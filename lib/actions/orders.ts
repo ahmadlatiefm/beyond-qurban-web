@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { calculateShipping } from '@/lib/shipping'
@@ -8,6 +9,7 @@ import { DeliveryMethod, OrderStatus } from '@prisma/client'
 import { createTripayTransaction } from '@/lib/tripay'
 import { sendOrderNotification } from '@/lib/onesender'
 import { sendFbCapiEvent } from '@/lib/facebook-capi'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const OrderSchema = z.object({
   productId: z.string().min(1),
@@ -42,6 +44,19 @@ async function generateOrderNumber(): Promise<string> {
 }
 
 export async function createOrder(formData: unknown) {
+  // Rate limiting — 5 req/min per IP
+  const headersList = await headers()
+  const ip =
+    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    headersList.get('x-real-ip') ??
+    'unknown'
+
+  const { allowed, retryAfterMs } = checkRateLimit(`order:${ip}`)
+  if (!allowed) {
+    const seconds = Math.ceil(retryAfterMs / 1000)
+    return { error: `Terlalu banyak percobaan. Coba lagi dalam ${seconds} detik.` }
+  }
+
   const parsed = OrderSchema.safeParse(formData)
   if (!parsed.success) return { error: parsed.error.flatten() }
 
