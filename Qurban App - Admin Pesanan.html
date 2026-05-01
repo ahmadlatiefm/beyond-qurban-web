@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Pesanan | Beyond Qurban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#0D3320',
+                        'brand-surface': '#1B5E3B',
+                        'brand-surface-light': '#3D7A56',
+                        'brand-accent': '#C8962A',
+                        'brand-accent-light': '#F5E6C3',
+                        'brand-light': '#FAFAF8',
+                        'brand-muted': '#6B7280',
+                        'brand-text-dark': '#0D1F17'
+                    },
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'sans': ['DM Sans', 'sans-serif']
+                    },
+                    backgroundImage: {
+                        'hero-gradient': 'linear-gradient(145deg, #1B5E3B, #0D3320)',
+                        'cta-gradient': 'linear-gradient(135deg, #F5E6C3, #C8962A)',
+                        'premium-gradient': 'linear-gradient(135deg, #1B5E3B, #3D7A56, #C8962A)',
+                        'soft-gradient': 'linear-gradient(180deg, #FAFAF8, #E8F4EE, #F5E6C3)'
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 20px rgba(13,51,32,0.10)',
+                        'glow': '0 0 30px rgba(200,150,42,0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { margin: 0; padding: 0; background-color: #FAFAF8; }
+        ::-webkit-scrollbar { display: none; }
+        
+        /* Custom Checkbox */
+        .custom-checkbox {
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 2px solid #6B7280;
+            border-radius: 0.25em;
+            display: grid;
+            place-content: center;
+        }
+
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            background-color: white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .custom-checkbox:checked {
+            background-color: #1B5E3B;
+            border-color: #1B5E3B;
+        }
+
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen text-brand-text-dark flex flex-col font-sans bg-brand-light m-0 p-0 relative overflow-hidden md:flex-row">
+
+    <!-- Desktop Sidebar -->
+    <aside id="desktop-sidebar" class="hidden md:flex flex-col w-[280px] bg-brand-dark min-h-screen sticky top-0 border-r border-brand-surface/30 z-40">
+        <div class="p-6 flex items-center gap-3 border-b border-brand-surface/30">
+            <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 shadow-glow">
+                <span class="text-xl">🐐</span>
+            </div>
+            <span class="font-serif font-bold text-brand-light text-xl tracking-wide">Admin Portal</span>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 flex flex-col gap-2">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                Dashboard
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-box-open w-5 text-center"></i>
+                Produk
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-brand-surface/40 text-brand-accent font-medium border border-brand-accent/20 transition-all shadow-sm">
+                <i class="fa-solid fa-cart-shopping w-5 text-center"></i>
+                Pesanan
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-users w-5 text-center"></i>
+                Pembeli
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-gear w-5 text-center"></i>
+                Pengaturan
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-brand-surface/30">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-accent-light/70 hover:bg-brand-surface/20 hover:text-brand-accent-light transition-all">
+                <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i>
+                Keluar
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 w-full flex flex-col relative z-10 h-screen overflow-y-auto pb-24 md:pb-8 bg-brand-light">
+        
+        <!-- Header -->
+        <header id="top-header" class="sticky top-0 z-30 bg-brand-light/80 backdrop-blur-md border-b border-brand-muted/20 px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 md:hidden">
+                <div class="w-8 h-8 bg-brand-dark rounded-full flex items-center justify-center">
+                    <span class="text-sm">🐐</span>
+                </div>
+                <span class="font-serif font-bold text-brand-dark">Pesanan</span>
+            </div>
+            
+            <div class="hidden md:block">
+                <div class="relative items-center">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted"></i>
+                    <input type="text" placeholder="Search" class="pl-10 pr-4 py-2 w-80 rounded-[8px] bg-brand-light border border-brand-muted/20 focus:outline-none focus:border-brand-surface text-sm">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <div class="hidden lg:flex items-center gap-4 text-sm text-brand-dark font-medium">
+                    <button class="flex items-center gap-2 hover:text-brand-surface">Design <i class="fa-solid fa-chevron-down text-xs text-brand-muted"></i></button>
+                    <button class="flex items-center gap-2 hover:text-brand-surface">Pages <i class="fa-solid fa-chevron-down text-xs text-brand-muted"></i></button>
+                    <button class="flex items-center gap-2 hover:text-brand-surface">Plugins <i class="fa-solid fa-chevron-down text-xs text-brand-muted"></i></button>
+                </div>
+                
+                <div class="flex items-center gap-4 border-l border-brand-muted/20 pl-4">
+                    <button class="text-brand-muted hover:text-brand-dark"><i class="fa-regular fa-circle-question text-lg"></i></button>
+                    <button class="text-brand-muted hover:text-brand-dark relative">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold border-2 border-brand-light">3</span>
+                    </button>
+                    <button class="flex items-center gap-2 px-3 py-1.5 border border-brand-muted/20 rounded-[8px] text-sm">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/uxpilot-auth-appspot-com-uk-flag.png" alt="ENG" class="w-4 h-4 rounded-full object-cover">
+                        Eng <i class="fa-solid fa-chevron-down text-xs text-brand-muted"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 md:p-8 max-w-[1200px] mx-auto w-full flex flex-col gap-6">
+            
+            <!-- Page Title & Actions -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h1 class="font-serif text-2xl md:text-[28px] font-bold text-brand-dark">Orders</h1>
+                <div class="flex items-center gap-3">
+                    <button class="px-4 py-2 bg-brand-light text-brand-dark border border-brand-muted/20 text-sm font-medium rounded-[8px] hover:bg-brand-surface/5 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-download text-brand-muted"></i> Export All
+                    </button>
+                    <button class="px-4 py-2 bg-brand-surface text-brand-light text-sm font-medium rounded-[8px] hover:bg-brand-dark transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Create Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex items-center gap-6 border-b border-brand-muted/20 pb-0 overflow-x-auto">
+                <button class="flex items-center gap-2 pb-3 border-b-2 border-brand-surface text-brand-surface font-bold text-sm whitespace-nowrap px-2">
+                    Semua <span class="px-2 py-0.5 bg-brand-surface text-brand-light rounded-[20px] text-[11px]">410</span>
+                </button>
+                <button class="flex items-center gap-2 pb-3 border-b-2 border-transparent text-brand-muted hover:text-brand-dark font-medium text-sm whitespace-nowrap px-2">
+                    Baru <span class="px-2 py-0.5 bg-[#10B981] text-white rounded-[20px] text-[11px]">36</span>
+                </button>
+                <button class="flex items-center gap-2 pb-3 border-b-2 border-transparent text-brand-muted hover:text-brand-dark font-medium text-sm whitespace-nowrap px-2">
+                    Menunggu Pembayaran <span class="px-2 py-0.5 bg-[#F59E0B] text-white rounded-[20px] text-[11px]">40</span>
+                </button>
+                <button class="flex items-center gap-2 pb-3 border-b-2 border-transparent text-brand-muted hover:text-brand-dark font-medium text-sm whitespace-nowrap px-2">
+                    Diproses <span class="px-2 py-0.5 bg-brand-muted/20 text-brand-dark rounded-[20px] text-[11px]">0</span>
+                </button>
+                <button class="flex items-center gap-2 pb-3 border-b-2 border-transparent text-brand-muted hover:text-brand-dark font-medium text-sm whitespace-nowrap px-2">
+                    Dikirim <span class="px-2 py-0.5 bg-[#8B5CF6] text-white rounded-[20px] text-[11px]">334</span>
+                </button>
+                <button class="flex items-center gap-2 pb-3 border-b-2 border-transparent text-brand-muted hover:text-brand-dark font-medium text-sm whitespace-nowrap px-2">
+                    Selesai
+                </button>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="bg-brand-light rounded-[12px] border border-brand-muted/20 p-4 shadow-sm flex flex-col sm:flex-row gap-4">
+                <div class="relative flex-1 max-w-[400px]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted"></i>
+                    <input type="text" placeholder="Search" class="w-full pl-10 pr-4 py-2 rounded-[8px] bg-brand-light border border-brand-muted/20 focus:outline-none focus:border-brand-surface text-sm">
+                </div>
+                <button class="px-4 py-2 bg-brand-light text-brand-dark border border-brand-muted/20 text-sm font-medium rounded-[8px] hover:bg-brand-surface/5 flex items-center justify-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-filter text-brand-muted"></i> Filters
+                </button>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="flex items-center gap-3 py-2">
+                <div class="w-6 h-6 bg-brand-surface rounded-[6px] flex items-center justify-center text-brand-light">
+                    <i class="fa-solid fa-minus text-xs"></i>
+                </div>
+                <span class="text-sm font-medium text-brand-dark mr-4">Select All</span>
+                
+                <button class="px-3 py-1.5 bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] text-sm font-medium rounded-[8px] flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Print <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+                <button class="px-3 py-1.5 bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-sm font-medium rounded-[8px] flex items-center gap-2">
+                    Update Order <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center bg-[#F3E8FF] text-[#7E22CE] border border-[#E9D5FF] rounded-[8px]">
+                    <i class="fa-solid fa-download text-sm"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-[8px]">
+                    <i class="fa-regular fa-trash-can text-sm"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-[8px]">
+                    <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Order Cards List -->
+            <div class="flex flex-col gap-4">
+                
+                <!-- Order Card 1 -->
+                <div class="bg-brand-light rounded-[12px] border border-brand-muted/20 shadow-sm p-6 relative">
+                    <div class="absolute top-6 left-6">
+                        <input type="checkbox" checked class="custom-checkbox">
+                    </div>
+                    
+                    <div class="ml-10">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-lg font-bold text-brand-dark">Order <span class="text-brand-dark">#2471</span></h3>
+                                <span class="px-2.5 py-1 bg-[#10B981] text-white rounded-[20px] text-[11px] font-bold">Paid</span>
+                            </div>
+                            <div class="text-xl font-bold text-brand-dark">Rp 3.500.000</div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-brand-muted mb-6">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-calendar text-brand-muted/70"></i>
+                                13 Sep, 2023 at 4:39 PM
+                            </div>
+                            <div class="hidden sm:block w-px h-4 bg-brand-muted/30"></div>
+                            <div>
+                                Shipping No: <a href="#" class="text-brand-surface hover:underline">61833014105</a>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3 mb-6">
+                            <button class="px-3 py-1.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-dark flex items-center gap-2 bg-brand-light hover:bg-brand-surface/5">
+                                <span class="w-2 h-2 rounded-full bg-brand-muted"></span> Unfinished <i class="fa-solid fa-chevron-down text-[10px] text-brand-muted ml-1"></i>
+                            </button>
+                            <div class="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-[#DC2626]">
+                                <i class="fa-solid fa-truck-fast"></i> Beyond Delivery
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4 p-4 rounded-[8px] bg-brand-surface/5 border border-brand-muted/10">
+                            <div class="w-16 h-16 rounded-[8px] overflow-hidden bg-white border border-brand-muted/20 shrink-0">
+                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/0eb6a0098f-c48d45467e90d54cd481.png" alt="Domba Garut" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-brand-dark mb-1">Domba Garut Super A - Jantan 35kg</h4>
+                                <div class="text-xs text-brand-muted mb-1">SKU: <span class="text-brand-surface">DG-A-001</span></div>
+                                <div class="text-xs text-brand-dark font-medium">Quantity: 1</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Card 2 -->
+                <div class="bg-brand-light rounded-[12px] border border-brand-muted/20 shadow-sm p-6 relative">
+                    <div class="absolute top-6 left-6">
+                        <input type="checkbox" checked class="custom-checkbox">
+                    </div>
+                    
+                    <div class="ml-10">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-lg font-bold text-brand-dark">Order <span class="text-brand-dark">#2472</span></h3>
+                                <span class="px-2.5 py-1 bg-brand-muted text-white rounded-[20px] text-[11px] font-bold">Waiting payment</span>
+                            </div>
+                            <div class="text-xl font-bold text-brand-dark">Rp 4.200.000</div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-brand-muted mb-6">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-calendar text-brand-muted/70"></i>
+                                14 Sep, 2023 at 8:27 PM
+                            </div>
+                            <div class="hidden sm:block w-px h-4 bg-brand-muted/30"></div>
+                            <div>
+                                Shipping No: <a href="#" class="text-brand-surface hover:underline">61833014106</a>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button class="px-3 py-1.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-dark flex items-center gap-2 bg-brand-light hover:bg-brand-surface/5">
+                                    <span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span> Menunggu <i class="fa-solid fa-chevron-down text-[10px] text-brand-muted ml-1"></i>
+                                </button>
+                                <button class="px-3 py-1.5 bg-[#10B981] text-white rounded-[8px] text-xs font-bold">Auto-WA</button>
+                                <button class="px-3 py-1.5 bg-[#FEE2E2] text-[#DC2626] rounded-[8px] text-xs font-bold">Tandai Bermasalah</button>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button class="w-9 h-9 border border-brand-muted/20 rounded-[8px] flex items-center justify-center text-brand-muted hover:bg-brand-surface/5">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <button class="px-3 py-1.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-dark flex items-center gap-2 hover:bg-brand-surface/5">
+                                    <i class="fa-solid fa-print text-brand-muted"></i> Print <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                </button>
+                                <button class="px-3 py-1.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-dark flex items-center gap-2 hover:bg-brand-surface/5">
+                                    Update Order <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                </button>
+                                <button onclick="document.getElementById('order-detail-drawer').classList.remove('translate-x-full')" class="px-4 py-1.5 bg-brand-surface text-brand-light rounded-[8px] text-sm font-bold hover:bg-brand-dark transition-colors">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4 p-4 rounded-[8px] bg-brand-surface/5 border border-brand-muted/10">
+                            <div class="w-16 h-16 rounded-[8px] overflow-hidden bg-white border border-brand-muted/20 shrink-0">
+                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/0aca13db1f-24aa72cdee1fbb404a13.png" alt="Domba Merino" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-brand-dark mb-1">Domba Merino Premium - Jantan 40kg</h4>
+                                <div class="text-xs text-brand-muted mb-1">SKU: <span class="text-brand-surface">DM-P-042</span></div>
+                                <div class="text-xs text-brand-dark font-medium">Quantity: 1</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Card 3 -->
+                <div class="bg-brand-light rounded-[12px] border border-brand-muted/20 shadow-sm p-6 relative opacity-70">
+                    <div class="absolute top-6 left-6">
+                        <input type="checkbox" class="custom-checkbox">
+                    </div>
+                    
+                    <div class="ml-10">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-lg font-bold text-brand-dark">Order <span class="text-brand-dark">#2473</span></h3>
+                                <span class="px-2.5 py-1 bg-[#10B981] text-white rounded-[20px] text-[11px] font-bold">Paid</span>
+                            </div>
+                            <div class="text-xl font-bold text-brand-dark">Rp 2.800.000</div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-brand-muted mt-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-calendar text-brand-muted/70"></i>
+                                16 Sep, 2023 at 12:05 PM
+                            </div>
+                            <div class="hidden sm:block w-px h-4 bg-brand-muted/30"></div>
+                            <div>
+                                Shipping No: <a href="#" class="text-brand-surface hover:underline">61833014100</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Drawer: Order Details -->
+    <div id="order-detail-drawer" class="fixed inset-y-0 right-0 w-full md:w-[600px] bg-brand-light shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-brand-muted/20">
+        <div class="px-6 py-4 border-b border-brand-muted/20 flex justify-between items-center bg-brand-light sticky top-0 z-10">
+            <div>
+                <h2 class="font-serif text-xl font-bold text-brand-dark">Order #2472</h2>
+                <p class="text-sm text-brand-muted mt-1">14 Sep, 2023 at 8:27 PM</p>
+            </div>
+            <button onclick="document.getElementById('order-detail-drawer').classList.add('translate-x-full')" class="text-brand-muted hover:text-brand-dark w-8 h-8 rounded-full hover:bg-brand-surface/5 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-8 bg-[#FAFAF8]">
+            
+            <!-- Customer & Delivery Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-4 rounded-[12px] border border-brand-muted/10 shadow-sm">
+                    <h3 class="text-sm font-bold text-brand-dark mb-3 flex items-center gap-2 uppercase tracking-wide">
+                        <i class="fa-regular fa-user text-brand-surface"></i> Pembeli
+                    </h3>
+                    <p class="font-bold text-brand-dark text-sm">Ahmad Fauzi</p>
+                    <p class="text-sm text-brand-muted mt-1">+62 812-3456-7890</p>
+                    <p class="text-sm text-brand-muted">ahmad.fauzi@email.com</p>
+                </div>
+                <div class="bg-white p-4 rounded-[12px] border border-brand-muted/10 shadow-sm">
+                    <h3 class="text-sm font-bold text-brand-dark mb-3 flex items-center gap-2 uppercase tracking-wide">
+                        <i class="fa-solid fa-location-dot text-brand-surface"></i> Pengiriman
+                    </h3>
+                    <p class="text-sm text-brand-dark">Jl. Kebon Jeruk Raya No. 45, RT 01/RW 02</p>
+                    <p class="text-sm text-brand-muted mt-1">Kebon Jeruk, Jakarta Barat</p>
+                    <p class="text-sm text-brand-muted">DKI Jakarta 11530</p>
+                    <div class="mt-3 inline-block px-2.5 py-1 bg-[#FEF3C7] text-[#D97706] text-xs font-bold rounded-[4px]">
+                        Jadwal: H-2 Idul Adha
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Stepper -->
+            <div class="bg-white p-5 rounded-[12px] border border-brand-muted/10 shadow-sm">
+                <h3 class="text-sm font-bold text-brand-dark mb-5 uppercase tracking-wide">Status Pesanan</h3>
+                <div class="relative pl-6 border-l-2 border-brand-muted/20 space-y-6">
+                    <div class="relative">
+                        <div class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-brand-surface border-4 border-white shadow-sm"></div>
+                        <h4 class="text-sm font-bold text-brand-dark">Pesanan Dibuat</h4>
+                        <p class="text-xs text-brand-muted mt-0.5">14 Sep 2023, 20:27 WIB</p>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-[#F59E0B] border-4 border-white shadow-sm"></div>
+                        <h4 class="text-sm font-bold text-[#F59E0B]">Menunggu Pembayaran</h4>
+                        <p class="text-xs text-brand-muted mt-0.5">Menunggu konfirmasi transfer bank</p>
+                        <button class="mt-2 px-3 py-1.5 bg-brand-surface text-brand-light text-xs font-bold rounded-[6px]">Konfirmasi Pembayaran</button>
+                    </div>
+                    <div class="relative opacity-40">
+                        <div class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-brand-muted border-4 border-white shadow-sm"></div>
+                        <h4 class="text-sm font-bold text-brand-dark">Diproses</h4>
+                    </div>
+                    <div class="relative opacity-40">
+                        <div class="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-brand-muted border-4 border-white shadow-sm"></div>
+                        <h4 class="text-sm font-bold text-brand-dark">Dikirim</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Proof -->
+            <div class="bg-white p-5 rounded-[12px] border border-brand-muted/10 shadow-sm">
+                <h3 class="text-sm font-bold text-brand-dark mb-4 uppercase tracking-wide">Bukti Pembayaran</h3>
+                <div class="border-2 border-dashed border-brand-muted/30 rounded-[8px] p-6 flex flex-col items-center justify-center bg-[#FAFAF8]">
+                    <i class="fa-regular fa-image text-3xl text-brand-muted/50 mb-2"></i>
+                    <p class="text-sm font-medium text-brand-muted">Belum ada bukti yang diunggah</p>
+                </div>
+            </div>
+
+            <!-- Internal Notes -->
+            <div class="bg-white p-5 rounded-[12px] border border-brand-muted/10 shadow-sm">
+                <h3 class="text-sm font-bold text-brand-dark mb-3 uppercase tracking-wide">Catatan Internal</h3>
+                <textarea rows="3" placeholder="Tambahkan catatan untuk admin lain (tidak terlihat oleh pembeli)..." class="w-full p-3 rounded-[8px] bg-[#FAFAF8] border border-brand-muted/20 text-sm focus:outline-none focus:border-brand-surface resize-none"></textarea>
+                <div class="flex justify-end mt-2">
+                    <button class="px-4 py-1.5 bg-brand-surface/10 text-brand-surface text-xs font-bold rounded-[6px] hover:bg-brand-surface hover:text-white transition-colors">Simpan Catatan</button>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="bg-white p-5 rounded-[12px] border border-brand-muted/10 shadow-sm mb-6">
+                <h3 class="text-sm font-bold text-brand-dark mb-4 uppercase tracking-wide">Ringkasan Pesanan</h3>
+                <div class="flex items-center gap-4 py-3 border-b border-brand-muted/10">
+                    <div class="w-12 h-12 rounded-[6px] overflow-hidden bg-brand-surface/5 shrink-0">
+                         <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/0aca13db1f-24aa72cdee1fbb404a13.png" alt="Domba Merino" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-brand-dark">Domba Merino Premium</h4>
+                        <p class="text-xs text-brand-muted">1 x Rp 4.200.000</p>
+                    </div>
+                    <div class="text-sm font-bold text-brand-dark">Rp 4.200.000</div>
+                </div>
+                <div class="space-y-2 pt-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-brand-muted">Subtotal</span>
+                        <span class="font-medium text-brand-dark">Rp 4.200.000</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-brand-muted">Biaya Pengiriman</span>
+                        <span class="font-medium text-brand-dark">Gratis</span>
+                    </div>
+                    <div class="flex justify-between text-base font-bold text-brand-dark pt-2 border-t border-brand-muted/10 mt-2">
+                        <span>Total Keseluruhan</span>
+                        <span class="text-brand-accent">Rp 4.200.000</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="p-4 border-t border-brand-muted/20 bg-brand-light flex gap-3 sticky bottom-0 z-10">
+            <button class="flex-1 px-4 py-2.5 bg-white text-[#DC2626] border border-[#DC2626]/30 font-bold rounded-[8px] hover:bg-[#FEE2E2] transition-colors text-sm">
+                Batalkan Pesanan
+            </button>
+            <button class="flex-1 px-4 py-2.5 bg-cta-gradient text-brand-text-dark font-bold rounded-[8px] shadow-sm hover:scale-[1.02] transition-transform text-sm">
+                Simpan Perubahan
+            </button>
+        </div>
+    </div>
+    
+    <!-- Drawer Backdrop -->
+    <div id="drawer-backdrop" onclick="document.getElementById('order-detail-drawer').classList.add('translate-x-full')" class="fixed inset-0 bg-brand-dark/50 backdrop-blur-sm z-40 hidden"></div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 w-full bg-brand-light border-t border-brand-muted/20 z-30 px-2 py-2 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-chart-pie text-lg"></i>
+            <span class="text-[10px] font-medium">Dashboard</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-box-open text-lg"></i>
+            <span class="text-[10px] font-medium">Produk</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-accent gap-1">
+            <i class="fa-solid fa-cart-shopping text-lg"></i>
+            <span class="text-[10px] font-medium">Pesanan</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-users text-lg"></i>
+            <span class="text-[10px] font-medium">Pembeli</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-gear text-lg"></i>
+            <span class="text-[10px] font-medium">Pengaturan</span>
+        </a>
+    </nav>
+
+    <script>
+        // Drawer Logic
+        const drawer = document.getElementById('order-detail-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+        
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === "class") {
+                    const classList = mutation.target.className;
+                    if(classList.includes('translate-x-full')) {
+                        backdrop.classList.add('hidden');
+                    } else {
+                        backdrop.classList.remove('hidden');
+                    }
+                }
+            });
+        });
+        
+        observer.observe(drawer, { attributes: true });
+    </script>
+</body>
+</html>

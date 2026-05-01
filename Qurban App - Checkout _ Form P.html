@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout / Form Pemesanan | Beyond Qurban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#0D3320',
+                        'brand-surface': '#1B5E3B',
+                        'brand-surface-light': '#3D7A56',
+                        'brand-accent': '#C8962A',
+                        'brand-accent-light': '#F5E6C3',
+                        'brand-light': '#FAFAF8',
+                        'brand-muted': '#6B7280',
+                        'brand-text-dark': '#0D1F17'
+                    },
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'sans': ['DM Sans', 'sans-serif']
+                    },
+                    backgroundImage: {
+                        'hero-gradient': 'linear-gradient(145deg, #1B5E3B, #0D3320)',
+                        'cta-gradient': 'linear-gradient(135deg, #F5E6C3, #C8962A)',
+                        'premium-gradient': 'linear-gradient(135deg, #1B5E3B, #3D7A56, #C8962A)',
+                        'soft-gradient': 'linear-gradient(180deg, #FAFAF8, #E8F4EE, #F5E6C3)'
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 20px rgba(13,51,32,0.10)',
+                        'glow': '0 0 30px rgba(200,150,42,0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { margin: 0; padding: 0; background-color: #FAFAF8; }
+        ::-webkit-scrollbar { display: none; }
+        
+        /* Mobile Menu Drawer Animation */
+        #mobile-menu {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(100%);
+        }
+        #mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        /* Form Input Focus State Overrides */
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #C8962A;
+            box-shadow: 0 0 0 1px #C8962A;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen text-brand-text-dark flex flex-col font-sans bg-brand-light bg-soft-gradient m-0 p-0">
+
+    <!-- Header Navigation (Exact copy from provided HTML) -->
+    <header id="header" class="fixed top-0 left-0 w-full z-50 bg-brand-dark border-b border-brand-surface-light/30 transition-all duration-300">
+        <div class="max-w-[1440px] mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 group-hover:border-brand-accent transition-colors">
+                    <span class="text-xl">🐐</span>
+                </div>
+                <span class="font-serif text-brand-accent text-xl font-bold tracking-wide">Beyond Qurban</span>
+            </a>
+
+            <!-- Desktop Nav (Katalog marked active) -->
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Homepage</a>
+                <a href="#" class="text-brand-accent font-medium text-sm tracking-wide transition-colors border-b-2 border-brand-accent pb-1">Katalog</a>
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Lacak Pesanan</a>
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Tentang Kami</a>
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Admin</a>
+            </nav>
+
+            <!-- Desktop Actions -->
+            <div class="hidden md:flex items-center gap-4">
+                <a href="#" class="bg-cta-gradient text-brand-text-dark font-bold text-sm py-2.5 px-6 rounded-[20px] shadow-premium hover:scale-105 transition-transform flex items-center gap-2">
+                    <span>Beli Sekarang</span>
+                </a>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button id="mobile-menu-btn" class="md:hidden text-brand-light hover:text-brand-accent transition-colors">
+                <i class="fa-solid fa-bars text-2xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Drawer (Exact copy) -->
+    <div id="mobile-menu" class="fixed inset-0 z-[60] bg-brand-dark flex flex-col md:hidden">
+        <div class="px-6 h-20 flex items-center justify-between border-b border-brand-surface-light/30">
+            <a href="#" class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30">
+                    <span class="text-xl">🐐</span>
+                </div>
+                <span class="font-serif text-brand-accent text-xl font-bold tracking-wide">Beyond Qurban</span>
+            </a>
+            <button id="close-menu-btn" class="text-brand-light hover:text-brand-accent transition-colors">
+                <i class="fa-solid fa-xmark text-3xl"></i>
+            </button>
+        </div>
+        <nav class="flex-1 flex flex-col pt-8 px-6 gap-6">
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Homepage</a>
+            <a href="#" class="text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Katalog</a>
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Lacak Pesanan</a>
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Tentang Kami</a>
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Admin</a>
+        </nav>
+        <div class="p-6">
+            <a href="#" class="w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[20px] shadow-premium flex items-center justify-center gap-2">
+                <span>Beli Sekarang</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 pt-28 pb-24 max-w-[1440px] mx-auto px-6 md:px-12 w-full">
+        
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-sm text-brand-muted mb-8">
+            <a href="#" class="hover:text-brand-surface transition-colors">Beranda</a>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            <a href="#" class="hover:text-brand-surface transition-colors">Katalog</a>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            <span class="text-brand-text-dark font-medium">Checkout Pemesanan</span>
+        </nav>
+
+        <div class="flex flex-col lg:flex-row gap-8 lg:gap-12" id="checkout-container">
+            
+            <!-- Left Column: Form Section -->
+            <div class="w-full lg:w-[65%] flex flex-col gap-6" id="form-section">
+                
+                <!-- Form Card -->
+                <div class="bg-white rounded-[12px] border border-brand-muted/20 shadow-premium p-8 relative overflow-hidden">
+                    
+                    <!-- Decorative Icon (Reference style) -->
+                    <div class="w-12 h-12 rounded-[12px] border border-brand-muted/20 flex items-center justify-center mb-6 bg-brand-light">
+                        <i class="fa-solid fa-pen-to-square text-brand-surface text-xl"></i>
+                    </div>
+
+                    <h1 class="font-serif text-2xl font-bold text-brand-text-dark mb-2">Formulir Pemesanan</h1>
+                    <p class="text-brand-muted text-sm mb-8 pb-6 border-b border-brand-muted/20 border-dashed">
+                        Lengkapi data diri dan alamat pengiriman Anda dengan benar.
+                    </p>
+
+                    <form id="order-form" class="flex flex-col gap-6">
+                        
+                        <!-- Name Input -->
+                        <div class="flex flex-col gap-2">
+                            <label for="name" class="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1">
+                                NAMA LENGKAP <span class="text-brand-surface">*</span>
+                            </label>
+                            <input type="text" id="name" placeholder="Masukkan nama lengkap Anda" class="w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm transition-colors focus:bg-white" required>
+                        </div>
+
+                        <!-- Phone Input -->
+                        <div class="flex flex-col gap-2">
+                            <label for="phone" class="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1">
+                                NOMOR WHATSAPP <span class="text-brand-surface">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted text-sm font-medium">+62</span>
+                                <input type="tel" id="phone" placeholder="812-3456-7890" class="w-full h-12 pl-12 pr-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm transition-colors focus:bg-white" required>
+                            </div>
+                        </div>
+
+                        <!-- Address Input -->
+                        <div class="flex flex-col gap-2">
+                            <label for="address" class="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1">
+                                ALAMAT PENGIRIMAN <span class="text-brand-surface">*</span>
+                            </label>
+                            <textarea id="address" rows="3" placeholder="Masukkan alamat lengkap (Jalan, RT/RW, Kelurahan, Kecamatan, Kota)" class="w-full p-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm transition-colors focus:bg-white resize-none" required></textarea>
+                        </div>
+
+                        <!-- Delivery Date -->
+                        <div class="flex flex-col gap-2">
+                            <label for="date" class="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1">
+                                TANGGAL PENGIRIMAN <span class="text-brand-surface">*</span>
+                            </label>
+                            <select id="date" class="w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark text-sm transition-colors focus:bg-white appearance-none relative" required>
+                                <option value="" disabled selected>Pilih jadwal pengiriman</option>
+                                <option value="h-3">H-3 Idul Adha (14 Juni 2024)</option>
+                                <option value="h-2">H-2 Idul Adha (15 Juni 2024)</option>
+                                <option value="h-1">H-1 Idul Adha (16 Juni 2024)</option>
+                            </select>
+                            <div class="pointer-events-none absolute right-10 mt-[38px] text-brand-muted">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Notes Input -->
+                        <div class="flex flex-col gap-2 pb-6 border-b border-brand-muted/20 border-dashed">
+                            <label for="notes" class="text-xs font-bold text-brand-text-dark uppercase tracking-widest">
+                                CATATAN TAMBAHAN (OPSIONAL)
+                            </label>
+                            <input type="text" id="notes" placeholder="Misal: Patokan rumah, jam pengiriman yang diinginkan" class="w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm transition-colors focus:bg-white">
+                        </div>
+
+                        <!-- Consent Checkbox -->
+                        <div class="flex items-start gap-3 mt-2">
+                            <input type="checkbox" id="consent" class="mt-1 w-4 h-4 rounded-[4px] border-brand-muted/30 text-brand-surface focus:ring-brand-accent cursor-pointer" required>
+                            <label for="consent" class="text-xs text-brand-muted leading-relaxed cursor-pointer">
+                                Saya menyetujui bahwa data yang saya masukkan adalah benar. Saya memahami syarat & ketentuan pembelian hewan kurban, termasuk garansi kesehatan dan jadwal pengiriman yang telah ditentukan.
+                            </label>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Order Summary & CTA -->
+            <div class="w-full lg:w-[35%] flex flex-col gap-6">
+                
+                <!-- Summary Card -->
+                <div class="bg-brand-surface rounded-[12px] shadow-premium overflow-hidden sticky top-28">
+                    <div class="p-6 border-b border-brand-surface-light/30">
+                        <h2 class="font-serif text-xl font-bold text-brand-light mb-1">Ringkasan Pesanan</h2>
+                        <p class="text-brand-accent-light/70 text-xs">Periksa kembali pesanan Anda</p>
+                    </div>
+                    
+                    <div class="p-6 bg-brand-dark/20">
+                        <!-- Product Item -->
+                        <div class="flex gap-4 mb-6">
+                            <div class="w-20 h-20 rounded-[8px] overflow-hidden bg-brand-light shrink-0">
+                                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-f49b96c7e425ecf482ce.png" alt="Domba Garut Super" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex flex-col justify-center">
+                                <h3 class="text-brand-light font-bold text-sm mb-1">Domba Garut Super #G012</h3>
+                                <div class="flex items-center gap-2 text-xs text-brand-accent-light/80 mb-2">
+                                    <span class="bg-brand-surface-light/50 px-2 py-0.5 rounded-[4px]"><i class="fa-solid fa-weight-scale mr-1"></i>38 kg</span>
+                                </div>
+                                <span class="font-sans font-bold text-brand-accent text-base">Rp 3.500.000</span>
+                            </div>
+                        </div>
+
+                        <!-- Cost Breakdown -->
+                        <div class="flex flex-col gap-3 text-sm border-t border-brand-surface-light/30 pt-4 mb-4">
+                            <div class="flex justify-between text-brand-accent-light/80">
+                                <span>Subtotal Produk</span>
+                                <span>Rp 3.500.000</span>
+                            </div>
+                            <div class="flex justify-between text-brand-accent-light/80">
+                                <span>Biaya Pengiriman</span>
+                                <span class="text-[#25D366]">Gratis</span>
+                            </div>
+                            <div class="flex justify-between text-brand-accent-light/80">
+                                <span>Biaya Perawatan</span>
+                                <span class="text-[#25D366]">Gratis</span>
+                            </div>
+                        </div>
+
+                        <!-- Total -->
+                        <div class="flex justify-between items-center border-t border-brand-surface-light/30 pt-4 mb-6">
+                            <span class="text-brand-light font-bold">Total Pembayaran</span>
+                            <span class="font-sans font-bold text-brand-accent text-xl">Rp 3.500.000</span>
+                        </div>
+
+                        <!-- CTA Button -->
+                        <button type="button" id="submit-order-btn" class="w-full bg-cta-gradient text-brand-text-dark font-bold text-base py-3.5 rounded-[8px] shadow-glow hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                            Tempatkan Pesanan
+                        </button>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="text-[10px] text-brand-accent-light/50 flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-lock"></i>
+                                Pembayaran aman melalui transfer bank
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Success State (Hidden by default) -->
+        <div id="success-state" class="hidden w-full max-w-2xl mx-auto bg-white rounded-[12px] border border-brand-muted/20 shadow-premium p-10 text-center">
+            
+            <div class="w-20 h-20 bg-[#25D366]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fa-solid fa-check text-4xl text-[#25D366]"></i>
+            </div>
+            
+            <h2 class="font-serif text-3xl font-bold text-brand-text-dark mb-2">Pesanan Berhasil!</h2>
+            <p class="text-brand-muted text-sm mb-8">Terima kasih, pesanan Anda telah kami terima dan sedang diproses.</p>
+            
+            <div class="bg-brand-light border border-brand-muted/20 rounded-[12px] p-6 mb-8 inline-block w-full max-w-sm">
+                <p class="text-xs text-brand-muted uppercase tracking-widest font-bold mb-2">KODE PESANAN ANDA</p>
+                <div class="text-2xl font-sans font-bold text-brand-surface tracking-wider">BQ-9824-XV</div>
+                <button class="text-xs text-brand-surface font-bold mt-3 hover:text-brand-accent transition-colors flex items-center justify-center gap-1 mx-auto">
+                    <i class="fa-regular fa-copy"></i> Salin Kode
+                </button>
+            </div>
+            
+            <h3 class="font-bold text-brand-text-dark text-sm mb-4">Langkah Selanjutnya:</h3>
+            <ul class="text-left text-sm text-brand-muted space-y-3 mb-8 max-w-md mx-auto">
+                <li class="flex items-start gap-3">
+                    <div class="w-6 h-6 rounded-full bg-brand-surface text-brand-light flex items-center justify-center shrink-0 text-xs mt-0.5">1</div>
+                    <p>Admin kami akan menghubungi nomor WhatsApp Anda dalam waktu 1x24 jam untuk konfirmasi pesanan.</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <div class="w-6 h-6 rounded-full bg-brand-surface text-brand-light flex items-center justify-center shrink-0 text-xs mt-0.5">2</div>
+                    <p>Lakukan pembayaran sesuai instruksi yang akan dikirimkan melalui WhatsApp.</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <div class="w-6 h-6 rounded-full bg-brand-surface text-brand-light flex items-center justify-center shrink-0 text-xs mt-0.5">3</div>
+                    <p>Anda dapat melacak status pesanan kapan saja menggunakan kode pesanan di atas.</p>
+                </li>
+            </ul>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="bg-brand-surface text-brand-light font-bold text-sm py-3 px-8 rounded-[8px] hover:bg-brand-dark transition-colors">
+                    Lacak Pesanan
+                </a>
+                <a href="#" class="bg-white border-2 border-brand-surface text-brand-surface font-bold text-sm py-3 px-8 rounded-[8px] hover:bg-brand-light transition-colors">
+                    Kembali ke Beranda
+                </a>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer (Exact copy from provided HTML) -->
+    <footer id="footer" class="bg-brand-dark border-t border-brand-surface-light/20 pt-16 pb-8 text-brand-accent-light">
+        <div class="max-w-[1440px] mx-auto px-6 md:px-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <!-- Brand Col -->
+                <div class="md:col-span-1">
+                    <a href="#" class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30">
+                            <span class="text-xl">🐐</span>
+                        </div>
+                        <span class="font-serif text-brand-accent text-xl font-bold tracking-wide">Beyond Qurban</span>
+                    </a>
+                    <p class="text-sm text-brand-accent-light/70 leading-relaxed mb-6">
+                        Menyediakan domba kurban berkualitas, sehat, dan dirawat sesuai syariat untuk menyempurnakan ibadah Anda.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-light hover:bg-brand-accent hover:text-brand-dark transition-colors">
+                            <i class="fa-brands fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-light hover:bg-brand-accent hover:text-brand-dark transition-colors">
+                            <i class="fa-brands fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-light hover:bg-brand-accent hover:text-brand-dark transition-colors">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Menu Links -->
+                <div class="md:col-span-1">
+                    <h4 class="font-serif text-brand-light text-lg font-bold mb-6">Menu</h4>
+                    <ul class="space-y-4 text-sm">
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Homepage</a></li>
+                        <li><a href="#" class="text-brand-accent transition-colors">Katalog Domba</a></li>
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Lacak Pesanan</a></li>
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Tentang Kami</a></li>
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Syarat & Ketentuan</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="md:col-span-2">
+                    <h4 class="font-serif text-brand-light text-lg font-bold mb-6">Kontak Kami</h4>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-location-dot mt-1 text-brand-accent"></i>
+                            <p class="text-brand-accent-light/80">Jl. Peternakan Raya No. 12, Lembang, Bandung Barat, Jawa Barat 40391</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-phone text-brand-accent"></i>
+                            <p class="text-brand-accent-light/80">+62 812-3456-7890</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-envelope text-brand-accent"></i>
+                            <p class="text-brand-accent-light/80">info@beyondqurban.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copyright -->
+            <div class="border-t border-brand-surface-light/20 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-brand-accent-light/50">
+                <p>&copy; 2024 Beyond Qurban. All Rights Reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="hover:text-brand-accent transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-brand-accent transition-colors">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const closeMenuBtn = document.getElementById('close-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            });
+
+            closeMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                document.body.style.overflow = '';
+            });
+            
+            // Header scroll effect
+            const header = document.getElementById('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 20) {
+                    header.classList.add('shadow-lg');
+                    header.classList.replace('bg-brand-dark', 'bg-brand-dark/95');
+                    header.classList.add('backdrop-blur-md');
+                } else {
+                    header.classList.remove('shadow-lg');
+                    header.classList.replace('bg-brand-dark/95', 'bg-brand-dark');
+                    header.classList.remove('backdrop-blur-md');
+                }
+            });
+
+            // Form Submit Logic (Visual demonstration)
+            const submitBtn = document.getElementById('submit-order-btn');
+            const checkoutContainer = document.getElementById('checkout-container');
+            const successState = document.getElementById('success-state');
+            
+            submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Simple validation check (visual only for demo)
+                const consent = document.getElementById('consent');
+                if(!consent.checked) {
+                    alert("Harap setujui syarat dan ketentuan.");
+                    return;
+                }
+                
+                // Show success state
+                checkoutContainer.classList.add('hidden');
+                successState.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

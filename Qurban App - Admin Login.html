@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Beyond Qurban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#0D3320',
+                        'brand-surface': '#1B5E3B',
+                        'brand-surface-light': '#3D7A56',
+                        'brand-accent': '#C8962A',
+                        'brand-accent-light': '#F5E6C3',
+                        'brand-light': '#FAFAF8',
+                        'brand-muted': '#6B7280',
+                        'brand-text-dark': '#0D1F17'
+                    },
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'sans': ['DM Sans', 'sans-serif']
+                    },
+                    backgroundImage: {
+                        'hero-gradient': 'linear-gradient(145deg, #1B5E3B, #0D3320)',
+                        'cta-gradient': 'linear-gradient(135deg, #F5E6C3, #C8962A)',
+                        'premium-gradient': 'linear-gradient(135deg, #1B5E3B, #3D7A56, #C8962A)',
+                        'soft-gradient': 'linear-gradient(180deg, #FAFAF8, #E8F4EE, #F5E6C3)'
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 20px rgba(13,51,32,0.10)',
+                        'glow': '0 0 30px rgba(200,150,42,0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { margin: 0; padding: 0; background-color: #0D3320; }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="antialiased min-h-screen text-brand-text-dark flex flex-col font-sans bg-brand-dark m-0 p-0 relative overflow-hidden">
+
+    <!-- Decorative Background Elements -->
+    <div id="bg-decorations" class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-surface-light/20 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-brand-accent/10 rounded-full blur-[150px]"></div>
+        <div class="absolute top-[40%] left-[60%] w-[30%] h-[30%] bg-brand-surface/20 rounded-full blur-[100px]"></div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1 w-full flex items-center justify-center relative z-10 p-6 min-h-screen">
+        
+        <!-- Login Container -->
+        <div id="login-container" class="w-full max-w-[480px] flex flex-col items-center">
+            
+            <!-- Header Section -->
+            <div id="login-header" class="text-center mb-10 flex flex-col items-center">
+                <a href="#" class="flex items-center gap-3 mb-6 group">
+                    <div class="w-12 h-12 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 group-hover:border-brand-accent transition-colors shadow-glow">
+                        <span class="text-2xl">🐐</span>
+                    </div>
+                </a>
+                <div class="bg-brand-accent-light px-4 py-1.5 rounded-[20px] mb-6 inline-block">
+                    <span class="text-brand-dark font-medium text-sm tracking-wide">Admin Portal</span>
+                </div>
+                <h1 class="font-serif text-4xl md:text-5xl font-bold text-brand-light mb-2">Welcome Back!</h1>
+                <p class="text-brand-accent-light/70 text-base">Secure access to Beyond Qurban dashboard</p>
+            </div>
+
+            <!-- Login Card -->
+            <div id="login-card" class="w-full bg-brand-surface rounded-[12px] p-8 md:p-10 shadow-premium border border-brand-accent/20 backdrop-blur-sm relative">
+                
+                <form id="login-form" class="flex flex-col gap-6">
+                    
+                    <!-- Email/Username Input -->
+                    <div class="flex flex-col gap-2">
+                        <label for="email" class="text-brand-light font-medium text-sm">Email Address or Username</label>
+                        <div class="relative">
+                            <input type="text" id="email" class="w-full h-12 bg-brand-light text-brand-text-dark rounded-[8px] px-4 border border-transparent focus:border-brand-accent focus:outline-none transition-colors shadow-sm" placeholder="admin@beyondqurban.com" value="admin@beyondqurban.com">
+                        </div>
+                    </div>
+
+                    <!-- Password Input -->
+                    <div class="flex flex-col gap-2">
+                        <label for="password" class="text-brand-light font-medium text-sm">Password</label>
+                        <div class="relative">
+                            <input type="password" id="password" class="w-full h-12 bg-brand-light text-brand-text-dark rounded-[8px] px-4 pr-12 border border-transparent focus:border-brand-accent focus:outline-none transition-colors shadow-sm" value="••••••••">
+                            <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-text-dark transition-colors">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="flex items-center justify-between mt-2">
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <div class="relative flex items-center justify-center">
+                                <input type="checkbox" class="peer sr-only" checked>
+                                <div class="w-5 h-5 bg-brand-light border border-brand-muted/30 rounded-[4px] peer-checked:bg-brand-accent peer-checked:border-brand-accent transition-colors flex items-center justify-center">
+                                    <i class="fa-solid fa-check text-brand-dark text-xs opacity-0 peer-checked:opacity-100 transition-opacity"></i>
+                                </div>
+                            </div>
+                            <span class="text-brand-light/80 text-sm group-hover:text-brand-light transition-colors">Remember me</span>
+                        </label>
+                        <a href="#" class="text-brand-accent hover:text-brand-accent-light text-sm font-medium transition-colors">Forgot password?</a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full h-12 mt-4 bg-cta-gradient text-brand-text-dark font-serif font-bold text-lg rounded-[8px] shadow-premium hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
+                        Secure Login <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+
+                </form>
+
+            </div>
+
+            <!-- Secure Messaging Footer -->
+            <div id="secure-messaging" class="mt-8 flex flex-col items-center gap-4 text-center">
+                <div class="flex items-center gap-2 text-brand-accent/80 text-sm">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>256-bit Encrypted Connection</span>
+                </div>
+                <div class="text-brand-light/50 text-xs flex gap-4">
+                    <a href="#" class="hover:text-brand-accent transition-colors">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="#" class="hover:text-brand-accent transition-colors">Terms of Service</a>
+                    <span>•</span>
+                    <a href="#" class="hover:text-brand-accent transition-colors">Support</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const togglePasswordBtn = document.getElementById('toggle-password');
+            const passwordInput = document.getElementById('password');
+            const icon = togglePasswordBtn.querySelector('i');
+
+            togglePasswordBtn.addEventListener('click', () => {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

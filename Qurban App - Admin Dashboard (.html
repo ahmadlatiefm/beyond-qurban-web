@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Beyond Qurban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#0D3320',
+                        'brand-surface': '#1B5E3B',
+                        'brand-surface-light': '#3D7A56',
+                        'brand-accent': '#C8962A',
+                        'brand-accent-light': '#F5E6C3',
+                        'brand-light': '#FAFAF8',
+                        'brand-muted': '#6B7280',
+                        'brand-text-dark': '#0D1F17'
+                    },
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'sans': ['DM Sans', 'sans-serif']
+                    },
+                    backgroundImage: {
+                        'hero-gradient': 'linear-gradient(145deg, #1B5E3B, #0D3320)',
+                        'cta-gradient': 'linear-gradient(135deg, #F5E6C3, #C8962A)',
+                        'premium-gradient': 'linear-gradient(135deg, #1B5E3B, #3D7A56, #C8962A)',
+                        'soft-gradient': 'linear-gradient(180deg, #FAFAF8, #E8F4EE, #F5E6C3)'
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 20px rgba(13,51,32,0.10)',
+                        'glow': '0 0 30px rgba(200,150,42,0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #FAFAF8; }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="antialiased min-h-screen text-brand-text-dark flex flex-col font-sans bg-brand-light m-0 p-0 relative overflow-hidden md:flex-row">
+
+    <!-- Desktop Sidebar -->
+    <aside id="desktop-sidebar" class="hidden md:flex flex-col w-[280px] bg-brand-dark min-h-screen sticky top-0 border-r border-brand-surface/30 z-40">
+        <div class="p-6 flex items-center gap-3 border-b border-brand-surface/30">
+            <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 shadow-glow">
+                <span class="text-xl">🐐</span>
+            </div>
+            <span class="font-serif font-bold text-brand-light text-xl tracking-wide">Admin Portal</span>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 flex flex-col gap-2">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-brand-surface/40 text-brand-accent font-medium border border-brand-accent/20 transition-all shadow-sm">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                Dashboard
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-box-open w-5 text-center"></i>
+                Produk
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-cart-shopping w-5 text-center"></i>
+                Pesanan
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-users w-5 text-center"></i>
+                Pembeli
+            </a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-light/70 hover:bg-brand-surface/20 hover:text-brand-light transition-all">
+                <i class="fa-solid fa-gear w-5 text-center"></i>
+                Pengaturan
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-brand-surface/30">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-[12px] text-brand-accent-light/70 hover:bg-brand-surface/20 hover:text-brand-accent-light transition-all">
+                <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i>
+                Keluar
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 w-full flex flex-col relative z-10 min-h-screen overflow-y-auto pb-24 md:pb-8">
+        
+        <!-- Header -->
+        <header id="top-header" class="sticky top-0 z-30 bg-brand-light/80 backdrop-blur-md border-b border-brand-muted/20 px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 md:hidden">
+                <div class="w-8 h-8 bg-brand-dark rounded-full flex items-center justify-center">
+                    <span class="text-sm">🐐</span>
+                </div>
+                <span class="font-serif font-bold text-brand-dark">Dashboard</span>
+            </div>
+            
+            <div class="hidden md:block">
+                <h1 class="font-serif text-2xl font-bold text-brand-dark">Ringkasan Dashboard</h1>
+                <p class="text-brand-muted text-sm mt-1">Pantau performa penjualan dan aktivitas terkini.</p>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-full bg-brand-light border border-brand-muted/20 flex items-center justify-center text-brand-dark hover:bg-brand-surface hover:text-brand-light transition-colors relative">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-brand-accent rounded-full"></span>
+                </button>
+                <div class="w-10 h-10 rounded-full bg-brand-surface overflow-hidden border-2 border-brand-accent/30">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="Admin" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 max-w-7xl mx-auto w-full flex flex-col gap-8">
+            
+            <!-- Quick Actions -->
+            <section id="quick-actions" class="flex flex-wrap gap-4">
+                <button class="px-6 py-3 bg-cta-gradient text-brand-text-dark font-sans font-bold rounded-[12px] shadow-premium hover:scale-[1.02] transition-transform flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Tambah Produk
+                </button>
+                <button class="px-6 py-3 bg-brand-light text-brand-dark border border-brand-surface/20 font-sans font-bold rounded-[12px] shadow-sm hover:bg-brand-surface/5 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-list-check"></i> Lihat Pesanan
+                </button>
+            </section>
+
+            <!-- Stat Cards Grid -->
+            <section id="stat-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-brand-surface rounded-[12px] p-6 shadow-premium relative overflow-hidden border border-brand-accent/10">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-brand-surface-light/20 rounded-full blur-[20px] -mr-10 -mt-10"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="w-12 h-12 rounded-[12px] bg-brand-dark/50 flex items-center justify-center border border-brand-accent/20">
+                            <i class="fa-solid fa-bag-shopping text-brand-accent text-xl"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-brand-accent/20 text-brand-accent rounded-full text-xs font-bold">+12%</span>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-brand-light/70 text-sm mb-1">Pesanan Hari Ini</p>
+                        <h3 class="font-serif text-3xl font-bold text-brand-light">45</h3>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-brand-surface rounded-[12px] p-6 shadow-premium relative overflow-hidden border border-brand-accent/10">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-brand-surface-light/20 rounded-full blur-[20px] -mr-10 -mt-10"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="w-12 h-12 rounded-[12px] bg-brand-dark/50 flex items-center justify-center border border-brand-accent/20">
+                            <i class="fa-solid fa-clock text-brand-accent text-xl"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-brand-accent/20 text-brand-accent rounded-full text-xs font-bold">-2%</span>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-brand-light/70 text-sm mb-1">Menunggu Pembayaran</p>
+                        <h3 class="font-serif text-3xl font-bold text-brand-light">12</h3>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-brand-surface rounded-[12px] p-6 shadow-premium relative overflow-hidden border border-brand-accent/10">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-brand-surface-light/20 rounded-full blur-[20px] -mr-10 -mt-10"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="w-12 h-12 rounded-[12px] bg-brand-dark/50 flex items-center justify-center border border-brand-accent/20">
+                            <i class="fa-solid fa-box text-brand-accent text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-brand-light/70 text-sm mb-1">Produk Tersedia</p>
+                        <h3 class="font-serif text-3xl font-bold text-brand-light">128</h3>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-brand-surface rounded-[12px] p-6 shadow-premium relative overflow-hidden border border-brand-accent/10">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-brand-surface-light/20 rounded-full blur-[20px] -mr-10 -mt-10"></div>
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="w-12 h-12 rounded-[12px] bg-brand-dark/50 flex items-center justify-center border border-brand-accent/20">
+                            <i class="fa-solid fa-truck-fast text-brand-accent text-xl"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-brand-accent/20 text-brand-accent rounded-full text-xs font-bold">+5%</span>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-brand-light/70 text-sm mb-1">Pengiriman Berhasil</p>
+                        <h3 class="font-serif text-3xl font-bold text-brand-light">89</h3>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Grid: Chart & Activity -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                
+                <!-- Chart Section -->
+                <section id="analytics-chart" class="xl:col-span-2 bg-brand-light rounded-[12px] border border-brand-muted/20 shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-serif text-xl font-bold text-brand-dark">Sales/Orders Today</h2>
+                        <select class="bg-brand-light border border-brand-muted/30 rounded-[8px] px-3 py-1.5 text-sm text-brand-dark focus:outline-none focus:border-brand-accent">
+                            <option>Hari Ini</option>
+                            <option>Minggu Ini</option>
+                            <option>Bulan Ini</option>
+                        </select>
+                    </div>
+                    <div id="salesChart" class="w-full h-[350px]"></div>
+                </section>
+
+                <!-- Recent Activity Section -->
+                <section id="recent-activity" class="bg-brand-light rounded-[12px] border border-brand-muted/20 shadow-sm p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-serif text-xl font-bold text-brand-dark">Aktivitas Terkini</h2>
+                        <button class="text-brand-accent text-sm font-medium hover:underline">Lihat Semua</button>
+                    </div>
+                    
+                    <div class="flex flex-col gap-4 flex-1 overflow-y-auto pr-2">
+                        <!-- Activity Item 1 -->
+                        <div class="flex items-start gap-4 pb-4 border-b border-brand-muted/10">
+                            <div class="w-10 h-10 rounded-full bg-brand-surface/10 flex items-center justify-center text-brand-surface shrink-0">
+                                <i class="fa-solid fa-cart-arrow-down"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-brand-dark mb-0.5">Pesanan Baru #ORD-092</p>
+                                <p class="text-xs text-brand-muted">Budi Santoso memesan Domba Garut Super.</p>
+                                <span class="text-[10px] text-brand-muted/70 mt-1 block">10 menit yang lalu</span>
+                            </div>
+                        </div>
+
+                        <!-- Activity Item 2 -->
+                        <div class="flex items-start gap-4 pb-4 border-b border-brand-muted/10">
+                            <div class="w-10 h-10 rounded-full bg-brand-accent/10 flex items-center justify-center text-brand-accent shrink-0">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-brand-dark mb-0.5">Pembayaran Dikonfirmasi</p>
+                                <p class="text-xs text-brand-muted">Pesanan #ORD-088 telah dibayar.</p>
+                                <span class="text-[10px] text-brand-muted/70 mt-1 block">45 menit yang lalu</span>
+                            </div>
+                        </div>
+
+                        <!-- Activity Item 3 -->
+                        <div class="flex items-start gap-4 pb-4 border-b border-brand-muted/10">
+                            <div class="w-10 h-10 rounded-full bg-brand-surface-light/10 flex items-center justify-center text-brand-surface-light shrink-0">
+                                <i class="fa-solid fa-plus"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-brand-dark mb-0.5">Produk Ditambahkan</p>
+                                <p class="text-xs text-brand-muted">Domba Merino Grade A ditambahkan ke katalog.</p>
+                                <span class="text-[10px] text-brand-muted/70 mt-1 block">2 jam yang lalu</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Activity Item 4 -->
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-brand-muted/10 flex items-center justify-center text-brand-muted shrink-0">
+                                <i class="fa-solid fa-user-check"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-brand-dark mb-0.5">Pelanggan Baru</p>
+                                <p class="text-xs text-brand-muted">Ahmad mendaftar sebagai pembeli.</p>
+                                <span class="text-[10px] text-brand-muted/70 mt-1 block">5 jam yang lalu</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 w-full bg-brand-light border-t border-brand-muted/20 z-50 px-2 py-2 flex justify-between items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-safe">
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-accent gap-1">
+            <i class="fa-solid fa-chart-pie text-lg"></i>
+            <span class="text-[10px] font-medium">Dashboard</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-box-open text-lg"></i>
+            <span class="text-[10px] font-medium">Produk</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-cart-shopping text-lg"></i>
+            <span class="text-[10px] font-medium">Pesanan</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-users text-lg"></i>
+            <span class="text-[10px] font-medium">Pembeli</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-1/5 text-brand-muted hover:text-brand-dark gap-1">
+            <i class="fa-solid fa-gear text-lg"></i>
+            <span class="text-[10px] font-medium">Pengaturan</span>
+        </a>
+    </nav>
+
+    <script>
+        function initializeCharts() {
+            try {
+                var trace1 = {
+                    x: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+                    y: [5, 12, 8, 24, 18, 32, 28],
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'tozeroy',
+                    name: 'Orders',
+                    line: {
+                        color: '#C8962A',
+                        width: 3,
+                        shape: 'spline',
+                        smoothing: 1.3
+                    },
+                    fillcolor: 'rgba(200, 150, 42, 0.1)'
+                };
+
+                var layout = {
+                    margin: { t: 10, r: 10, b: 40, l: 40 },
+                    plot_bgcolor: 'transparent',
+                    paper_bgcolor: 'transparent',
+                    showlegend: false,
+                    xaxis: {
+                        showgrid: false,
+                        tickfont: { color: '#6B7280' },
+                        linecolor: 'rgba(107, 114, 128, 0.2)'
+                    },
+                    yaxis: {
+                        showgrid: true,
+                        gridcolor: 'rgba(107, 114, 128, 0.1)',
+                        tickfont: { color: '#6B7280' },
+                        linecolor: 'transparent'
+                    }
+                };
+
+                var config = {
+                    responsive: true,
+                    displayModeBar: false
+                };
+
+                Plotly.newPlot('salesChart', [trace1], layout, config);
+            } catch(e) {
+                console.error("Chart initialization failed:", e);
+            }
+        }
+
+        window.addEventListener('load', initializeCharts);
+        setTimeout(initializeCharts, 1200);
+    </script>
+</body>
+</html>

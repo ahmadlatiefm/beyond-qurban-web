@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Lacak Pesanan | Beyond Qurban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark': '#0D3320',
+                        'brand-surface': '#1B5E3B',
+                        'brand-surface-light': '#3D7A56',
+                        'brand-accent': '#C8962A',
+                        'brand-accent-light': '#F5E6C3',
+                        'brand-light': '#FAFAF8',
+                        'brand-muted': '#6B7280',
+                        'brand-text-dark': '#0D1F17'
+                    },
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'sans': ['DM Sans', 'sans-serif']
+                    },
+                    backgroundImage: {
+                        'hero-gradient': 'linear-gradient(145deg, #1B5E3B, #0D3320)',
+                        'cta-gradient': 'linear-gradient(135deg, #F5E6C3, #C8962A)',
+                        'premium-gradient': 'linear-gradient(135deg, #1B5E3B, #3D7A56, #C8962A)',
+                        'soft-gradient': 'linear-gradient(180deg, #FAFAF8, #E8F4EE, #F5E6C3)'
+                    },
+                    boxShadow: {
+                        'premium': '0 4px 20px rgba(13,51,32,0.10)',
+                        'glow': '0 0 30px rgba(200,150,42,0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { margin: 0; padding: 0; background-color: #FAFAF8; }
+        ::-webkit-scrollbar { display: none; }
+        
+        /* Mobile Menu Drawer Animation */
+        #mobile-menu {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(100%);
+        }
+        #mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        /* Form Input Focus State Overrides */
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #C8962A;
+            box-shadow: 0 0 0 1px #C8962A;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen text-brand-text-dark flex flex-col font-sans bg-brand-light bg-soft-gradient m-0 p-0">
+
+    <!-- Header Navigation -->
+    <header id="header" class="fixed top-0 left-0 w-full z-50 bg-brand-dark border-b border-brand-surface-light/30 transition-all duration-300">
+        <div class="max-w-[1440px] mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 group-hover:border-brand-accent transition-colors">
+                    <span class="text-xl">🐐</span>
+                </div>
+                <span class="font-serif text-brand-accent text-xl font-bold tracking-wide">Beyond Qurban</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <nav class="hidden md:flex items-center gap-8">
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Homepage</a>
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Katalog</a>
+                <a href="#" class="text-brand-accent font-medium text-sm tracking-wide transition-colors border-b-2 border-brand-accent pb-1">Lacak Pesanan</a>
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Tentang Kami</a>
+                <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-sm tracking-wide transition-colors">Admin</a>
+            </nav>
+
+            <!-- Desktop Actions -->
+            <div class="hidden md:flex items-center gap-4">
+                <a href="#" class="bg-cta-gradient text-brand-text-dark font-bold text-sm py-2.5 px-6 rounded-[20px] shadow-premium hover:scale-105 transition-transform flex items-center gap-2">
+                    <span>Beli Sekarang</span>
+                </a>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button id="mobile-menu-btn" class="md:hidden text-brand-light hover:text-brand-accent transition-colors">
+                <i class="fa-solid fa-bars text-2xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Drawer -->
+    <div id="mobile-menu" class="fixed inset-0 z-[60] bg-brand-dark flex flex-col md:hidden">
+        <div class="px-6 h-20 flex items-center justify-between border-b border-brand-surface-light/30">
+            <a href="#" class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30">
+                    <span class="text-xl">🐐</span>
+                </div>
+                <span class="font-serif text-brand-accent text-xl font-bold tracking-wide">Beyond Qurban</span>
+            </a>
+            <button id="close-menu-btn" class="text-brand-light hover:text-brand-accent transition-colors">
+                <i class="fa-solid fa-xmark text-3xl"></i>
+            </button>
+        </div>
+        <nav class="flex-1 flex flex-col pt-8 px-6 gap-6">
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Homepage</a>
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Katalog</a>
+            <a href="#" class="text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Lacak Pesanan</a>
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Tentang Kami</a>
+            <a href="#" class="text-brand-light hover:text-brand-accent font-medium text-xl border-b border-brand-surface-light/20 pb-4">Admin</a>
+        </nav>
+        <div class="p-6">
+            <a href="#" class="w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[20px] shadow-premium flex items-center justify-center gap-2">
+                <span>Beli Sekarang</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 pt-32 pb-24 max-w-[1440px] mx-auto px-6 md:px-12 w-full flex flex-col gap-8 min-h-[calc(100vh-400px)]">
+        
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-sm text-brand-muted mb-4 w-full">
+            <a href="#" class="hover:text-brand-surface transition-colors">Beranda</a>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            <a href="#" class="hover:text-brand-surface transition-colors">Lacak Pesanan</a>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            <span class="text-brand-text-dark font-medium">Hasil Pencarian</span>
+        </nav>
+
+        <!-- Tracking Header & Status Badge -->
+        <div class="bg-white rounded-[12px] border border-brand-muted/20 shadow-premium p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-48 h-48 bg-brand-surface/5 rounded-bl-[150px] -z-10"></div>
+            
+            <div class="flex flex-col gap-2">
+                <p class="text-xs font-bold text-brand-muted uppercase tracking-widest">Pesanan</p>
+                <h1 class="font-serif text-3xl font-bold text-brand-text-dark">BQ-9824-XV</h1>
+                <p class="text-sm text-brand-muted mt-1">Dipesan pada: 12 Juni 2024, 10:30 WIB</p>
+            </div>
+
+            <div class="flex flex-col items-start md:items-end gap-3">
+                <div class="bg-premium-gradient text-white font-bold text-sm py-2 px-6 rounded-[20px] shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Diproses</span>
+                </div>
+                <button class="text-brand-surface hover:text-brand-accent text-sm font-medium transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Invoice
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Details & Stepper -->
+            <div class="lg:col-span-2 flex flex-col gap-8">
+                
+                <!-- Progress Stepper -->
+                <div class="bg-white rounded-[12px] border border-brand-muted/20 shadow-premium p-6 md:p-8">
+                    <h2 class="font-serif text-xl font-bold text-brand-text-dark mb-8">Status Pengiriman</h2>
+                    
+                    <div class="relative">
+                        <!-- Vertical Line -->
+                        <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-brand-muted/20 z-0"></div>
+                        
+                        <div class="flex flex-col gap-8 relative z-10">
+                            <!-- Step 1: Dipesan (Completed) -->
+                            <div class="flex gap-6 items-start">
+                                <div class="w-8 h-8 rounded-full bg-brand-surface text-brand-light flex items-center justify-center shrink-0 shadow-sm border-2 border-white">
+                                    <i class="fa-solid fa-check text-xs"></i>
+                                </div>
+                                <div class="flex flex-col gap-1 pt-1">
+                                    <h3 class="text-base font-bold text-brand-text-dark">Pesanan Diterima</h3>
+                                    <p class="text-sm text-brand-muted">Pesanan Anda telah kami terima dan sedang menunggu pembayaran.</p>
+                                    <p class="text-xs text-brand-muted/70 mt-1">12 Jun 2024, 10:30 WIB</p>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Pembayaran (Completed) -->
+                            <div class="flex gap-6 items-start">
+                                <div class="w-8 h-8 rounded-full bg-brand-surface text-brand-light flex items-center justify-center shrink-0 shadow-sm border-2 border-white">
+                                    <i class="fa-solid fa-check text-xs"></i>
+                                </div>
+                                <div class="flex flex-col gap-1 pt-1">
+                                    <h3 class="text-base font-bold text-brand-text-dark">Pembayaran Dikonfirmasi</h3>
+                                    <p class="text-sm text-brand-muted">Pembayaran telah berhasil diverifikasi.</p>
+                                    <p class="text-xs text-brand-muted/70 mt-1">12 Jun 2024, 11:45 WIB</p>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Diproses (Active) -->
+                            <div class="flex gap-6 items-start">
+                                <div class="w-8 h-8 rounded-full bg-brand-accent text-brand-dark flex items-center justify-center shrink-0 shadow-glow border-2 border-white relative">
+                                    <div class="absolute inset-0 rounded-full border-2 border-brand-accent animate-ping opacity-50"></div>
+                                    <i class="fa-solid fa-circle text-[8px]"></i>
+                                </div>
+                                <div class="flex flex-col gap-1 pt-1">
+                                    <h3 class="text-base font-bold text-brand-accent">Pesanan Diproses</h3>
+                                    <p class="text-sm text-brand-text-dark">Hewan kurban sedang disiapkan dan dicek kesehatannya sebelum pengiriman.</p>
+                                    <p class="text-xs text-brand-muted mt-1">13 Jun 2024, 09:00 WIB</p>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Dikirim/Diantar (Pending) -->
+                            <div class="flex gap-6 items-start">
+                                <div class="w-8 h-8 rounded-full bg-brand-light border-2 border-brand-muted/30 text-brand-muted flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-truck text-xs"></i>
+                                </div>
+                                <div class="flex flex-col gap-1 pt-1">
+                                    <h3 class="text-base font-medium text-brand-muted">Dalam Pengiriman</h3>
+                                    <p class="text-sm text-brand-muted/70">Pesanan dalam perjalanan menuju lokasi tujuan.</p>
+                                </div>
+                            </div>
+
+                            <!-- Step 5: Selesai (Pending) -->
+                            <div class="flex gap-6 items-start">
+                                <div class="w-8 h-8 rounded-full bg-brand-light border-2 border-brand-muted/30 text-brand-muted flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-flag-checkered text-xs"></i>
+                                </div>
+                                <div class="flex flex-col gap-1 pt-1">
+                                    <h3 class="text-base font-medium text-brand-muted">Selesai</h3>
+                                    <p class="text-sm text-brand-muted/70">Pesanan telah diterima.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order & Buyer Detail -->
+                <div class="bg-white rounded-[12px] border border-brand-muted/20 shadow-premium p-6 md:p-8 flex flex-col gap-6">
+                    <h2 class="font-serif text-xl font-bold text-brand-text-dark border-b border-brand-muted/20 pb-4">Detail Pesanan</h2>
+                    
+                    <!-- Product Info -->
+                    <div class="flex flex-col md:flex-row gap-6 items-start border-b border-brand-muted/10 pb-6">
+                        <div class="w-24 h-24 rounded-[8px] bg-brand-light border border-brand-muted/20 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img class="w-full h-full object-cover" bg-remove="false" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-4ffbf587d06c6693f66a.png" alt="High quality photo of a healthy white sheep for Qurban, farm background" />
+                        </div>
+                        <div class="flex-1 flex flex-col gap-2">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-brand-text-dark">Domba Garut Premium (Tipe B)</h3>
+                                    <p class="text-sm text-brand-muted">Berat: 25-30 kg | Jantan</p>
+                                </div>
+                                <span class="font-sans font-bold text-brand-accent whitespace-nowrap">Rp 3.500.000</span>
+                            </div>
+                            <div class="mt-2 text-sm text-brand-text-dark">
+                                <span class="text-brand-muted">Catatan:</span> Mohon dikirim pagi hari sebelum jam 10.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buyer Info Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs font-bold text-brand-muted uppercase tracking-widest">Penerima</span>
+                            <p class="text-sm font-medium text-brand-text-dark">Bapak Ahmad</p>
+                            <p class="text-sm text-brand-muted">0812-3456-7890</p>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs font-bold text-brand-muted uppercase tracking-widest">Tanggal Pengiriman</span>
+                            <p class="text-sm font-medium text-brand-text-dark">15 Juni 2024</p>
+                        </div>
+                        <div class="flex flex-col gap-1 md:col-span-2">
+                            <span class="text-xs font-bold text-brand-muted uppercase tracking-widest">Alamat Pengiriman</span>
+                            <p class="text-sm text-brand-text-dark leading-relaxed">
+                                Jl. Sudirman No. 123, Komplek Mawar Blok B4,<br>
+                                Kelurahan Sukamaju, Kecamatan Cibeunying,<br>
+                                Kota Bandung, Jawa Barat 40123
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Actions & Support -->
+            <div class="flex flex-col gap-6">
+                
+                <!-- Payment Summary / Instructions -->
+                <div class="bg-brand-surface rounded-[12px] shadow-premium p-6 text-brand-light">
+                    <h3 class="font-serif text-lg font-bold mb-4">Ringkasan Pembayaran</h3>
+                    <div class="flex flex-col gap-3 text-sm mb-6 border-b border-white/20 pb-6">
+                        <div class="flex justify-between">
+                            <span class="text-brand-accent-light/80">Subtotal Produk</span>
+                            <span>Rp 3.500.000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-brand-accent-light/80">Biaya Pengiriman</span>
+                            <span>Rp 150.000</span>
+                        </div>
+                        <div class="flex justify-between mt-2 pt-2 border-t border-white/20 font-bold text-base">
+                            <span>Total Pembayaran</span>
+                            <span class="text-brand-accent">Rp 3.650.000</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-brand-dark/30 rounded-[8px] p-4 flex items-center gap-3 mb-4">
+                        <i class="fa-solid fa-check-circle text-brand-accent text-xl"></i>
+                        <div>
+                            <p class="text-sm font-bold">Lunas</p>
+                            <p class="text-xs text-brand-accent-light/70">Via Transfer Bank BCA</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support CTA -->
+                <div class="bg-white rounded-[12px] border border-brand-muted/20 shadow-premium p-6 text-center flex flex-col items-center gap-4">
+                    <div class="w-16 h-16 rounded-full bg-brand-light flex items-center justify-center text-brand-surface mb-2">
+                        <i class="fa-brands fa-whatsapp text-3xl"></i>
+                    </div>
+                    <h3 class="font-serif text-lg font-bold text-brand-text-dark">Butuh Bantuan?</h3>
+                    <p class="text-sm text-brand-muted mb-2">
+                        Hubungi admin kami jika Anda memiliki pertanyaan terkait pesanan ini.
+                    </p>
+                    <a href="#" class="w-full bg-[#25D366] text-white font-bold text-sm py-3 px-6 rounded-[8px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Hubungi via WhatsApp
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer id="footer" class="bg-brand-dark border-t border-brand-surface-light/20 pt-16 pb-8 text-brand-accent-light mt-auto">
+        <div class="max-w-[1440px] mx-auto px-6 md:px-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <!-- Brand Col -->
+                <div class="md:col-span-1">
+                    <a href="#" class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30">
+                            <span class="text-xl">🐐</span>
+                        </div>
+                        <span class="font-serif text-brand-accent text-xl font-bold tracking-wide">Beyond Qurban</span>
+                    </a>
+                    <p class="text-sm text-brand-accent-light/70 leading-relaxed mb-6">
+                        Menyediakan domba kurban berkualitas, sehat, dan dirawat sesuai syariat untuk menyempurnakan ibadah Anda.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-light hover:bg-brand-accent hover:text-brand-dark transition-colors">
+                            <i class="fa-brands fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-light hover:bg-brand-accent hover:text-brand-dark transition-colors">
+                            <i class="fa-brands fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-light hover:bg-brand-accent hover:text-brand-dark transition-colors">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Menu Links -->
+                <div class="md:col-span-1">
+                    <h4 class="font-serif text-brand-light text-lg font-bold mb-6">Menu</h4>
+                    <ul class="space-y-4 text-sm">
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Homepage</a></li>
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Katalog Domba</a></li>
+                        <li><a href="#" class="text-brand-accent transition-colors">Lacak Pesanan</a></li>
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Tentang Kami</a></li>
+                        <li><a href="#" class="hover:text-brand-accent transition-colors">Syarat & Ketentuan</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="md:col-span-2">
+                    <h4 class="font-serif text-brand-light text-lg font-bold mb-6">Kontak Kami</h4>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-location-dot mt-1 text-brand-accent"></i>
+                            <p class="text-brand-accent-light/80">Jl. Peternakan Raya No. 12, Lembang, Bandung Barat, Jawa Barat 40391</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-phone text-brand-accent"></i>
+                            <p class="text-brand-accent-light/80">+62 812-3456-7890</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-envelope text-brand-accent"></i>
+                            <p class="text-brand-accent-light/80">info@beyondqurban.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copyright -->
+            <div class="border-t border-brand-surface-light/20 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-brand-accent-light/50">
+                <p>&copy; 2024 Beyond Qurban. All Rights Reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="hover:text-brand-accent transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-brand-accent transition-colors">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const closeMenuBtn = document.getElementById('close-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            });
+
+            closeMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                document.body.style.overflow = '';
+            });
+            
+            // Header scroll effect
+            const header = document.getElementById('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 20) {
+                    header.classList.add('shadow-lg');
+                    header.classList.replace('bg-brand-dark', 'bg-brand-dark/95');
+                    header.classList.add('backdrop-blur-md');
+                } else {
+                    header.classList.remove('shadow-lg');
+                    header.classList.replace('bg-brand-dark/95', 'bg-brand-dark');
+                    header.classList.remove('backdrop-blur-md');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
