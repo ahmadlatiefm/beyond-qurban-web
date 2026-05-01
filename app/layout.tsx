@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
+import { Suspense } from 'react'
 import './globals.css'
 import AnalyticsScripts from '@/components/public/AnalyticsScripts'
 
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" className={`${playfair.variable} ${dmSans.variable}`}>
       <body className="font-sans antialiased">
         {children}
-        <AnalyticsScripts />
+        {/* Analytics in Suspense so DB errors never crash the page */}
+        <Suspense fallback={null}>
+          <AnalyticsScripts />
+        </Suspense>
       </body>
     </html>
   )
