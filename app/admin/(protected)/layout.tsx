@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import Sidebar from '@/components/admin/Sidebar'
 import BottomNav from '@/components/admin/BottomNav'
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/admin/login')
 
