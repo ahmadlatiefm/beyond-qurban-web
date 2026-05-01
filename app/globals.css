@@ -73,10 +73,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: var(--off-white);
+    color: var(--text-dark);
   }
-}
-
-body {
-  background-color: var(--off-white);
-  color: var(--text-dark);
 }
