@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import OrderForm from '@/components/public/OrderForm'
+import { sendFbCapiEvent } from '@/lib/facebook-capi'
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const product = await prisma.product.findUnique({ where: { slug: params.slug } })
@@ -18,6 +19,13 @@ const LOCATION_LABEL: Record<string, string> = { INDONESIA: 'Indonesia', AFRICA:
 export default async function DetailProdukPage({ params }: { params: { slug: string } }) {
   const product = await prisma.product.findUnique({ where: { slug: params.slug } })
   if (!product || product.status === 'INACTIVE') notFound()
+
+  // Fire-and-forget ViewContent
+  void sendFbCapiEvent('ViewContent', {
+    contentIds: [product.id],
+    contentName: product.name,
+    value: product.price,
+  })
 
   const allImages = [product.imageUrl, ...product.images].filter(Boolean).slice(0, 5)
 

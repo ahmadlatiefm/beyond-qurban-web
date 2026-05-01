@@ -5,6 +5,9 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { calculateShipping } from '@/lib/shipping'
 import { DeliveryMethod, OrderStatus } from '@prisma/client'
+import { createTripayTransaction } from '@/lib/tripay'
+import { sendOrderNotification } from '@/lib/onesender'
+import { sendFbCapiEvent } from '@/lib/facebook-capi'
 
 const OrderSchema = z.object({
   productId: z.string().min(1),
@@ -99,6 +102,62 @@ export async function createOrder(formData: unknown) {
       },
     })
 
+    // FB CAPI InitiateCheckout
+    void sendFbCapiEvent('InitiateCheckout', {
+      phone: data.phone,
+      customerName: data.customerName,
+      value: totalAmount,
+      contentIds: [data.productId],
+      contentName: product.name,
+    })
+
+    // WA notifications — fire-and-forget
+    void sendOrderNotification('order_created_customer', {
+      customerName: data.customerName,
+      whatsapp: data.whatsapp,
+      orderNumber,
+      productName: product.name,
+      totalAmount,
+    })
+    void sendOrderNotification('order_created_admin', {
+      customerName: data.customerName,
+      whatsapp: data.whatsapp,
+      orderNumber,
+      productName: product.name,
+      totalAmount,
+    })
+
+    // Create Tripay transaction
+    const expiredTime = Math.floor(Date.now() / 1000) + 24 * 60 * 60
+
+    const tripayResult = await createTripayTransaction({
+      merchantRef: order.orderNumber,
+      amount: order.totalAmount,
+      customerName: data.customerName,
+      customerEmail: `${data.whatsapp.replace(/\D/g, '')}@wa.beyond-qurban.id`,
+      customerPhone: data.phone,
+      orderItems: [{ name: product.name, price: product.price, quantity: data.quantity }],
+      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/lacak?order=${order.orderNumber}`,
+      expiredTime,
+    })
+
+    if (tripayResult.success && tripayResult.data) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          tripayReference: tripayResult.data.reference,
+          tripayPaymentUrl: tripayResult.data.payment_url,
+        },
+      })
+      return {
+        success: true,
+        order: {
+          ...order,
+          tripayPaymentUrl: tripayResult.data.payment_url,
+        },
+      }
+    }
+
     revalidatePath('/admin/pesanan')
     return { success: true, order }
   } catch {
@@ -113,6 +172,27 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
       data: { status },
       include: { product: true },
     })
+
+    if (status === 'SHIPPED') {
+      void sendOrderNotification('shipping_customer', {
+        customerName: order.customerName,
+        whatsapp: order.whatsapp,
+        orderNumber: order.orderNumber,
+        productName: order.product.name,
+        totalAmount: order.totalAmount,
+        status,
+      })
+    } else if (status !== 'CANCELLED') {
+      void sendOrderNotification('status_updated_customer', {
+        customerName: order.customerName,
+        whatsapp: order.whatsapp,
+        orderNumber: order.orderNumber,
+        productName: order.product.name,
+        totalAmount: order.totalAmount,
+        status,
+      })
+    }
+
     revalidatePath('/admin/pesanan')
     return { success: true, order }
   } catch {
