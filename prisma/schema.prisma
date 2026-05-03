@@ -7,13 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum ProductType {
-  LOKAL
-  ETAWA
-  GARUT
-  BATUR
-}
-
 enum ProductStatus {
   ACTIVE
   INACTIVE
@@ -50,7 +43,6 @@ model Product {
   id                String         @id @default(cuid())
   slug              String         @unique
   name              String
-  type              ProductType
   weight            Float
   price             Int
   stock             Int            @default(1)
@@ -99,13 +91,38 @@ model Order {
   updatedAt        DateTime       @updatedAt
 }
 
-model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String   @unique
-  whatsapp  String
-  city      String
-  createdAt DateTime @default(now())
+model Campaign {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  title       String
+  location    QurbanLocation
+  targetCount Int
+  price       Int
+  imageUrl    String
+  description String         @db.Text
+  isActive    Boolean        @default(true)
+  donations   Donation[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Donation {
+  id               String        @id @default(cuid())
+  orderNumber      String        @unique
+  campaign         Campaign      @relation(fields: [campaignId], references: [id])
+  campaignId       String
+  customerName     String
+  phone            String
+  whatsapp         String
+  quantity         Int           @default(1)
+  totalAmount      Int
+  paymentMethod    String?
+  paymentStatus    PaymentStatus @default(UNPAID)
+  tripayReference  String?
+  tripayPaymentUrl String?
+  status           OrderStatus   @default(PENDING)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 }
 
 model Settings {
