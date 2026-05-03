@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #FAFAF8; }
+  ::-webkit-scrollbar { display: none; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.fade-up   { animation: fadeUp 0.6s ease forwards; }
+.fade-up-2 { animation: fadeUp 0.7s 0.15s ease both; }
+.fade-up-3 { animation: fadeUp 0.7s 0.30s ease both; }
+.fade-up-4 { animation: fadeUp 0.7s 0.45s ease both; }
+.float     { animation: float 3s ease-in-out infinite; }
+.shimmer-text {
+  background: linear-gradient(90deg, #C8962A, #F5E6C3, #C8962A);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+.product-card { transition: all 0.3s ease; }
+.product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(13,51,32,.15); }
+.filter-chip {
+  transition: all 0.2s; cursor: pointer;
+  border: 1.5px solid rgba(107,114,128,.25); border-radius: 9999px;
+  padding: 6px 16px; font-size: .8rem; font-weight: 500;
+  background: white; color: #6B7280;
+}
+.filter-chip.active, .filter-chip:hover {
+  border-color: #1B5E3B; background: #1B5E3B; color: white;
+}
