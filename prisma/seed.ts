@@ -1,20 +1,36 @@
-import { PrismaClient, ProductType, QurbanLocation, ProductStatus } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
+
+// Load env manually for ts-node context
+import * as fs from 'fs'
+import * as path from 'path'
+
+const envPath = path.resolve(__dirname, '../.env')
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf-8')
+  envContent.split('\n').forEach((line) => {
+    const match = line.match(/^([^#=]+)=(.*)$/)
+    if (match) {
+      const key = match[1].trim()
+      const value = match[2].trim().replace(/^["']|["']$/g, '')
+      if (!process.env[key]) process.env[key] = value
+    }
+  })
+}
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
   // Admin user
-  const hashedPassword = await bcrypt.hash('admin123', 12)
   await prisma.adminUser.upsert({
     where: { email: 'admin@beyondqurban.com' },
     update: {},
     create: {
       email: 'admin@beyondqurban.com',
-      password: hashedPassword,
-      name: 'Admin Beyond Qurban',
+      name: 'Admin',
+      password: await bcrypt.hash('admin123', 10),
     },
   })
 
@@ -23,132 +39,127 @@ async function main() {
     {
       slug: 'domba-garut-super',
       name: 'Domba Garut Super',
-      type: ProductType.GARUT,
-      weight: 35,
+      weight: 37.5,
       price: 3500000,
-      stock: 10,
-      description: 'Domba Garut asli dengan berat optimal untuk kurban. Dipelihara dengan standar syariat, sehat dan tidak cacat.',
-      imageUrl: '/uploads/placeholder.jpg',
-      images: [] as string[],
-      badge: 'Best Seller',
-      qurbanLocation: QurbanLocation.INDONESIA,
+      badge: 'Premium',
+      qurbanLocation: 'INDONESIA' as const,
       allowHomeDelivery: true,
-      status: ProductStatus.ACTIVE,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
+      description: 'Domba Garut berkualitas super, terseleksi ketat dan memenuhi syarat syariat Islam.',
+    },
+    {
+      slug: 'domba-priangan-a',
+      name: 'Domba Priangan A',
+      weight: 32.5,
+      price: 2800000,
+      badge: null,
+      qurbanLocation: 'INDONESIA' as const,
+      allowHomeDelivery: true,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-c4fe96d3e4365e7ee53c.png',
+      description: 'Domba Priangan pilihan, sehat dan siap kurban dengan berat ideal.',
     },
     {
       slug: 'domba-merino-cross',
       name: 'Domba Merino Cross',
-      type: ProductType.LOKAL,
-      weight: 28,
-      price: 2800000,
-      stock: 8,
-      description: 'Domba lokal persilangan Merino, dagingnya berkualitas tinggi. Cocok untuk keluarga yang ingin kurban berkah.',
-      imageUrl: '/uploads/placeholder.jpg',
-      images: [] as string[],
-      badge: 'Premium',
-      qurbanLocation: QurbanLocation.INDONESIA,
+      weight: 42.5,
+      price: 4200000,
+      badge: 'Best Seller',
+      qurbanLocation: 'INDONESIA' as const,
       allowHomeDelivery: true,
-      status: ProductStatus.ACTIVE,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/b1788dd218-c7de4a2e4e38fbf7061a.png',
+      description: 'Merino Cross premium dengan berat di atas rata-rata, pilihan terbaik untuk kurban.',
     },
     {
       slug: 'domba-penyaluran-indonesia',
       name: 'Domba Penyaluran Indonesia',
-      type: ProductType.LOKAL,
-      weight: 25,
-      price: 2200000,
-      stock: 20,
-      description: 'Kurban disalurkan ke daerah pelosok Indonesia yang membutuhkan. Amanah dan terverifikasi.',
-      imageUrl: '/uploads/placeholder.jpg',
-      images: [] as string[],
+      weight: 30.0,
+      price: 2500000,
       badge: null,
-      qurbanLocation: QurbanLocation.INDONESIA,
+      qurbanLocation: 'INDONESIA' as const,
       allowHomeDelivery: false,
-      status: ProductStatus.ACTIVE,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
+      description: 'Program penyaluran kurban ke pedalaman Indonesia yang membutuhkan.',
     },
     {
-      slug: 'domba-qurban-afrika',
-      name: 'Domba Qurban Afrika',
-      type: ProductType.LOKAL,
-      weight: 30,
-      price: 1800000,
-      stock: 15,
-      description: 'Kurban disalurkan ke saudara muslim di Afrika yang membutuhkan. Proses penyembelihan sesuai syariat.',
-      imageUrl: '/uploads/placeholder.jpg',
-      images: [] as string[],
+      slug: 'domba-ekor-gemuk',
+      name: 'Domba Ekor Gemuk',
+      weight: 40.0,
+      price: 3800000,
       badge: null,
-      qurbanLocation: QurbanLocation.AFRICA,
-      allowHomeDelivery: false,
-      status: ProductStatus.ACTIVE,
-    },
-    {
-      slug: 'domba-qurban-palestina',
-      name: 'Domba Qurban Palestina',
-      type: ProductType.LOKAL,
-      weight: 28,
-      price: 2000000,
-      stock: 12,
-      description: 'Wujudkan kepedulian untuk saudara di Palestina. Kurban Anda disalurkan langsung ke Gaza.',
-      imageUrl: '/uploads/placeholder.jpg',
-      images: [] as string[],
-      badge: null,
-      qurbanLocation: QurbanLocation.PALESTINE,
-      allowHomeDelivery: false,
-      status: ProductStatus.ACTIVE,
+      qurbanLocation: 'INDONESIA' as const,
+      allowHomeDelivery: true,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/f43ecc8b00-1e2c261de24584ca2dce.png',
+      description: 'Domba ekor gemuk, padat dan berkualitas tinggi untuk ibadah kurban.',
     },
   ]
 
-  for (const product of products) {
+  for (const p of products) {
     await prisma.product.upsert({
-      where: { slug: product.slug },
+      where: { slug: p.slug },
       update: {},
-      create: product,
+      create: {
+        ...p,
+        stock: 10,
+        images: [p.imageUrl],
+        status: 'ACTIVE',
+      },
     })
   }
 
-  // Default Settings
-  const defaultSettings = [
-    { key: 'tripay_mode', value: 'sandbox' },
-    { key: 'tripay_api_key', value: '' },
-    { key: 'tripay_private_key', value: '' },
-    { key: 'tripay_merchant_code', value: '' },
-    { key: 'onesender_api_key', value: '' },
-    { key: 'onesender_sender_number', value: '' },
-    { key: 'notif_order_customer', value: 'true' },
-    { key: 'notif_order_admin', value: 'true' },
-    { key: 'notif_payment_customer', value: 'true' },
-    { key: 'notif_payment_admin', value: 'true' },
-    { key: 'notif_status_customer', value: 'true' },
-    { key: 'notif_shipping_customer', value: 'true' },
-    { key: 'fb_pixel_id', value: '' },
-    { key: 'fb_pixel_enabled', value: 'false' },
-    { key: 'fb_capi_token', value: '' },
-    { key: 'fb_capi_enabled', value: 'false' },
-    { key: 'fb_capi_test_event_code', value: '' },
-    { key: 'fb_capi_purchase_trigger', value: 'tripay_callback' },
-    { key: 'tiktok_pixel_id', value: '' },
-    { key: 'tiktok_pixel_enabled', value: 'false' },
-    { key: 'gtm_container_id', value: '' },
-    { key: 'gtm_enabled', value: 'false' },
+  // Campaigns
+  await prisma.campaign.upsert({
+    where: { slug: 'qurban-afrika-2025' },
+    update: {},
+    create: {
+      slug: 'qurban-afrika-2025',
+      title: 'Qurban Afrika 2025',
+      location: 'AFRICA',
+      targetCount: 100,
+      price: 2000000,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
+      description: 'Salurkan qurban ke saudara Muslim di Afrika sub-Sahara yang membutuhkan.',
+    },
+  })
+
+  await prisma.campaign.upsert({
+    where: { slug: 'qurban-palestina-2025' },
+    update: {},
+    create: {
+      slug: 'qurban-palestina-2025',
+      title: 'Qurban Palestina 2025',
+      location: 'PALESTINE',
+      targetCount: 50,
+      price: 2500000,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/b1788dd218-c7de4a2e4e38fbf7061a.png',
+      description: 'Salurkan qurban untuk saudara Muslim di Palestina yang membutuhkan bantuan.',
+    },
+  })
+
+  // Settings defaults
+  const settings = [
     { key: 'store_name', value: 'Beyond Qurban' },
     { key: 'store_whatsapp', value: '6281234567890' },
     { key: 'store_email', value: 'info@beyondqurban.com' },
     { key: 'store_address', value: 'Bandung, Jawa Barat' },
-    { key: 'store_hours', value: 'Senin–Sabtu, 08.00–17.00 WIB' },
-    { key: 'store_logo', value: '' },
-    { key: 'admin_whatsapp', value: '6281234567890' },
+    { key: 'tripay_mode', value: 'sandbox' },
+    { key: 'onesender_enabled', value: 'true' },
   ]
 
-  for (const setting of defaultSettings) {
+  for (const s of settings) {
     await prisma.settings.upsert({
-      where: { key: setting.key },
+      where: { key: s.key },
       update: {},
-      create: setting,
+      create: s,
     })
   }
 
-  console.log('✅ Seed selesai')
+  console.log('✅ Seed selesai:')
+  console.log('   - 1 admin user')
+  console.log('   - 5 produk')
+  console.log('   - 2 campaign')
+  console.log('   - 6 settings')
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1) })
-  .finally(async () => { await prisma.$disconnect() })
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())
