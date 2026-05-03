@@ -2,23 +2,6 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 
-// Load env manually for ts-node context
-import * as fs from 'fs'
-import * as path from 'path'
-
-const envPath = path.resolve(__dirname, '../.env')
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf-8')
-  envContent.split('\n').forEach((line) => {
-    const match = line.match(/^([^#=]+)=(.*)$/)
-    if (match) {
-      const key = match[1].trim()
-      const value = match[2].trim().replace(/^["']|["']$/g, '')
-      if (!process.env[key]) process.env[key] = value
-    }
-  })
-}
-
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
