@@ -69,3 +69,5 @@
 .filter-chip.active, .filter-chip:hover {
   border-color: #1B5E3B; background: #1B5E3B; color: white;
 }
+.gallery-thumb { transition: all 0.2s; opacity: 0.55; }
+.gallery-thumb:hover, .gallery-thumb.active { opacity: 1; }
