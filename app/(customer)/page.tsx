@@ -17,6 +17,7 @@ import {
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons'
 import { prisma } from '@/lib/prisma'
 import { formatCurrency } from '@/lib/utils'
+import ProductCard from '@/components/ui/ProductCard'
 
 async function getFeaturedProducts() {
   return prisma.product.findMany({
@@ -174,47 +175,7 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {products.map((product) => (
-              <div
-                key={product.id}
-                className="product-card bg-white rounded-[12px] overflow-hidden border border-brand-muted/10 flex flex-col shadow-premium"
-              >
-                <div className="relative h-52 bg-brand-light overflow-hidden">
-                  <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
-                    <span className="bg-brand-surface text-brand-light text-[10px] font-bold px-2.5 py-1 rounded-[20px]">
-                      Tersedia
-                    </span>
-                    {product.badge && (
-                      <span className="bg-brand-accent text-brand-dark text-[10px] font-bold px-2.5 py-1 rounded-[20px]">
-                        {product.badge}
-                      </span>
-                    )}
-                  </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                    src={product.imageUrl}
-                    alt={product.name}
-                  />
-                </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="font-serif text-lg font-bold text-brand-dark mb-1">{product.name}</h3>
-                  <div className="flex items-center gap-1 text-xs text-brand-muted mb-3">
-                    <FontAwesomeIcon icon={faWeightScale} /> {product.weight} kg
-                  </div>
-                  <div className="mt-auto pt-3 border-t border-brand-muted/10 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs text-brand-muted">Harga</div>
-                      <div className="font-bold text-brand-accent text-base">{formatCurrency(product.price)}</div>
-                    </div>
-                    <Link
-                      href={`/produk/${product.slug}`}
-                      className="w-9 h-9 rounded-full bg-brand-surface text-brand-accent-light flex items-center justify-center hover:bg-brand-dark transition-colors"
-                    >
-                      <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <ProductCard key={product.id} product={product} available />
             ))}
           </div>
         </div>

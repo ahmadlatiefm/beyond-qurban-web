@@ -7,6 +7,7 @@ import {
   faWeightScale, faChevronLeft, faChevronRight
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
+import ProductCard from '@/components/ui/ProductCard'
 import type { Product } from '@prisma/client'
 
 type FilterType = 'all' | 'domba' | 'kambing' | 'sapi' | 'tersedia' | 'premium'
@@ -125,66 +126,7 @@ export default function KatalogClient({ products }: Props) {
         {filtered.map(product => {
           const avail = product.status === 'ACTIVE' && product.stock > 0
           return (
-            <div
-              key={product.id}
-              className={`product-card bg-white rounded-[12px] overflow-hidden border border-brand-muted/10 flex flex-col shadow-premium${!avail ? ' opacity-70' : ''}`}
-            >
-              <div className="relative h-52 bg-brand-light overflow-hidden">
-                {/* Badges */}
-                <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
-                  {avail && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-surface text-brand-light">
-                      Tersedia
-                    </span>
-                  )}
-                  {(product.badge === 'Best Seller' || product.badge === 'Premium') && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-accent text-brand-dark">
-                      {product.badge}
-                    </span>
-                  )}
-                </div>
-                {/* Overlay for unavailable */}
-                {!avail && (
-                  <div className="absolute inset-0 bg-white/35 z-[3]"></div>
-                )}
-                {/* Image */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className={`w-full h-full object-cover hover:scale-110 transition-transform duration-500${!avail ? ' grayscale-[30%]' : ''}`}
-                  src={product.imageUrl}
-                  alt={product.name}
-                />
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <h3 className="font-serif text-lg font-bold text-brand-dark mb-1">{product.name}</h3>
-                <div className="flex items-center gap-3 text-xs text-brand-muted mb-3">
-                  <span className="flex items-center gap-1">
-                    <FontAwesomeIcon icon={faWeightScale} />
-                    {product.weight} kg
-                  </span>
-                </div>
-                <div className="mt-auto pt-3 border-t border-brand-muted/10 flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-brand-muted">Harga</div>
-                    <div className={`font-bold text-base ${avail ? 'text-brand-accent' : 'text-brand-muted'}`}>
-                      {formatCurrency(product.price)}
-                    </div>
-                  </div>
-                  {avail ? (
-                    <Link
-                      href={`/produk/${product.slug}`}
-                      className="bg-cta-gradient text-brand-text-dark text-xs font-bold px-4 py-2 rounded-[20px] hover:scale-105 transition-transform"
-                    >
-                      Lihat Detail
-                    </Link>
-                  ) : (
-                    <span className="text-xs text-brand-muted font-medium bg-brand-light px-3 py-1.5 rounded-[20px]">
-                      Terpesan
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+            <ProductCard key={product.id} product={product} available={avail} />
           )
         })}
       </div>
