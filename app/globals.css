@@ -71,3 +71,10 @@
 }
 .gallery-thumb { transition: all 0.2s; opacity: 0.55; }
 .gallery-thumb:hover, .gallery-thumb.active { opacity: 1; }
+.pay-tab { padding: 11px 18px; font-size: .875rem; font-weight: 500; color: #6B7280; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; white-space: nowrap; }
+.pay-tab.active { color: #1B5E3B; border-bottom-color: #1B5E3B; font-weight: 700; }
+.inp-copy { display: flex; align-items: center; }
+.inp-copy input { flex: 1; height: 44px; padding: 0 14px; border: 1px solid rgba(107,114,128,.2); border-radius: 8px 0 0 8px; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #0D1F17; background: #FAFAF8; outline: none; }
+.copy-btn { height: 44px; padding: 0 16px; background: #1B5E3B; color: white; font-weight: 700; font-size: .8rem; border: none; border-radius: 0 8px 8px 0; cursor: pointer; transition: background .2s; white-space: nowrap; }
+.copy-btn:hover { background: #0D3320; }
+.copy-btn.copied { background: #16A34A; }
