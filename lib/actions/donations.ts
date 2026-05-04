@@ -29,7 +29,10 @@ export async function createDonation(formData: FormData) {
   const campaign = await prisma.campaign.findUnique({ where: { slug: campaignSlug } })
   if (!campaign) throw new Error('Campaign tidak ditemukan')
 
-  const totalAmount = campaign.price * quantity
+  // Use specific animal price if provided (from sidebar animal picker)
+  const animalPriceRaw = formData.get('animalPrice') as string | null
+  const unitPrice = animalPriceRaw ? (parseInt(animalPriceRaw) || campaign.price) : campaign.price
+  const totalAmount = unitPrice * quantity
   const orderNumber = generateOrderNumber()
 
   const donation = await prisma.donation.create({

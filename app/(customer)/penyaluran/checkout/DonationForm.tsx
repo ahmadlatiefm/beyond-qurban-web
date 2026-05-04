@@ -22,10 +22,16 @@ import type { Campaign } from '@prisma/client'
 const inpCls =
   'w-full h-11 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A] transition-[border-color]'
 
-export default function DonationForm({ campaign, qty, shareType }: { campaign: Campaign; qty: number; shareType: '1/1' | '1/7' }) {
+export default function DonationForm({
+  campaign, qty, shareType, animalName, animalPrice
+}: {
+  campaign: Campaign; qty: number; shareType: '1/1' | '1/7'
+  animalName?: string | null; animalPrice?: number | null
+}) {
   const [isPending, startTransition] = useTransition()
   const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER')
-  const unitPrice = shareType === '1/7' ? Math.round(campaign.price / 7) : campaign.price
+  // Use specific animal price if provided (from sidebar animal picker)
+  const unitPrice = animalPrice ?? (shareType === '1/7' ? Math.round(campaign.price / 7) : campaign.price)
   const total = unitPrice * qty
 
   function getFlag(loc: string) {
@@ -49,6 +55,8 @@ export default function DonationForm({ campaign, qty, shareType }: { campaign: C
       <div className="flex-1 flex flex-col gap-5">
         <form id="donation-form" onSubmit={handleSubmit} className="contents">
           <input type="hidden" name="campaignSlug" value={campaign.slug} />
+          {animalName && <input type="hidden" name="animalName" value={animalName} />}
+          {animalPrice && <input type="hidden" name="animalPrice" value={animalPrice} />}
           <input type="hidden" name="quantity" value={qty} />
 
           {/* Section 1: Informasi Donatur */}

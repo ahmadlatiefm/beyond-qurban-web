@@ -9,7 +9,7 @@ import DonationForm from './DonationForm'
 export default async function CheckoutPenyaluranPage({
   searchParams,
 }: {
-  searchParams: { campaign?: string; qty?: string; share?: string }
+  searchParams: { campaign?: string; qty?: string; share?: string; animalName?: string; animalPrice?: string }
 }) {
   const campaignSlug = searchParams.campaign
   if (!campaignSlug) notFound()
@@ -19,6 +19,9 @@ export default async function CheckoutPenyaluranPage({
 
   const qty = parseInt(searchParams.qty ?? '1') || 1
   const shareType = (searchParams.share === '1/7' ? '1/7' : '1/1') as '1/1' | '1/7'
+  // Override price if specific animal was selected from sidebar
+  const animalName = searchParams.animalName ? decodeURIComponent(searchParams.animalName) : null
+  const animalPrice = searchParams.animalPrice ? parseInt(searchParams.animalPrice) || null : null
 
   return (
     <main className="pt-28 pb-24 min-h-screen" style={{ background: 'linear-gradient(180deg,#FAFAF8,#E8F4EE,#F5E6C3)' }}>
@@ -55,7 +58,13 @@ export default async function CheckoutPenyaluranPage({
           </div>
         </div>
 
-        <DonationForm campaign={campaign} qty={qty} shareType={shareType} />
+        <DonationForm
+          campaign={campaign}
+          qty={qty}
+          shareType={shareType}
+          animalName={animalName}
+          animalPrice={animalPrice}
+        />
       </div>
     </main>
   )
