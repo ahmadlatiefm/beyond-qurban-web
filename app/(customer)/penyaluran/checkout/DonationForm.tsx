@@ -97,19 +97,6 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
                 </label>
                 <input name="email" type="email" placeholder="email@contoh.com" className={inpCls} />
               </div>
-              <div className="flex items-start gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="consent"
-                  required
-                  className="mt-1 w-4 h-4 accent-brand-surface cursor-pointer"
-                />
-                <label htmlFor="consent" className="text-xs text-brand-muted leading-relaxed cursor-pointer">
-                  Saya menyetujui{' '}
-                  <span className="text-brand-surface font-semibold">syarat &amp; ketentuan</span> program qurban
-                  penyaluran dan memahami bahwa hewan akan disalurkan langsung ke destinasi yang dipilih
-                </label>
-              </div>
             </div>
           </div>
 

@@ -12,7 +12,7 @@ import {
   faLink,
   faChevronDown,
 } from '@fortawesome/free-solid-svg-icons'
-import { faFacebook, faTwitter, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { faFacebookF as faFacebookFIcon, faXTwitter as faXTwitterIcon, faWhatsapp as faWhatsappIcon } from '@fortawesome/free-brands-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import type { Campaign } from '@prisma/client'
 
@@ -192,7 +192,7 @@ export default function PenyaluranClient({ campaigns }: Props) {
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 bg-[#25D366] text-white text-xs font-bold px-4 py-2 rounded-[8px] hover:opacity-90 transition-opacity"
                       >
-                        <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
+                        <FontAwesomeIcon icon={faWhatsappIcon} /> WhatsApp
                       </a>
                       <a
                         href="https://facebook.com/sharer/sharer.php?u=https://beyondqurban.com/penyaluran"
@@ -200,15 +200,15 @@ export default function PenyaluranClient({ campaigns }: Props) {
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 bg-[#1877F2] text-white text-xs font-bold px-4 py-2 rounded-[8px] hover:opacity-90 transition-opacity"
                       >
-                        <FontAwesomeIcon icon={faFacebook} /> Facebook
+                        <FontAwesomeIcon icon={faFacebookFIcon} /> Facebook
                       </a>
                       <a
                         href="https://twitter.com/intent/tweet?text=Yuk%20qurban%20bersama%20Beyond%20Qurban%201447H"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 bg-[#1DA1F2] text-white text-xs font-bold px-4 py-2 rounded-[8px] hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-2 bg-black text-white text-xs font-bold px-4 py-2 rounded-[8px] hover:opacity-90 transition-opacity"
                       >
-                        <FontAwesomeIcon icon={faTwitter} /> Twitter
+                        <FontAwesomeIcon icon={faXTwitterIcon} /> X / Twitter
                       </a>
                       <button
                         onClick={() => navigator.clipboard.writeText(window.location.href).catch(() => {})}
@@ -333,33 +333,40 @@ export default function PenyaluranClient({ campaigns }: Props) {
 
               {/* Destination selection */}
               <div className="p-5 flex flex-col gap-3">
-                <div className="text-xs font-bold text-brand-text-dark uppercase tracking-wider mb-1">
-                  Pilih Destinasi Penyaluran
+                <div className="text-xs font-bold text-brand-dark uppercase tracking-wider mb-3">
+                  Pilih Destinasi
                 </div>
 
-                {campaigns.map((campaign) => (
-                  <div
-                    key={campaign.id}
-                    onClick={() => setSelectedCampaign(campaign)}
-                    className={`dest-opt${selectedCampaign?.id === campaign.id ? ' selected' : ''}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{getFlag(campaign.location)}</span>
-                        <div>
-                          <div className="font-bold text-sm text-brand-dark">{campaign.title}</div>
-                          <div className="text-xs text-brand-muted">{getLocationLabel(campaign.location)}</div>
+                {campaigns.map((campaign) => {
+                  const badge = campaign.location === 'AFRICA'
+                    ? { text: '🌐 Internasional', cls: 'bg-blue-100 text-blue-700' }
+                    : campaign.location === 'PALESTINE'
+                    ? { text: '🚨 Prioritas', cls: 'bg-red-100 text-red-600' }
+                    : { text: '🔥 Terpopuler', cls: 'bg-brand-accent text-brand-dark' }
+                  return (
+                    <div
+                      key={campaign.id}
+                      onClick={() => setSelectedCampaign(campaign)}
+                      className={`dest-opt${selectedCampaign?.id === campaign.id ? ' selected' : ''}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">{getFlag(campaign.location)}</span>
+                          <div>
+                            <div className="font-bold text-sm text-brand-dark">{getLocationLabel(campaign.location)}</div>
+                            <div className="text-xs text-brand-muted">{campaign.title}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-bold text-brand-accent text-sm">
-                          Rp {(campaign.price / 1000000).toFixed(1)}Jt
+                        <div className="text-right shrink-0">
+                          <div className="font-bold text-sm text-brand-accent">
+                            Rp {(campaign.price / 1000000).toFixed(1)}Jt
+                          </div>
+                          <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${badge.cls}`}>{badge.text}</div>
                         </div>
-                        <div className="text-[10px] text-brand-muted">/ekor</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
 
                 {/* Quantity selector */}
                 <div className="mt-2">
@@ -383,22 +390,35 @@ export default function PenyaluranClient({ campaigns }: Props) {
                 </div>
 
                 {/* Total */}
-                <div className="bg-brand-light rounded-[10px] p-4 flex justify-between items-center mt-1">
-                  <span className="text-sm font-medium text-brand-dark">Total Donasi</span>
-                  <span className="font-serif text-xl font-bold text-brand-accent">{formatCurrency(total)}</span>
+                <div className="flex items-center justify-between mb-4 mt-2">
+                  <span className="text-sm text-brand-muted">Total yang akan dibayar</span>
+                  <span className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(total)}</span>
                 </div>
 
                 {/* CTA Button */}
                 <Link
                   href={checkoutUrl}
-                  className="w-full bg-cta-gradient text-brand-text-dark font-bold py-4 rounded-[12px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-premium"
+                  className="block w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[14px] shadow-premium hover:scale-[1.02] transition-transform text-center mb-3"
                 >
-                  <FontAwesomeIcon icon={faHeart} /> Donasi Sekarang
+                  <FontAwesomeIcon icon={faHeart} className="mr-2" />Qurban Sekarang!
                 </Link>
-                <div className="text-center text-xs text-brand-muted">
-                  <FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent/60 mr-1" />
-                  Transaksi aman &amp; amanah
+                <div className="flex items-center justify-center gap-1.5 text-xs text-brand-muted">
+                  <FontAwesomeIcon icon={faShieldHalved} className="text-brand-surface" /> Aman &amp; terpercaya · Tersertifikasi MUI
                 </div>
+              </div>
+
+              {/* Share mini */}
+              <div className="px-5 pb-5 flex gap-2 border-t border-brand-muted/10 pt-4">
+                <span className="text-xs text-brand-muted self-center">Bagikan:</span>
+                <a href="https://wa.me/?text=Yuk+Qurban+Bersama+%23BeyondQurban1447H!" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-[#25D366] rounded-full flex items-center justify-center text-white text-xs hover:scale-110 transition-transform">
+                  <FontAwesomeIcon icon={faWhatsappIcon} />
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-[#1877F2] rounded-full flex items-center justify-center text-white text-xs hover:scale-110 transition-transform">
+                  <FontAwesomeIcon icon={faFacebookFIcon} />
+                </a>
+                <a href="https://twitter.com/intent/tweet?text=%23BeyondQurban1447H" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-xs hover:scale-110 transition-transform">
+                  <FontAwesomeIcon icon={faXTwitterIcon} />
+                </a>
               </div>
             </div>
           </div>
