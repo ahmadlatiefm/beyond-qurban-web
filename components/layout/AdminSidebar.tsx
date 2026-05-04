@@ -6,7 +6,7 @@ import { signOut } from 'next-auth/react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faChartPie, faBoxOpen, faCartShopping, faCircleCheck,
-  faHandHoldingHeart, faUsers, faGear, faArrowRightFromBracket,
+  faHandHoldingHeart, faUsers, faGear, faArrowRightFromBracket, faBullhorn,
 } from '@fortawesome/free-solid-svg-icons'
 
 const NAV_ITEMS = [
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/produk', label: 'Produk', icon: faBoxOpen },
   { href: '/admin/pesanan', label: 'Pesanan', icon: faCartShopping },
   { href: '/admin/konfirmasi', label: 'Konfirmasi Bayar', icon: faCircleCheck },
+  { href: '/admin/campaign', label: 'Campaign', icon: faBullhorn },
   { href: '/admin/penyaluran', label: 'Penyaluran', icon: faHandHoldingHeart },
   { href: '/admin/pengaturan', label: 'Pengaturan', icon: faGear },
 ]

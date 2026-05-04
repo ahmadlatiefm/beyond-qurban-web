@@ -2,13 +2,13 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChartPie, faBoxOpen, faCartShopping, faCircleCheck, faGear } from '@fortawesome/free-solid-svg-icons'
+import { faChartPie, faBoxOpen, faCartShopping, faBullhorn, faGear } from '@fortawesome/free-solid-svg-icons'
 
 const BOTTOM_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: faChartPie },
   { href: '/admin/produk', label: 'Produk', icon: faBoxOpen },
   { href: '/admin/pesanan', label: 'Pesanan', icon: faCartShopping },
-  { href: '/admin/konfirmasi', label: 'Konfirmasi', icon: faCircleCheck },
+  { href: '/admin/campaign', label: 'Campaign', icon: faBullhorn },
   { href: '/admin/pengaturan', label: 'Pengaturan', icon: faGear },
 ]
 
