@@ -83,3 +83,19 @@
 .dest-opt { border: 2px solid rgba(107,114,128,.2); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all .2s; background: white; }
 .dest-opt:hover { border-color: #C8962A; }
 .dest-opt.selected { border-color: #C8962A; background: rgba(200,150,42,.04); box-shadow: 0 0 0 3px rgba(200,150,42,.15); }
+
+/* Admin form inputs */
+.inp { width: 100%; height: 42px; padding: 0 12px; border: 1px solid rgba(107,114,128,.2); border-radius: 8px; font-size: .875rem; font-family: 'DM Sans', sans-serif; color: #0D1F17; background: #FAFAF8; outline: none; transition: border-color .2s; }
+.inp:focus { border-color: #C8962A; box-shadow: 0 0 0 1px #C8962A; }
+textarea.inp { height: auto; padding: 10px 12px; resize: vertical; }
+
+/* Toggle switch */
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #d1d5db; border-radius: 24px; transition: .3s; }
+.toggle-slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .3s; }
+.toggle input:checked + .toggle-slider { background: #1B5E3B; }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* Modal overlay */
+.modal-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
