@@ -1,10 +1,12 @@
 'use server'
-import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { calculateShipping } from '@/lib/shipping'
-import { generateOrderNumber } from '@/lib/utils'
 
 export async function createOrder(formData: FormData) {
+  const { redirect } = await import('next/navigation')
+  const { calculateShipping } = await import('@/lib/shipping')
+  const { generateOrderNumber } = await import('@/lib/utils')
+
   const slug = formData.get('slug') as string
   const customerName = formData.get('customerName') as string
   const whatsapp = formData.get('whatsapp') as string
@@ -49,4 +51,29 @@ export async function createOrder(formData: FormData) {
   })
 
   redirect(`/checkout/pembayaran?order=${order.orderNumber}`)
+}
+
+export async function updateOrderStatus(id: string, status: string) {
+  await prisma.order.update({
+    where: { id },
+    data: { status: status as any },
+  })
+  revalidatePath('/admin/pesanan')
+}
+
+export async function confirmPayment(id: string) {
+  await prisma.order.update({
+    where: { id },
+    data: { paymentStatus: 'PAID', status: 'CONFIRMED' },
+  })
+  revalidatePath('/admin/konfirmasi')
+  revalidatePath('/admin/pesanan')
+}
+
+export async function rejectPayment(id: string) {
+  await prisma.order.update({
+    where: { id },
+    data: { paymentStatus: 'EXPIRED', status: 'CANCELLED' },
+  })
+  revalidatePath('/admin/konfirmasi')
 }
