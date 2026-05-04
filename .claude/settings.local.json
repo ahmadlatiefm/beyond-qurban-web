@@ -41,7 +41,8 @@
       "Bash(powershell -Command \"Get-Content 'E:\\\\Downloads\\\\Beyond Qurban Design System\\\\uploads\\\\Qurban App - Admin Pengaturan.html' | Select-Object -Skip 100 -First 200\")",
       "Bash(powershell -Command \"Get-Content 'E:\\\\Downloads\\\\Beyond Qurban Design System\\\\uploads\\\\Qurban App - Admin Pengaturan.html' | Select-Object -Skip 290 -First 200\")",
       "Bash(powershell -Command \"Get-Content 'E:\\\\Downloads\\\\Beyond Qurban Design System\\\\uploads\\\\Qurban App - Admin Pengaturan.html' | Select-Object -Skip 490 -First 250\")",
-      "Bash(powershell -Command \"Get-Content 'E:\\\\Downloads\\\\Beyond Qurban Design System\\\\uploads\\\\Qurban App - Admin Pengaturan.html' | Select-Object -Skip 700 -First 150\")"
+      "Bash(powershell -Command \"Get-Content 'E:\\\\Downloads\\\\Beyond Qurban Design System\\\\uploads\\\\Qurban App - Admin Pengaturan.html' | Select-Object -Skip 700 -First 150\")",
+      "Bash(git stash *)"
     ]
   }
 }

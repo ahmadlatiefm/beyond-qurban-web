@@ -91,22 +91,23 @@ model Order {
 }
 
 model Campaign {
-  id          String         @id @default(cuid())
-  slug        String         @unique
-  title       String
-  location    QurbanLocation
-  targetCount Int
-  price       Int
-  imageUrl    String
-  description String         @db.Text
-  // Jenis hewan: "domba" | "kambing" | "sapi" | "unta" | "mix"
-  animalType  String         @default("domba")
-  // Tipe program: "qurban" | "sedekah" | "keduanya"
-  programType String         @default("qurban")
-  isActive    Boolean        @default(true)
-  donations   Donation[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  location      QurbanLocation
+  targetCount   Int
+  price         Int
+  imageUrl      String
+  description   String         @db.Text
+  richContent   String?        @db.Text  // JSON: [{type:'text'|'image', value:string, caption?:string}]
+  animalType    String         @default("domba")  // domba|kambing|sapi|unta|mix
+  programType   String         @default("qurban") // qurban|sedekah|keduanya
+  ctaButtonText String?                           // Custom button text override
+  allowShare    Boolean        @default(false)    // Allow 1/7 sapi share
+  isActive      Boolean        @default(true)
+  donations     Donation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Donation {
@@ -117,8 +118,10 @@ model Donation {
   customerName     String
   phone            String
   whatsapp         String
-  qurbanName       String?       // Nama atas nama qurban
+  qurbanName       String?       // Nama atas nama qurban (qty=1)
+  qurbanNames      String?       @db.Text  // JSON array of names (qty>1)
   forWhom          String?       // "self" | "other"
+  shareType        String?       // "1/1" | "1/7" (untuk sapi)
   email            String?
   quantity         Int           @default(1)
   totalAmount      Int
