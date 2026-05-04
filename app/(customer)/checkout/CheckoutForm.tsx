@@ -10,32 +10,43 @@ import { formatCurrency } from '@/lib/utils'
 import { createOrder } from '@/lib/actions/orders'
 import type { Product } from '@prisma/client'
 
-const PAYMENT_METHODS = [
-  {
-    group: 'Transfer Bank (Virtual Account)',
-    icon: faBuildingColumns,
-    methods: [
-      { value: 'BVAI',      bank: 'BCA',  label: 'BCA Virtual Account',     color: 'text-blue-700',    bgColor: 'bg-blue-50' },
-      { value: 'MANDIRIVA', bank: 'MNR',  label: 'Mandiri Virtual Account',  color: 'text-yellow-700',  bgColor: 'bg-yellow-50' },
-      { value: 'BNIVA',     bank: 'BNI',  label: 'BNI Virtual Account',      color: 'text-orange-600',  bgColor: 'bg-orange-50' },
-      { value: 'BRIVA',     bank: 'BRI',  label: 'BRI Virtual Account',      color: 'text-blue-500',    bgColor: 'bg-blue-50' },
-    ],
-  },
-  {
-    group: 'QRIS',
-    icon: faQrcode,
-    methods: [
-      { value: 'QRIS', bank: 'QRIS', label: 'QRIS — Semua E-Wallet & M-Banking', color: 'text-brand-dark', bgColor: 'bg-brand-light' },
-    ],
-  },
+interface ActiveChannels {
+  BVAI: boolean; MANDIRIVA: boolean; BNIVA: boolean; BRIVA: boolean; QRIS: boolean; MANUAL: boolean
+}
+interface ManualBank { enabled: boolean; bankName: string; accountNumber: string; accountOwner: string }
+
+const ALL_VA_METHODS = [
+  { value: 'BVAI',      bank: 'BCA',  label: 'BCA Virtual Account',    color: 'text-blue-700',   bgColor: 'bg-blue-50',    channelKey: 'BVAI' as const },
+  { value: 'MANDIRIVA', bank: 'MNR',  label: 'Mandiri Virtual Account', color: 'text-yellow-700', bgColor: 'bg-yellow-50',  channelKey: 'MANDIRIVA' as const },
+  { value: 'BNIVA',     bank: 'BNI',  label: 'BNI Virtual Account',     color: 'text-orange-600', bgColor: 'bg-orange-50',  channelKey: 'BNIVA' as const },
+  { value: 'BRIVA',     bank: 'BRI',  label: 'BRI Virtual Account',     color: 'text-blue-500',   bgColor: 'bg-blue-50',    channelKey: 'BRIVA' as const },
 ]
 
 const inputCls = 'w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
 
-export default function CheckoutForm({ product }: { product: Product }) {
-  const [paymentMethod, setPaymentMethod] = useState('BVAI')
+export default function CheckoutForm({
+  product, activeChannels, manualBank
+}: {
+  product: Product
+  activeChannels?: ActiveChannels
+  manualBank?: ManualBank
+}) {
+  const [paymentMethod, setPaymentMethod] = useState(() => {
+    if (!activeChannels) return 'BVAI'
+    if (activeChannels.BVAI) return 'BVAI'
+    if (activeChannels.MANDIRIVA) return 'MANDIRIVA'
+    if (activeChannels.BNIVA) return 'BNIVA'
+    if (activeChannels.BRIVA) return 'BRIVA'
+    if (activeChannels.QRIS) return 'QRIS'
+    if (activeChannels.MANUAL) return 'MANUAL_TRANSFER'
+    return 'BVAI'
+  })
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  const activeVA = ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey] !== false)
+  const showQRIS = !activeChannels || activeChannels.QRIS !== false
+  const showManual = manualBank?.enabled && activeChannels?.MANUAL
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -123,19 +134,21 @@ export default function CheckoutForm({ product }: { product: Product }) {
               <input name="notes" type="text" placeholder="Misal: Patokan rumah, jam pengiriman yang diinginkan" className={inputCls} />
             </div>
 
-            {/* Payment methods — grouped */}
+            {/* Payment methods — dynamic */}
             <div className="flex flex-col gap-4 pt-2">
               <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest">
                 METODE PEMBAYARAN <span className="text-brand-surface">*</span>
               </label>
-              {PAYMENT_METHODS.map((group) => (
-                <div key={group.group} className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+
+              {/* Virtual Account group */}
+              {activeVA.length > 0 && (
+                <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
-                    <FontAwesomeIcon icon={group.icon} className="text-brand-muted text-sm" />
-                    <span className="text-xs font-bold text-brand-dark">{group.group}</span>
+                    <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">Transfer Bank (Virtual Account)</span>
                   </div>
                   <div className="divide-y divide-brand-muted/10">
-                    {group.methods.map((method) => (
+                    {activeVA.map((method) => (
                       <button
                         key={method.value}
                         type="button"
@@ -157,7 +170,62 @@ export default function CheckoutForm({ product }: { product: Product }) {
                     ))}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* QRIS group */}
+              {showQRIS && (
+                <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
+                    <FontAwesomeIcon icon={faQrcode} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">QRIS</span>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('QRIS')}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
+                        paymentMethod === 'QRIS' ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        paymentMethod === 'QRIS' ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'
+                      }`}>
+                        {paymentMethod === 'QRIS' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <div className="w-10 h-7 rounded-[6px] bg-brand-light flex items-center justify-center font-bold text-[10px] text-brand-dark shrink-0">QRIS</div>
+                      <span className="text-sm font-medium text-brand-dark">QRIS — Semua E-Wallet &amp; M-Banking</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Transfer — only if enabled in settings */}
+              {showManual && manualBank && (
+                <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
+                    <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">Transfer Manual</span>
+                    <span className="text-[10px] text-brand-muted ml-1">— langsung ke rekening</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('MANUAL_TRANSFER')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${paymentMethod === 'MANUAL_TRANSFER' ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod === 'MANUAL_TRANSFER' ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
+                      {paymentMethod === 'MANUAL_TRANSFER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="w-10 h-7 rounded-[6px] bg-brand-surface/10 flex items-center justify-center font-bold text-[10px] text-brand-surface shrink-0">
+                      {manualBank.bankName.split(' ')[0].substring(0, 3).toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-brand-dark">{manualBank.bankName}</span>
+                      <div className="text-xs text-brand-muted">{manualBank.accountNumber} — A/N {manualBank.accountOwner}</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+
               <div className="flex items-start gap-2 bg-brand-light border border-brand-accent/20 rounded-[8px] p-3">
                 <FontAwesomeIcon icon={faCircleInfo} className="text-brand-accent text-sm mt-0.5" />
                 <p className="text-xs text-brand-muted">

@@ -21,6 +21,17 @@ export default async function PembayaranPenyaluranPage({
   })
   if (!donation) notFound()
 
+  const manualBankSettings = await prisma.settings.findMany({
+    where: { key: { in: ['manual_bank_name','manual_bank_number','manual_bank_owner','manual_transfer_enabled'] } }
+  })
+  const mbMap: Record<string, string> = {}
+  manualBankSettings.forEach(s => { mbMap[s.key] = s.value })
+  const manualBank = mbMap.manual_transfer_enabled === 'true' ? {
+    bankName: mbMap.manual_bank_name ?? 'Bank BCA',
+    accountNumber: mbMap.manual_bank_number ?? '',
+    accountOwner: mbMap.manual_bank_owner ?? 'Yayasan One Ummah',
+  } : null
+
   return (
     <main
       className="pt-28 pb-24 min-h-screen"
@@ -84,6 +95,7 @@ export default async function PembayaranPenyaluranPage({
           createdAt={donation.createdAt.toISOString()}
           paymentMethod={donation.paymentMethod ?? 'BVAI'}
           payCode={donation.tripayReference}
+          manualBank={manualBank}
         />
       </div>
     </main>

@@ -17,6 +17,30 @@ export default async function CheckoutPage({
   const product = await prisma.product.findUnique({ where: { slug } })
   if (!product) notFound()
 
+  const [settings] = await Promise.all([
+    prisma.settings.findMany({
+      where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','ch_shopeepay','manual_transfer_enabled','manual_bank_name','manual_bank_number','manual_bank_owner'] } }
+    })
+  ])
+  const settingsMap: Record<string, string> = {}
+  settings.forEach(s => { settingsMap[s.key] = s.value })
+
+  const activeChannels = {
+    BVAI:      settingsMap.ch_bca !== 'false',
+    MANDIRIVA: settingsMap.ch_mandiri !== 'false',
+    BNIVA:     settingsMap.ch_bni !== 'false',
+    BRIVA:     settingsMap.ch_bri !== 'false',
+    QRIS:      settingsMap.ch_qris !== 'false',
+    MANUAL:    settingsMap.manual_transfer_enabled === 'true',
+  }
+
+  const manualBank = {
+    enabled: settingsMap.manual_transfer_enabled === 'true',
+    bankName: settingsMap.manual_bank_name ?? 'Bank BCA',
+    accountNumber: settingsMap.manual_bank_number ?? '',
+    accountOwner: settingsMap.manual_bank_owner ?? 'Yayasan One Ummah',
+  }
+
   return (
     <main className="pt-32 pb-24 min-h-screen bg-soft-gradient max-w-[1440px] mx-auto px-6 md:px-12">
       <nav className="flex items-center gap-2 text-sm text-brand-muted mb-8">
@@ -39,7 +63,7 @@ export default async function CheckoutPage({
         </div>
       </div>
 
-      <CheckoutForm product={product} />
+      <CheckoutForm product={product} activeChannels={activeChannels} manualBank={manualBank} />
     </main>
   )
 }

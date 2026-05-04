@@ -481,6 +481,48 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                 </button>
               </div>
             </div>
+
+            {/* Manual Transfer Config */}
+            <div className="setting-card">
+              <h2 className="font-bold text-brand-dark text-base mb-1">Transfer Manual</h2>
+              <p className="text-sm text-brand-muted mb-5">Tambahkan opsi transfer langsung ke rekening bank tanpa melalui Tripay.</p>
+
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                  <div>
+                    <div className="font-semibold text-sm text-brand-dark">Aktifkan Transfer Manual</div>
+                    <div className="text-xs text-brand-muted mt-0.5">Tampilkan opsi ini di form checkout</div>
+                  </div>
+                  <label className="toggle">
+                    <input type="checkbox" checked={settings.manual_transfer_enabled === 'true'} onChange={e => set('manual_transfer_enabled', e.target.checked ? 'true' : 'false')} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Nama Bank</label>
+                    <input type="text" value={settings.manual_bank_name ?? ''} onChange={e => set('manual_bank_name', e.target.value)} className="inp" placeholder="Bank BCA" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Nomor Rekening</label>
+                    <input type="text" value={settings.manual_bank_number ?? ''} onChange={e => set('manual_bank_number', e.target.value)} className="inp" placeholder="1234567890" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Atas Nama</label>
+                    <input type="text" value={settings.manual_bank_owner ?? ''} onChange={e => set('manual_bank_owner', e.target.value)} className="inp" placeholder="Yayasan One Ummah" />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleSave(['manual_transfer_enabled', 'manual_bank_name', 'manual_bank_number', 'manual_bank_owner'])}
+                  disabled={isPending}
+                  className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60"
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

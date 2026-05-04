@@ -17,6 +17,28 @@ export default async function CheckoutPenyaluranPage({
   const campaign = await prisma.campaign.findUnique({ where: { slug: campaignSlug } })
   if (!campaign) notFound()
 
+  const settingsRows = await prisma.settings.findMany({
+    where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','manual_transfer_enabled','manual_bank_name','manual_bank_number','manual_bank_owner'] } }
+  })
+  const settingsMap: Record<string, string> = {}
+  settingsRows.forEach(s => { settingsMap[s.key] = s.value })
+
+  const activeChannels = {
+    BVAI:      settingsMap.ch_bca !== 'false',
+    MANDIRIVA: settingsMap.ch_mandiri !== 'false',
+    BNIVA:     settingsMap.ch_bni !== 'false',
+    BRIVA:     settingsMap.ch_bri !== 'false',
+    QRIS:      settingsMap.ch_qris !== 'false',
+    MANUAL:    settingsMap.manual_transfer_enabled === 'true',
+  }
+
+  const manualBank = {
+    enabled: settingsMap.manual_transfer_enabled === 'true',
+    bankName: settingsMap.manual_bank_name ?? 'Bank BCA',
+    accountNumber: settingsMap.manual_bank_number ?? '',
+    accountOwner: settingsMap.manual_bank_owner ?? 'Yayasan One Ummah',
+  }
+
   const qty = parseInt(searchParams.qty ?? '1') || 1
   const shareType = (searchParams.share === '1/7' ? '1/7' : '1/1') as '1/1' | '1/7'
   // Override price if specific animal was selected from sidebar
@@ -64,6 +86,8 @@ export default async function CheckoutPenyaluranPage({
           shareType={shareType}
           animalName={animalName}
           animalPrice={animalPrice}
+          activeChannels={activeChannels}
+          manualBank={manualBank}
         />
       </div>
     </main>

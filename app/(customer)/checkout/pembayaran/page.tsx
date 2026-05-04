@@ -21,6 +21,17 @@ export default async function PembayaranPage({
   })
   if (!order) notFound()
 
+  const manualBankSettings = await prisma.settings.findMany({
+    where: { key: { in: ['manual_bank_name','manual_bank_number','manual_bank_owner','manual_transfer_enabled'] } }
+  })
+  const mbMap: Record<string, string> = {}
+  manualBankSettings.forEach(s => { mbMap[s.key] = s.value })
+  const manualBank = mbMap.manual_transfer_enabled === 'true' ? {
+    bankName: mbMap.manual_bank_name ?? 'Bank BCA',
+    accountNumber: mbMap.manual_bank_number ?? '',
+    accountOwner: mbMap.manual_bank_owner ?? 'Yayasan One Ummah',
+  } : null
+
   return (
     <main className="pt-28 pb-24 min-h-screen" style={{ background: 'linear-gradient(180deg,#FAFAF8,#E8F4EE,#F5E6C3)' }}>
       <div className="max-w-[1100px] mx-auto px-6 md:px-12">
@@ -76,6 +87,7 @@ export default async function PembayaranPage({
           createdAt={order.createdAt.toISOString()}
           paymentMethod={order.paymentMethod ?? 'BVAI'}
           payCode={order.tripayReference}
+          manualBank={manualBank}
         />
       </div>
     </main>

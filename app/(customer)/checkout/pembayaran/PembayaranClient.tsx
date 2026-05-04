@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  faBuildingColumns, faQrcode, faWallet,
-  faListOl, faTriangleExclamation, faDownload,
+  faBuildingColumns, faQrcode,
+  faListOl, faTriangleExclamation,
   faWeightScale, faArrowRight, faShieldHalved,
 } from '@fortawesome/free-solid-svg-icons'
 import { faCopy, faClock } from '@fortawesome/free-regular-svg-icons'
@@ -19,19 +19,18 @@ interface Props {
   createdAt: string
   paymentMethod: string
   payCode: string | null
+  manualBank?: { bankName: string; accountNumber: string; accountOwner: string } | null
 }
 
 export default function PembayaranClient({
   orderNumber, totalAmount, productName, productImage, productWeight, createdAt,
-  paymentMethod, payCode,
+  paymentMethod, payCode, manualBank,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'transfer' | 'qris' | 'ewallet'>(() => {
-    if (['BVAI', 'MANDIRIVA', 'BNIVA', 'BRIVA'].includes(paymentMethod)) return 'transfer'
-    if (['QRIS', 'QRISC'].includes(paymentMethod)) return 'qris'
-    return 'ewallet'
-  })
   const [copied, setCopied] = useState<string | null>(null)
   const [countdown, setCountdown] = useState('23:59:00')
+  const [proofUrl, setProofUrl] = useState('')
+  const [uploadingProof, setUploadingProof] = useState(false)
+  const [uploadError, setUploadError] = useState('')
 
   // Countdown: 24h from createdAt
   useEffect(() => {
@@ -55,143 +54,199 @@ export default function PembayaranClient({
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const bankLabel =
-    paymentMethod === 'BVAI' ? 'Bank BCA' :
-    paymentMethod === 'MANDIRIVA' ? 'Bank Mandiri' :
-    paymentMethod === 'BNIVA' ? 'Bank BNI' :
-    paymentMethod === 'BRIVA' ? 'Bank BRI' : paymentMethod
-
-  const bankCode =
-    paymentMethod === 'BVAI' ? 'BCA' :
-    paymentMethod === 'MANDIRIVA' ? 'MNR' :
-    paymentMethod === 'BNIVA' ? 'BNI' :
-    paymentMethod === 'BRIVA' ? 'BRI' : paymentMethod
-
-  const bankColor =
-    paymentMethod === 'BVAI' ? 'text-blue-700' :
-    paymentMethod === 'MANDIRIVA' ? 'text-yellow-700' :
-    paymentMethod === 'BNIVA' ? 'text-orange-600' :
-    paymentMethod === 'BRIVA' ? 'text-blue-500' : 'text-brand-dark'
+  async function handleProofUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingProof(true)
+    setUploadError('')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/proof-upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploadingProof(false)
+    if (data.url) {
+      setProofUrl(data.url)
+      await fetch('/api/orders/save-proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber, proofUrl: data.url })
+      })
+    } else {
+      setUploadError(data.error ?? 'Upload gagal. Coba lagi.')
+    }
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-7 items-start">
-      {/* LEFT: Payment methods */}
+      {/* LEFT: Payment instructions */}
       <div className="flex-1 flex flex-col gap-6">
 
-        {/* Countdown */}
-        <div className="flex items-center gap-1.5 text-red-500 font-bold text-sm">
-          <FontAwesomeIcon icon={faClock} className="text-xs" />
-          Bayar sebelum: <span className="font-mono ml-1">{countdown}</span>
-        </div>
-
-        {/* Tabs card */}
-        <div className="bg-white rounded-[14px] shadow-premium border border-brand-muted/10 overflow-hidden">
-          <div className="p-5 md:p-6 border-b border-brand-muted/10">
+        {/* Single payment instructions card */}
+        <div className="bg-white rounded-[14px] shadow-premium border border-brand-muted/10 overflow-hidden flex-1">
+          <div className="p-5 border-b border-brand-muted/10">
             <h2 className="font-serif text-lg font-bold text-brand-text-dark">Instruksi Pembayaran</h2>
             <p className="text-xs text-brand-muted mt-1">Selesaikan pembayaran sebelum batas waktu habis</p>
+            <div className="flex items-center gap-1.5 text-red-500 font-bold text-sm mt-2">
+              <FontAwesomeIcon icon={faClock} className="text-xs" />
+              Bayar sebelum: <span className="font-mono ml-1">{countdown}</span>
+            </div>
           </div>
-          <div className="flex border-b border-brand-muted/10 overflow-x-auto">
-            {(['transfer', 'qris', 'ewallet'] as const).map((tab) => {
-              const labels = { transfer: 'Transfer Bank', qris: 'QRIS', ewallet: 'E-Wallet' }
-              const icons = { transfer: faBuildingColumns, qris: faQrcode, ewallet: faWallet }
-              return (
+
+          <div className="p-5">
+            {/* VA methods: BVAI, MANDIRIVA, BNIVA, BRIVA */}
+            {['BVAI','MANDIRIVA','BNIVA','BRIVA'].includes(paymentMethod) && (
+              <div className="flex flex-col gap-4">
+                {/* Bank card */}
+                <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm shadow-sm ${
+                      paymentMethod === 'BVAI' ? 'text-blue-700' :
+                      paymentMethod === 'MANDIRIVA' ? 'text-yellow-700' :
+                      paymentMethod === 'BNIVA' ? 'text-orange-600' : 'text-blue-500'
+                    }`}>
+                      {paymentMethod === 'BVAI' ? 'BCA' : paymentMethod === 'MANDIRIVA' ? 'MNR' : paymentMethod === 'BNIVA' ? 'BNI' : 'BRI'}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-brand-dark">
+                        {paymentMethod === 'BVAI' ? 'Bank BCA' : paymentMethod === 'MANDIRIVA' ? 'Bank Mandiri' : paymentMethod === 'BNIVA' ? 'Bank BNI' : 'Bank BRI'}
+                      </div>
+                      <div className="text-xs text-brand-muted">Virtual Account</div>
+                    </div>
+                  </div>
+                  <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
+                  <div className="inp-copy">
+                    <input type="text" value={payCode ?? 'Menunggu...'} readOnly />
+                    <button className={`copy-btn${copied === 'va' ? ' copied' : ''}`} onClick={() => copyText(payCode ?? '', 'va')}>
+                      <FontAwesomeIcon icon={faCopy} className="mr-1" />
+                      {copied === 'va' ? 'Disalin!' : 'Salin'}
+                    </button>
+                  </div>
+                  <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
+                  <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
+                  </h3>
+                  <ol className="flex flex-col gap-2.5">
+                    {['Buka aplikasi mobile banking atau ATM Anda',
+                      `Pilih menu Transfer Virtual Account ${paymentMethod === 'BVAI' ? 'BCA' : paymentMethod === 'MANDIRIVA' ? 'Mandiri' : paymentMethod === 'BNIVA' ? 'BNI' : 'BRI'}`,
+                      'Masukkan nomor VA di atas, pastikan nama penerima Yayasan One Ummah dan nominal sesuai',
+                      'Selesaikan transfer lalu upload bukti pembayaran di bawah',
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
+                        <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i+1}</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
+                  <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan.</p>
+                </div>
+              </div>
+            )}
+
+            {/* QRIS */}
+            {['QRIS','QRISC'].includes(paymentMethod) && (
+              <div className="flex flex-col items-center gap-4 text-center">
+                <p className="text-sm text-brand-muted">Scan QR Code menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS</p>
+                <div className="w-52 h-52 bg-brand-light border-2 border-brand-surface/30 rounded-[14px] flex items-center justify-center mx-auto">
+                  <FontAwesomeIcon icon={faQrcode} className="text-7xl text-brand-dark/25" />
+                </div>
+                <div className="bg-brand-light rounded-[10px] border border-brand-muted/15 p-3 w-full">
+                  <div className="text-xs text-brand-muted mb-1">Total yang harus dibayar</div>
+                  <div className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(totalAmount)}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Manual Transfer */}
+            {paymentMethod === 'MANUAL_TRANSFER' && manualBank && (
+              <div className="flex flex-col gap-4">
+                <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm text-brand-surface shadow-sm">
+                      {manualBank.bankName.split(' ')[0].substring(0,3).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-brand-dark">{manualBank.bankName}</div>
+                      <div className="text-xs text-brand-muted">Transfer Manual</div>
+                    </div>
+                  </div>
+                  <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Rekening</label>
+                  <div className="inp-copy">
+                    <input type="text" value={manualBank.accountNumber} readOnly />
+                    <button className={`copy-btn${copied === 'manual' ? ' copied' : ''}`} onClick={() => copyText(manualBank.accountNumber, 'manual')}>
+                      <FontAwesomeIcon icon={faCopy} className="mr-1" />
+                      {copied === 'manual' ? 'Disalin!' : 'Salin'}
+                    </button>
+                  </div>
+                  <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">{manualBank.accountOwner}</strong></div>
+                </div>
+                <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
+                  <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
+                  </h3>
+                  <ol className="flex flex-col gap-2.5">
+                    {['Buka aplikasi mobile banking atau ATM Anda',
+                      `Transfer ke rekening ${manualBank.bankName} nomor ${manualBank.accountNumber}`,
+                      `Pastikan nama penerima ${manualBank.accountOwner} dan nominal sesuai`,
+                      'Upload bukti transfer di bawah setelah selesai',
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
+                        <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i+1}</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
+                  <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan atau dikurangi.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Payment Proof Upload */}
+          <div className="p-5 border-t border-brand-muted/10">
+            <h3 className="font-bold text-sm text-brand-dark mb-3">📎 Upload Bukti Pembayaran</h3>
+            {proofUrl ? (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={proofUrl} alt="Bukti transfer" className="w-full h-36 object-cover rounded-[10px] border border-brand-muted/20" />
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pay-tab${activeTab === tab ? ' active' : ''}`}
+                  onClick={() => setProofUrl('')}
+                  className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded font-bold"
                 >
-                  <FontAwesomeIcon icon={icons[tab]} className="mr-1.5 text-xs" />{labels[tab]}
+                  ✕ Hapus
                 </button>
-              )
-            })}
+                <p className="text-xs text-emerald-600 font-medium mt-2 flex items-center gap-1">
+                  ✓ Bukti transfer berhasil diupload
+                </p>
+              </div>
+            ) : (
+              <label className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-[10px] cursor-pointer transition-colors ${uploadingProof ? 'border-brand-surface/30 bg-brand-surface/5' : 'border-brand-muted/30 hover:border-brand-accent/50 hover:bg-brand-accent/[0.02]'}`}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploadingProof}
+                  onChange={handleProofUpload}
+                />
+                <div className="text-center">
+                  <div className="text-xl mb-0.5">{uploadingProof ? '⏳' : '📷'}</div>
+                  <div className="text-xs font-medium text-brand-dark">{uploadingProof ? 'Mengupload...' : 'Klik untuk upload bukti transfer'}</div>
+                  <div className="text-[10px] text-brand-muted mt-0.5">JPG, PNG · Max 5MB</div>
+                </div>
+              </label>
+            )}
+            {uploadError && <p className="text-xs text-red-600 mt-2">{uploadError}</p>}
           </div>
-
-          {/* Transfer tab */}
-          {activeTab === 'transfer' && (
-            <div className="p-5 flex flex-col gap-4">
-              <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm shadow-sm ${bankColor}`}>
-                    {bankCode}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-brand-dark">{bankLabel}</div>
-                    <div className="text-xs text-brand-muted">Virtual Account</div>
-                  </div>
-                </div>
-                <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
-                <div className="inp-copy">
-                  <input type="text" value={payCode ?? '—'} readOnly />
-                  <button
-                    className={`copy-btn${copied === 'va' ? ' copied' : ''}`}
-                    onClick={() => copyText(payCode ?? '', 'va')}
-                  >
-                    <FontAwesomeIcon icon={faCopy} className="mr-1" />
-                    {copied === 'va' ? 'Disalin!' : 'Salin'}
-                  </button>
-                </div>
-                <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
-              </div>
-              {/* Transfer instructions */}
-              <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
-                <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
-                  <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
-                </h3>
-                <ol className="flex flex-col gap-2.5">
-                  {[
-                    'Buka aplikasi mobile banking atau ATM Anda',
-                    'Pilih menu Transfer Virtual Account, masukkan nomor VA di atas',
-                    'Pastikan nama penerima Yayasan One Ummah dan nominal sesuai',
-                    'Selesaikan transfer lalu upload bukti pembayaran',
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
-                      <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
-                <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
-                <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan.</p>
-              </div>
-            </div>
-          )}
-
-          {/* QRIS tab */}
-          {activeTab === 'qris' && (
-            <div className="p-5 md:p-6 flex flex-col items-center gap-4 text-center">
-              <p className="text-sm text-brand-muted max-w-xs">Scan QR Code menggunakan aplikasi e-wallet atau mobile banking apa saja yang mendukung QRIS</p>
-              <div className="w-52 h-52 bg-brand-light border-2 border-brand-surface/30 rounded-[14px] flex items-center justify-center mx-auto">
-                <FontAwesomeIcon icon={faQrcode} className="text-[80px] text-brand-dark/25" />
-              </div>
-              <div className="bg-brand-light rounded-[10px] border border-brand-muted/15 p-3 w-full max-w-xs">
-                <div className="text-xs text-brand-muted mb-1">Total yang harus dibayar</div>
-                <div className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(totalAmount)}</div>
-              </div>
-              <button className="flex items-center gap-2 text-brand-surface font-bold text-sm border-2 border-brand-surface/30 hover:bg-brand-surface hover:text-white px-5 py-2.5 rounded-[10px] transition-colors">
-                <FontAwesomeIcon icon={faDownload} /> Simpan QR Code
-              </button>
-            </div>
-          )}
-
-          {/* E-Wallet tab */}
-          {activeTab === 'ewallet' && (
-            <div className="p-5 md:p-6 flex flex-col gap-3">
-              <p className="text-sm text-brand-muted">Pilih aplikasi e-wallet Anda:</p>
-              {['GoPay', 'OVO', 'DANA', 'ShopeePay'].map((w) => (
-                <div key={w} className="border-2 border-brand-muted/15 rounded-[10px] p-3.5 cursor-pointer hover:border-brand-accent/40 transition-all bg-white flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center">
-                    <FontAwesomeIcon icon={faWallet} className="text-brand-surface" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-brand-dark">{w}</div>
-                    <div className="text-xs text-brand-muted">{formatCurrency(totalAmount)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
