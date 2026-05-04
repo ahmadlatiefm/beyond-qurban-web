@@ -3,9 +3,9 @@ import { useState, useTransition } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faFloppyDisk, faRotateLeft, faPaperPlane, faCreditCard,
-  faTag, faCode, faSliders, faCircleInfo, faBell,
+  faTag, faCode, faSliders, faCircleInfo, faBell, faEye,
 } from '@fortawesome/free-solid-svg-icons'
-import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { faWhatsapp, faWhatsapp as faWhatsappPrev } from '@fortawesome/free-brands-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
 
 type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'info'
@@ -106,6 +106,130 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                     </button>
                     <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
                       <FontAwesomeIcon icon={faPaperPlane} /> Test API
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pesan Pertama */}
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <h2 className="font-bold text-brand-dark text-base mb-1">Pesan Pertama</h2>
+                  <p className="text-brand-muted text-sm leading-relaxed">Template pesan yang dikirim otomatis saat pesanan baru masuk.</p>
+                  <div className="mt-3 p-3 bg-brand-accent-light/60 rounded-[8px] border border-brand-accent/20">
+                    <p className="text-xs text-brand-text-dark/70 font-medium mb-1">Variabel tersedia:</p>
+                    <div className="flex flex-col gap-1 text-xs font-mono text-brand-surface">
+                      <span>{'{{nama}}'}</span>
+                      <span>{'{{nomor_pesanan}}'}</span>
+                      <span>{'{{produk}}'}</span>
+                      <span>{'{{total}}'}</span>
+                      <span>{'{{tanggal_kirim}}'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Pesan</label>
+                    <textarea
+                      value={settings.msg_first ?? `Halo Kak {{nama}}, 👋\n\nTerima kasih telah memesan kurban di *Beyond Qurban* 🐑\n\nBerikut detail pesanan Anda:\n📋 No. Pesanan: *{{nomor_pesanan}}*\n🐑 Produk: {{produk}}\n💰 Total: *{{total}}*\n🚚 Jadwal Kirim: {{tanggal_kirim}}\n\nSegera selesaikan pembayaran Anda ya, Kak!\n\n_Beyond Qurban — Amanah & Berkualitas_`}
+                      onChange={e => set('msg_first', e.target.value)}
+                      className="inp"
+                      rows={10}
+                      style={{ height: 'auto' }}
+                    />
+                  </div>
+                  {/* WA Preview */}
+                  <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
+                    <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
+                    </div>
+                    <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
+                      <p className="text-xs text-brand-text-dark whitespace-pre-line">
+                        {(settings.msg_first ?? '').replace('{{nama}}', 'Ahmad').replace('{{nomor_pesanan}}', 'BQ-2025-001').replace('{{produk}}', 'Domba Garut').replace('{{total}}', 'Rp 3.500.000').replace('{{tanggal_kirim}}', '14 Juni 2025')}
+                      </p>
+                      <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => handleSave(['msg_first'])}
+                      disabled={isPending}
+                      className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                    >
+                      <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
+                    </button>
+                    <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
+                      <FontAwesomeIcon icon={faEye} /> Preview
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pesan Follow Up */}
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <h2 className="font-bold text-brand-dark text-base mb-1">Pesan Follow Up</h2>
+                  <p className="text-brand-muted text-sm leading-relaxed">Template pesan follow up untuk mengingatkan pelanggan yang belum membayar.</p>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Kirim otomatis setelah</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={settings.followup_hours ?? '6'}
+                        onChange={e => set('followup_hours', e.target.value)}
+                        className="inp"
+                        style={{ width: 72 }}
+                        min={1} max={48}
+                      />
+                      <span className="text-sm text-brand-muted">jam</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <label className="toggle">
+                        <input
+                          type="checkbox"
+                          checked={settings.followup_enabled !== 'false'}
+                          onChange={e => set('followup_enabled', e.target.checked ? 'true' : 'false')}
+                        />
+                        <span className="toggle-slider" />
+                      </label>
+                      <span className="text-xs text-brand-dark font-medium">Aktifkan auto follow up</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Follow Up</label>
+                    <textarea
+                      value={settings.msg_followup ?? `Halo Kak {{nama}}, 😊\n\nKami ingin mengingatkan bahwa pesanan kurban Anda *{{nomor_pesanan}}* masih menunggu pembayaran.\n\n⏰ *Batas waktu: 24 jam sejak pemesanan*\n\nNominal tepat: *{{total}}*\n\nTerima kasih, semoga dimudahkan 🤲\n\n_Beyond Qurban_`}
+                      onChange={e => set('msg_followup', e.target.value)}
+                      className="inp"
+                      rows={10}
+                      style={{ height: 'auto' }}
+                    />
+                  </div>
+                  {/* WA Preview */}
+                  <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
+                    <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
+                    </div>
+                    <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
+                      <p className="text-xs text-brand-text-dark whitespace-pre-line">
+                        {(settings.msg_followup ?? '').replace('{{nama}}', 'Ahmad').replace('{{nomor_pesanan}}', 'BQ-2025-001').replace('{{total}}', 'Rp 3.500.000')}
+                      </p>
+                      <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => handleSave(['msg_followup', 'followup_hours', 'followup_enabled'])}
+                      disabled={isPending}
+                      className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                    >
+                      <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
                     </button>
                   </div>
                 </div>
