@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -9,6 +9,11 @@ import {
   faArrowRight,
   faShieldHalved,
   faPen,
+  faBuildingColumns,
+  faWallet,
+  faHandHoldingDollar,
+  faCreditCard,
+  faCircleInfo,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import { createDonation } from '@/lib/actions/donations'
@@ -19,6 +24,7 @@ const inpCls =
 
 export default function DonationForm({ campaign, qty }: { campaign: Campaign; qty: number }) {
   const [isPending, startTransition] = useTransition()
+  const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER')
   const total = campaign.price * qty
 
   function getFlag(loc: string) {
@@ -30,6 +36,7 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    fd.set('paymentMethod', paymentMethod)
     startTransition(() => {
       createDonation(fd)
     })
@@ -42,7 +49,6 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
         <form id="donation-form" onSubmit={handleSubmit} className="contents">
           <input type="hidden" name="campaignSlug" value={campaign.slug} />
           <input type="hidden" name="quantity" value={qty} />
-          <input type="hidden" name="paymentMethod" value="BANK_TRANSFER" />
 
           {/* Section 1: Informasi Donatur */}
           <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-7">
@@ -191,6 +197,82 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
                 placeholder="Nama atas nama qurban (sama dengan nama donatur jika untuk diri sendiri)"
                 className={inpCls}
               />
+            </div>
+          </div>
+
+          {/* Section 4: Metode Pembayaran */}
+          <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-7">
+            <div className="flex items-center gap-3 mb-6 pb-5 border-b border-dashed border-brand-muted/10">
+              <div className="w-10 h-10 rounded-[10px] bg-brand-light border border-brand-muted/15 flex items-center justify-center">
+                <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-surface" />
+              </div>
+              <div>
+                <h2 className="font-serif text-lg font-bold text-brand-text-dark">Metode Pembayaran</h2>
+                <p className="text-xs text-brand-muted mt-0.5">Pilih metode pembayaran donasi Anda</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {[
+                {
+                  value: 'BANK_TRANSFER',
+                  icon: faBuildingColumns,
+                  label: 'Transfer Bank',
+                  desc: 'Transfer ke rekening BCA, Mandiri, atau BNI. Instruksi dikirim via WhatsApp.',
+                },
+                {
+                  value: 'E_WALLET',
+                  icon: faWallet,
+                  label: 'E-Wallet',
+                  desc: 'Bayar dengan GoPay, OVO, DANA, atau ShopeePay.',
+                  badge: { text: 'Populer', cls: 'bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-2 py-0.5 rounded-[4px] uppercase' },
+                  chips: ['GoPay', 'OVO', 'DANA', 'ShopeePay'],
+                },
+                {
+                  value: 'QRIS',
+                  icon: faBuildingColumns,
+                  label: 'QRIS',
+                  desc: 'Scan QR code dengan aplikasi e-wallet atau mobile banking manapun.',
+                },
+              ].map((m) => (
+                <div
+                  key={m.value}
+                  onClick={() => setPaymentMethod(m.value)}
+                  className={`border-2 rounded-[8px] p-3.5 cursor-pointer transition-all flex items-start gap-4 ${
+                    paymentMethod === m.value
+                      ? 'border-brand-accent bg-brand-accent/[0.04]'
+                      : 'border-brand-muted/20 hover:border-brand-accent/50'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 mt-1 shrink-0 flex items-center justify-center ${
+                    paymentMethod === m.value ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'
+                  }`}>
+                    {paymentMethod === m.value && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FontAwesomeIcon icon={m.icon} className="text-brand-surface text-sm" />
+                      <span className="font-bold text-sm text-brand-text-dark">{m.label}</span>
+                      {m.badge && <span className={m.badge.cls}>{m.badge.text}</span>}
+                    </div>
+                    <p className="text-xs text-brand-muted">{m.desc}</p>
+                    {m.chips && (
+                      <div className="flex gap-2 flex-wrap mt-2">
+                        {m.chips.map((c) => (
+                          <span key={c} className="bg-brand-light border border-brand-muted/20 rounded px-2 py-0.5 text-[10px] font-medium">{c}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex items-start gap-2 bg-brand-light border border-brand-accent/20 rounded-[8px] p-3 mt-1">
+                <FontAwesomeIcon icon={faCircleInfo} className="text-brand-accent text-sm mt-0.5" />
+                <p className="text-xs text-brand-muted">
+                  <span className="font-bold text-brand-text-dark">Donasi Aman:</span> Semua transaksi dienkripsi dan dilindungi sistem keamanan berlapis.
+                </p>
+              </div>
             </div>
           </div>
 
