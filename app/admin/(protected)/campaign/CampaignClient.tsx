@@ -126,6 +126,173 @@ function RichContentEditor({ value, onChange }: { value: string; onChange: (v: s
   )
 }
 
+// ─── Media Picker Modal ──────────────────────────────────────────────────────
+function MediaPickerModal({
+  currentUrl,
+  onSelect,
+  onClose,
+}: {
+  currentUrl: string
+  onSelect: (url: string) => void
+  onClose: () => void
+}) {
+  const [tab, setTab] = useState<'gallery' | 'upload' | 'url'>('gallery')
+  const [galleryFiles, setGalleryFiles] = useState<string[]>([])
+  const [loadingGallery, setLoadingGallery] = useState(false)
+  const [urlInput, setUrlInput] = useState(currentUrl)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  useEffect(() => {
+    setLoadingGallery(true)
+    fetch('/api/uploads/list')
+      .then(r => r.json())
+      .then(d => setGalleryFiles(d.files ?? []))
+      .finally(() => setLoadingGallery(false))
+  }, [])
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setUploadError('')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/uploads', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploading(false)
+    if (data.url) {
+      setGalleryFiles(prev => [data.url, ...prev])
+      onSelect(data.url)
+    } else {
+      setUploadError(data.error ?? 'Upload gagal')
+    }
+  }
+
+  return (
+    <div
+      className="modal-overlay"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-[16px] w-full max-w-xl shadow-xl overflow-hidden max-h-[80vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-brand-muted/10 shrink-0">
+          <h3 className="font-serif text-base font-bold text-brand-dark">Pilih Foto</h3>
+          <button onClick={onClose} className="text-brand-muted hover:text-brand-dark w-7 h-7 rounded-full hover:bg-brand-light flex items-center justify-center">✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-brand-muted/10 shrink-0">
+          {([
+            { key: 'gallery', label: '🖼️ Galeri' },
+            { key: 'upload', label: '📤 Upload Baru' },
+            { key: 'url', label: '🔗 URL' },
+          ] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors ${tab === key ? 'border-b-2 border-brand-surface text-brand-surface font-bold' : 'text-brand-muted hover:text-brand-dark'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content — scrollable */}
+        <div className="overflow-y-auto p-5 flex-1">
+
+          {/* Gallery Tab */}
+          {tab === 'gallery' && (
+            <div>
+              {loadingGallery ? (
+                <div className="text-center py-8 text-brand-muted text-sm">Memuat galeri...</div>
+              ) : galleryFiles.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">📂</div>
+                  <p className="text-brand-muted text-sm">Belum ada foto di galeri</p>
+                  <button onClick={() => setTab('upload')} className="mt-3 text-brand-surface text-sm font-bold hover:underline">
+                    Upload foto pertama →
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {galleryFiles.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { onSelect(url); onClose() }}
+                      className={`aspect-square rounded-[8px] overflow-hidden border-2 transition-all hover:scale-[1.02] ${currentUrl === url ? 'border-brand-accent ring-2 ring-brand-accent/30' : 'border-transparent hover:border-brand-accent/40'}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Upload Tab */}
+          {tab === 'upload' && (
+            <div className="flex flex-col gap-4">
+              <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-[12px] cursor-pointer transition-colors ${uploading ? 'border-brand-surface/30 bg-brand-surface/5' : 'border-brand-muted/30 hover:border-brand-accent/50 hover:bg-brand-accent/[0.02]'}`}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={handleFileUpload}
+                />
+                <div className="text-center">
+                  <div className="text-3xl mb-2">{uploading ? '⏳' : '📤'}</div>
+                  <div className="text-sm font-medium text-brand-dark">
+                    {uploading ? 'Mengupload...' : 'Klik untuk pilih foto'}
+                  </div>
+                  <div className="text-[11px] text-brand-muted mt-1">JPG, PNG, WebP · Max 2MB</div>
+                </div>
+              </label>
+              {uploadError && (
+                <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-[8px] p-3">⚠️ {uploadError}</div>
+              )}
+              <p className="text-xs text-brand-muted text-center">Setelah upload, foto akan otomatis terpilih</p>
+            </div>
+          )}
+
+          {/* URL Tab */}
+          {tab === 'url' && (
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">URL Foto</label>
+                <input
+                  type="text"
+                  value={urlInput}
+                  onChange={e => setUrlInput(e.target.value)}
+                  className="inp"
+                  placeholder="https://contoh.com/foto-hewan.jpg"
+                />
+              </div>
+              {urlInput && (
+                <div className="rounded-[8px] overflow-hidden border border-brand-muted/20 h-32">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={urlInput} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => { if (urlInput) { onSelect(urlInput); onClose() } }}
+                disabled={!urlInput}
+                className="w-full py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[8px] shadow-premium disabled:opacity-40"
+              >
+                Gunakan URL Ini
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Animals Editor ───────────────────────────────────────────────────────────
 interface AnimalItem {
   id: string; name: string; weight: string
   originalPrice: number; price: number; imageUrl: string; stock: number
@@ -135,6 +302,7 @@ function AnimalsEditor({ value, onChange }: { value: string; onChange: (v: strin
   const [items, setItems] = useState<AnimalItem[]>(() => {
     try { return JSON.parse(value) } catch { return [] }
   })
+  const [pickerIdx, setPickerIdx] = useState<number | null>(null)
 
   useEffect(() => {
     try { setItems(JSON.parse(value)) } catch { setItems([]) }
@@ -185,12 +353,35 @@ function AnimalsEditor({ value, onChange }: { value: string; onChange: (v: strin
               <input type="number" value={item.price || ''} onChange={e => updateAnimal(idx, { price: parseInt(e.target.value) || 0 })} className="inp text-sm" placeholder="0" />
             </div>
             <div className="col-span-2">
-              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">URL Foto Hewan</label>
-              <input type="text" value={item.imageUrl} onChange={e => updateAnimal(idx, { imageUrl: e.target.value })} className="inp text-sm" placeholder="https://..." />
-              {item.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.imageUrl} alt="" className="mt-2 w-full h-20 object-cover rounded-[6px]" />
-              )}
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Foto Hewan</label>
+              <div className="flex gap-2 items-start">
+                {/* Preview */}
+                <div className="w-16 h-14 rounded-[8px] overflow-hidden border border-brand-muted/20 shrink-0 bg-brand-light">
+                  {item.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-2xl">🐑</div>
+                  )}
+                </div>
+                {/* Buttons */}
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPickerIdx(idx)}
+                    className="w-full py-1.5 bg-brand-surface text-white text-xs font-bold rounded-[6px] hover:bg-brand-dark transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    🖼️ Upload / Pilih Foto
+                  </button>
+                  <input
+                    type="text"
+                    value={item.imageUrl}
+                    onChange={e => updateAnimal(idx, { imageUrl: e.target.value })}
+                    className="inp text-xs"
+                    placeholder="atau paste URL..."
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -198,6 +389,15 @@ function AnimalsEditor({ value, onChange }: { value: string; onChange: (v: strin
       <button type="button" onClick={addAnimal} className="py-2.5 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[8px] text-xs font-medium transition-colors">
         + Tambah Pilihan Hewan
       </button>
+
+      {/* Media Picker Modal */}
+      {pickerIdx !== null && items[pickerIdx] && (
+        <MediaPickerModal
+          currentUrl={items[pickerIdx].imageUrl}
+          onSelect={url => updateAnimal(pickerIdx, { imageUrl: url })}
+          onClose={() => setPickerIdx(null)}
+        />
+      )}
     </div>
   )
 }
