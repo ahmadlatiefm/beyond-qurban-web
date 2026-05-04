@@ -82,6 +82,8 @@ export default async function PembayaranPenyaluranPage({
           campaignLocation={donation.campaign.location}
           quantity={donation.quantity}
           createdAt={donation.createdAt.toISOString()}
+          paymentMethod={donation.paymentMethod ?? 'BVAI'}
+          payCode={donation.tripayReference}
         />
       </div>
     </main>

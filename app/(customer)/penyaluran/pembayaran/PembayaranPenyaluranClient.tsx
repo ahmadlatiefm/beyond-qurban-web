@@ -6,6 +6,7 @@ import {
   faBuildingColumns,
   faQrcode,
   faWallet,
+  faListOl,
   faTriangleExclamation,
   faDownload,
   faArrowRight,
@@ -22,12 +23,9 @@ interface Props {
   campaignLocation: string
   quantity: number
   createdAt: string
+  paymentMethod: string
+  payCode: string | null
 }
-
-const VA_ACCOUNTS = [
-  { bank: 'BCA', color: 'text-blue-700', va: '1234 5678 9012', id: 'bca' },
-  { bank: 'MNR', color: 'text-yellow-700', va: '1400 0123 4567', id: 'mnr', label: 'Bank Mandiri' },
-]
 
 function getFlag(loc: string) {
   if (loc === 'AFRICA') return '🌍'
@@ -42,8 +40,14 @@ export default function PembayaranPenyaluranClient({
   campaignLocation,
   quantity,
   createdAt,
+  paymentMethod,
+  payCode,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'transfer' | 'qris' | 'ewallet'>('transfer')
+  const [activeTab, setActiveTab] = useState<'transfer' | 'qris' | 'ewallet'>(() => {
+    if (['BVAI', 'MANDIRIVA', 'BNIVA', 'BRIVA'].includes(paymentMethod)) return 'transfer'
+    if (['QRIS', 'QRISC'].includes(paymentMethod)) return 'qris'
+    return 'ewallet'
+  })
   const [copied, setCopied] = useState<string | null>(null)
   const [countdown, setCountdown] = useState('23:59:00')
 
@@ -72,6 +76,24 @@ export default function PembayaranPenyaluranClient({
     setCopied(key)
     setTimeout(() => setCopied(null), 2000)
   }
+
+  const bankLabel =
+    paymentMethod === 'BVAI' ? 'Bank BCA' :
+    paymentMethod === 'MANDIRIVA' ? 'Bank Mandiri' :
+    paymentMethod === 'BNIVA' ? 'Bank BNI' :
+    paymentMethod === 'BRIVA' ? 'Bank BRI' : paymentMethod
+
+  const bankCode =
+    paymentMethod === 'BVAI' ? 'BCA' :
+    paymentMethod === 'MANDIRIVA' ? 'MNR' :
+    paymentMethod === 'BNIVA' ? 'BNI' :
+    paymentMethod === 'BRIVA' ? 'BRI' : paymentMethod
+
+  const bankColor =
+    paymentMethod === 'BVAI' ? 'text-blue-700' :
+    paymentMethod === 'MANDIRIVA' ? 'text-yellow-700' :
+    paymentMethod === 'BNIVA' ? 'text-orange-600' :
+    paymentMethod === 'BRIVA' ? 'text-blue-500' : 'text-brand-dark'
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -102,37 +124,49 @@ export default function PembayaranPenyaluranClient({
         </div>
 
         {activeTab === 'transfer' && (
-          <div className="p-5 flex flex-col gap-3">
-            {VA_ACCOUNTS.map((acc) => (
-              <div key={acc.id} className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className={`w-10 h-10 bg-white rounded-[8px] border border-brand-muted/20 flex items-center justify-center font-bold text-xs ${acc.color}`}
-                  >
-                    {acc.bank}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-brand-muted">
-                      {acc.label || `Bank ${acc.bank}`} — Virtual Account
-                    </div>
-                    <div className="font-bold text-brand-dark text-base tracking-widest">{acc.va}</div>
-                  </div>
-                  <button
-                    onClick={() => copyText(acc.va, acc.id)}
-                    className={`flex items-center gap-1 text-xs font-bold border px-3 py-1.5 rounded-[6px] transition-colors shrink-0 ${
-                      copied === acc.id
-                        ? 'bg-green-600 text-white border-green-600'
-                        : 'text-brand-surface border-brand-surface/30 hover:bg-brand-surface hover:text-white'
-                    }`}
-                  >
-                    <FontAwesomeIcon icon={faCopy} /> {copied === acc.id ? 'Disalin!' : 'Salin'}
-                  </button>
+          <div className="p-5 flex flex-col gap-4">
+            <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 bg-white rounded-[8px] border border-brand-muted/20 flex items-center justify-center font-bold text-xs ${bankColor}`}>
+                  {bankCode}
                 </div>
-                <div className="text-xs text-brand-muted">
-                  A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong>
+                <div className="flex-1">
+                  <div className="text-xs text-brand-muted">{bankLabel} — Virtual Account</div>
                 </div>
               </div>
-            ))}
+              <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
+              <div className="inp-copy">
+                <input type="text" value={payCode ?? '—'} readOnly />
+                <button
+                  onClick={() => copyText(payCode ?? '', 'va')}
+                  className={`copy-btn${copied === 'va' ? ' copied' : ''}`}
+                >
+                  <FontAwesomeIcon icon={faCopy} /> {copied === 'va' ? 'Disalin!' : 'Salin'}
+                </button>
+              </div>
+              <div className="text-xs text-brand-muted mt-2">
+                A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong>
+              </div>
+            </div>
+            {/* Transfer instructions */}
+            <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
+              <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
+                <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
+              </h3>
+              <ol className="flex flex-col gap-2.5">
+                {[
+                  'Buka aplikasi mobile banking atau ATM Anda',
+                  'Pilih menu Transfer Virtual Account, masukkan nomor VA di atas',
+                  'Pastikan nama penerima Yayasan One Ummah dan nominal sesuai',
+                  'Selesaikan transfer lalu upload bukti pembayaran',
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
+                    <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[8px] p-3 mt-1">
               <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
               <p className="text-xs text-brand-muted">

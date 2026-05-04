@@ -55,5 +55,30 @@ export async function createDonation(formData: FormData) {
     },
   })
 
+  // Create Tripay transaction
+  try {
+    const { createTripayTransaction, getDemoPaymentData } = await import('@/lib/tripay')
+    let tripayData = await createTripayTransaction({
+      method: paymentMethod || 'BVAI',
+      merchantRef: donation.orderNumber,
+      amount: donation.totalAmount,
+      customerName: donation.customerName,
+      customerPhone: donation.whatsapp,
+      productName: campaign.title,
+    })
+    if (!tripayData) {
+      tripayData = getDemoPaymentData(paymentMethod || 'BVAI', donation.totalAmount, donation.orderNumber) as any
+    }
+    await prisma.donation.update({
+      where: { id: donation.id },
+      data: {
+        tripayReference: tripayData?.pay_code ?? (tripayData as any)?.reference ?? null,
+        tripayPaymentUrl: (tripayData as any)?.checkout_url ?? null,
+      },
+    })
+  } catch (err) {
+    console.error('[Donation] Tripay error (non-fatal):', err)
+  }
+
   redirect(`/penyaluran/pembayaran?order=${donation.orderNumber}`)
 }

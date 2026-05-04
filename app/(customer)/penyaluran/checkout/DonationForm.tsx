@@ -5,14 +5,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faUser,
   faHandHoldingHeart,
-  faScroll,
   faArrowRight,
   faShieldHalved,
   faPen,
   faBuildingColumns,
-  faWallet,
-  faHandHoldingDollar,
-  faCreditCard,
+  faQrcode,
   faCircleInfo,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
@@ -29,7 +26,7 @@ export default function DonationForm({
   animalName?: string | null; animalPrice?: number | null
 }) {
   const [isPending, startTransition] = useTransition()
-  const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER')
+  const [paymentMethod, setPaymentMethod] = useState('BVAI')
   // Use specific animal price if provided (from sidebar animal picker)
   const unitPrice = animalPrice ?? (shareType === '1/7' ? Math.round(campaign.price / 7) : campaign.price)
   const total = unitPrice * qty
@@ -239,62 +236,57 @@ export default function DonationForm({
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {[
                 {
-                  value: 'BANK_TRANSFER',
+                  group: 'Transfer Bank (Virtual Account)',
                   icon: faBuildingColumns,
-                  label: 'Transfer Bank',
-                  desc: 'Transfer ke rekening BCA, Mandiri, atau BNI. Instruksi dikirim via WhatsApp.',
+                  methods: [
+                    { value: 'BVAI',      bank: 'BCA',  label: 'BCA Virtual Account',     color: 'text-blue-700',    bgColor: 'bg-blue-50' },
+                    { value: 'MANDIRIVA', bank: 'MNR',  label: 'Mandiri Virtual Account',  color: 'text-yellow-700',  bgColor: 'bg-yellow-50' },
+                    { value: 'BNIVA',     bank: 'BNI',  label: 'BNI Virtual Account',      color: 'text-orange-600',  bgColor: 'bg-orange-50' },
+                    { value: 'BRIVA',     bank: 'BRI',  label: 'BRI Virtual Account',      color: 'text-blue-500',    bgColor: 'bg-blue-50' },
+                  ],
                 },
                 {
-                  value: 'E_WALLET',
-                  icon: faWallet,
-                  label: 'E-Wallet',
-                  desc: 'Bayar dengan GoPay, OVO, DANA, atau ShopeePay.',
-                  badge: { text: 'Populer', cls: 'bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-2 py-0.5 rounded-[4px] uppercase' },
-                  chips: ['GoPay', 'OVO', 'DANA', 'ShopeePay'],
+                  group: 'QRIS',
+                  icon: faQrcode,
+                  methods: [
+                    { value: 'QRIS', bank: 'QRIS', label: 'QRIS — Semua E-Wallet & M-Banking', color: 'text-brand-dark', bgColor: 'bg-brand-light' },
+                  ],
                 },
-                {
-                  value: 'QRIS',
-                  icon: faBuildingColumns,
-                  label: 'QRIS',
-                  desc: 'Scan QR code dengan aplikasi e-wallet atau mobile banking manapun.',
-                },
-              ].map((m) => (
-                <div
-                  key={m.value}
-                  onClick={() => setPaymentMethod(m.value)}
-                  className={`border-2 rounded-[8px] p-3.5 cursor-pointer transition-all flex items-start gap-4 ${
-                    paymentMethod === m.value
-                      ? 'border-brand-accent bg-brand-accent/[0.04]'
-                      : 'border-brand-muted/20 hover:border-brand-accent/50'
-                  }`}
-                >
-                  <div className={`w-5 h-5 rounded-full border-2 mt-1 shrink-0 flex items-center justify-center ${
-                    paymentMethod === m.value ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'
-                  }`}>
-                    {paymentMethod === m.value && <div className="w-2 h-2 rounded-full bg-white" />}
+              ].map((group) => (
+                <div key={group.group} className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
+                    <FontAwesomeIcon icon={group.icon} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">{group.group}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <FontAwesomeIcon icon={m.icon} className="text-brand-surface text-sm" />
-                      <span className="font-bold text-sm text-brand-text-dark">{m.label}</span>
-                      {m.badge && <span className={m.badge.cls}>{m.badge.text}</span>}
-                    </div>
-                    <p className="text-xs text-brand-muted">{m.desc}</p>
-                    {m.chips && (
-                      <div className="flex gap-2 flex-wrap mt-2">
-                        {m.chips.map((c) => (
-                          <span key={c} className="bg-brand-light border border-brand-muted/20 rounded px-2 py-0.5 text-[10px] font-medium">{c}</span>
-                        ))}
-                      </div>
-                    )}
+                  <div className="divide-y divide-brand-muted/10">
+                    {group.methods.map((method) => (
+                      <button
+                        key={method.value}
+                        type="button"
+                        onClick={() => setPaymentMethod(method.value)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
+                          paymentMethod === method.value ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                          paymentMethod === method.value ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'
+                        }`}>
+                          {paymentMethod === method.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className={`w-10 h-7 rounded-[6px] ${method.bgColor} flex items-center justify-center font-bold text-[10px] ${method.color} shrink-0`}>
+                          {method.bank}
+                        </div>
+                        <span className="text-sm font-medium text-brand-dark">{method.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
 
-              <div className="flex items-start gap-2 bg-brand-light border border-brand-accent/20 rounded-[8px] p-3 mt-1">
+              <div className="flex items-start gap-2 bg-brand-light border border-brand-accent/20 rounded-[8px] p-3">
                 <FontAwesomeIcon icon={faCircleInfo} className="text-brand-accent text-sm mt-0.5" />
                 <p className="text-xs text-brand-muted">
                   <span className="font-bold text-brand-text-dark">Donasi Aman:</span> Semua transaksi dienkripsi dan dilindungi sistem keamanan berlapis.

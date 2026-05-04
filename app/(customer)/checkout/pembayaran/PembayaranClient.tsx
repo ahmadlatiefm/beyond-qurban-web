@@ -17,17 +17,19 @@ interface Props {
   productImage: string
   productWeight: number
   createdAt: string
+  paymentMethod: string
+  payCode: string | null
 }
-
-const VA_ACCOUNTS = [
-  { bank: 'BCA', color: 'text-blue-700', va: '1234 5678 9012 3456', id: 'va-bca' },
-  { bank: 'MNR', color: 'text-yellow-700', va: '8900 0123 4567 8901', id: 'va-mandiri', label: 'Bank Mandiri' },
-]
 
 export default function PembayaranClient({
   orderNumber, totalAmount, productName, productImage, productWeight, createdAt,
+  paymentMethod, payCode,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'transfer' | 'qris' | 'ewallet'>('transfer')
+  const [activeTab, setActiveTab] = useState<'transfer' | 'qris' | 'ewallet'>(() => {
+    if (['BVAI', 'MANDIRIVA', 'BNIVA', 'BRIVA'].includes(paymentMethod)) return 'transfer'
+    if (['QRIS', 'QRISC'].includes(paymentMethod)) return 'qris'
+    return 'ewallet'
+  })
   const [copied, setCopied] = useState<string | null>(null)
   const [countdown, setCountdown] = useState('23:59:00')
 
@@ -53,6 +55,24 @@ export default function PembayaranClient({
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const bankLabel =
+    paymentMethod === 'BVAI' ? 'Bank BCA' :
+    paymentMethod === 'MANDIRIVA' ? 'Bank Mandiri' :
+    paymentMethod === 'BNIVA' ? 'Bank BNI' :
+    paymentMethod === 'BRIVA' ? 'Bank BRI' : paymentMethod
+
+  const bankCode =
+    paymentMethod === 'BVAI' ? 'BCA' :
+    paymentMethod === 'MANDIRIVA' ? 'MNR' :
+    paymentMethod === 'BNIVA' ? 'BNI' :
+    paymentMethod === 'BRIVA' ? 'BRI' : paymentMethod
+
+  const bankColor =
+    paymentMethod === 'BVAI' ? 'text-blue-700' :
+    paymentMethod === 'MANDIRIVA' ? 'text-yellow-700' :
+    paymentMethod === 'BNIVA' ? 'text-orange-600' :
+    paymentMethod === 'BRIVA' ? 'text-blue-500' : 'text-brand-dark'
+
   return (
     <div className="flex flex-col lg:flex-row gap-7 items-start">
       {/* LEFT: Payment methods */}
@@ -67,7 +87,7 @@ export default function PembayaranClient({
         {/* Tabs card */}
         <div className="bg-white rounded-[14px] shadow-premium border border-brand-muted/10 overflow-hidden">
           <div className="p-5 md:p-6 border-b border-brand-muted/10">
-            <h2 className="font-serif text-lg font-bold text-brand-text-dark">Pilih Metode Pembayaran</h2>
+            <h2 className="font-serif text-lg font-bold text-brand-text-dark">Instruksi Pembayaran</h2>
             <p className="text-xs text-brand-muted mt-1">Selesaikan pembayaran sebelum batas waktu habis</p>
           </div>
           <div className="flex border-b border-brand-muted/10 overflow-x-auto">
@@ -88,50 +108,52 @@ export default function PembayaranClient({
 
           {/* Transfer tab */}
           {activeTab === 'transfer' && (
-            <div className="p-5 md:p-6 flex flex-col gap-5">
-              {VA_ACCOUNTS.map((acc) => (
-                <div key={acc.id} className="bg-brand-light rounded-[12px] border border-brand-muted/10 p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm ${acc.color} shadow-sm`}>{acc.bank}</div>
-                    <div>
-                      <div className="font-bold text-sm text-brand-dark">{acc.label || `Bank ${acc.bank}`}</div>
-                      <div className="text-xs text-brand-muted">Virtual Account</div>
-                    </div>
+            <div className="p-5 flex flex-col gap-4">
+              <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm shadow-sm ${bankColor}`}>
+                    {bankCode}
                   </div>
-                  <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
-                  <div className="inp-copy">
-                    <input type="text" value={acc.va} readOnly />
-                    <button
-                      className={`copy-btn${copied === acc.id ? ' copied' : ''}`}
-                      onClick={() => copyText(acc.va, acc.id)}
-                    >
-                      <FontAwesomeIcon icon={faCopy} className="mr-1" />
-                      {copied === acc.id ? 'Disalin!' : 'Salin'}
-                    </button>
+                  <div>
+                    <div className="font-bold text-sm text-brand-dark">{bankLabel}</div>
+                    <div className="text-xs text-brand-muted">Virtual Account</div>
                   </div>
-                  <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
                 </div>
-              ))}
-
-              <div className="bg-brand-light rounded-[12px] border border-brand-muted/10 p-4">
+                <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
+                <div className="inp-copy">
+                  <input type="text" value={payCode ?? '—'} readOnly />
+                  <button
+                    className={`copy-btn${copied === 'va' ? ' copied' : ''}`}
+                    onClick={() => copyText(payCode ?? '', 'va')}
+                  >
+                    <FontAwesomeIcon icon={faCopy} className="mr-1" />
+                    {copied === 'va' ? 'Disalin!' : 'Salin'}
+                  </button>
+                </div>
+                <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
+              </div>
+              {/* Transfer instructions */}
+              <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
                 <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
                   <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
                 </h3>
                 <ol className="flex flex-col gap-2.5">
-                  {['Buka aplikasi mobile banking atau ATM Anda, pilih menu <strong class="text-brand-dark">Transfer Virtual Account</strong>',
-                    'Masukkan nomor VA di atas, pastikan nama penerima <strong class="text-brand-dark">Yayasan One Ummah</strong> dan nominal sesuai',
-                    'Selesaikan transfer lalu upload bukti pembayaran'].map((step, i) => (
+                  {[
+                    'Buka aplikasi mobile banking atau ATM Anda',
+                    'Pilih menu Transfer Virtual Account, masukkan nomor VA di atas',
+                    'Pastikan nama penerima Yayasan One Ummah dan nominal sesuai',
+                    'Selesaikan transfer lalu upload bukti pembayaran',
+                  ].map((step, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
                       <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                      <span dangerouslySetInnerHTML={{ __html: step }} />
+                      {step}
                     </li>
                   ))}
                 </ol>
               </div>
-
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
                 <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
-                <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong> di bawah. Jangan dibulatkan atau dikurangi.</p>
+                <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan.</p>
               </div>
             </div>
           )}

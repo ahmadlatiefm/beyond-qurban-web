@@ -49,6 +49,31 @@ export async function createOrder(formData: FormData) {
     },
   })
 
+  // Create Tripay transaction
+  try {
+    const { createTripayTransaction, getDemoPaymentData } = await import('@/lib/tripay')
+    let tripayData = await createTripayTransaction({
+      method: paymentMethod,
+      merchantRef: order.orderNumber,
+      amount: order.totalAmount,
+      customerName: order.customerName,
+      customerPhone: order.whatsapp,
+      productName: product.name,
+    })
+    if (!tripayData) {
+      tripayData = getDemoPaymentData(paymentMethod, order.totalAmount, order.orderNumber) as any
+    }
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        tripayReference: tripayData?.pay_code ?? (tripayData as any)?.reference ?? null,
+        tripayPaymentUrl: (tripayData as any)?.checkout_url ?? null,
+      },
+    })
+  } catch (err) {
+    console.error('[Order] Tripay error (non-fatal):', err)
+  }
+
   revalidatePath('/admin/pesanan')
   revalidatePath('/admin/dashboard')
   revalidatePath('/admin/konfirmasi')
