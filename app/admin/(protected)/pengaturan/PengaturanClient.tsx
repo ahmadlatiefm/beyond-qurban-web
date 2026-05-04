@@ -5,7 +5,7 @@ import {
   faFloppyDisk, faRotateLeft, faPaperPlane, faCreditCard,
   faTag, faCode, faSliders, faCircleInfo, faBell, faEye,
   faCopy, faPlugCircleCheck, faExternalLinkAlt,
-  faMinus, faPlus,
+  faMinus, faPlus, faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp, faWhatsapp as faWhatsappPrev, faFacebookF, faTiktok } from '@fortawesome/free-brands-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
@@ -16,6 +16,13 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
   const [activeSection, setActiveSection] = useState<SectionKey>('onesender')
   const [settings, setSettings] = useState(initialSettings)
   const [showKeys, setShowKeys] = useState({ apiKey: false, privKey: false, fbToken: false })
+  const [voucherModal, setVoucherModal] = useState(false)
+  const [vouchers, setVouchers] = useState([
+    { code: 'IDULADHA25', disc: 10, minBuy: 2000000, maxUse: 100, used: 34 },
+    { code: 'NEWUSER', disc: 5, minBuy: 1500000, maxUse: 50, used: 12 },
+    { code: 'RAMADAN24', disc: 15, minBuy: 3000000, maxUse: 200, used: 200 },
+  ])
+  const [newVoucher, setNewVoucher] = useState({ code: '', disc: 10, minBuy: 0, maxUse: 100 })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
 
@@ -695,14 +702,302 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
           </div>
         )}
 
-        {/* === OTHER SECTIONS === */}
-        {['diskon', 'info'].includes(activeSection) && (
+        {/* === MANAJEMEN DISKON === */}
+        {activeSection === 'diskon' && (
+          <div className="flex flex-col gap-6">
+
+            {/* Diskon Global */}
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <h2 className="font-bold text-brand-dark text-base mb-1">Diskon Global</h2>
+                  <p className="text-brand-muted text-sm leading-relaxed">Aktifkan diskon untuk semua produk sekaligus dengan periode tertentu.</p>
+                </div>
+                <div className="flex-1 flex flex-col gap-5">
+                  <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div>
+                      <div className="font-semibold text-sm text-brand-dark">Aktifkan Diskon Global</div>
+                      <div className="text-xs text-brand-muted mt-0.5">Terapkan diskon ke semua produk</div>
+                    </div>
+                    <label className="toggle">
+                      <input type="checkbox" checked={settings.diskon_global_enabled === 'true'} onChange={e => set('diskon_global_enabled', e.target.checked ? 'true' : 'false')} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+
+                  {/* Tipe Diskon */}
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-3">Tipe Diskon</label>
+                    <div className="flex gap-3">
+                      <button onClick={() => set('diskon_type', 'persen')} className={`radio-mode${(settings.diskon_type ?? 'persen') === 'persen' ? ' selected' : ''}`}>
+                        <div className="dot" /> Persentase (%)
+                      </button>
+                      <button onClick={() => set('diskon_type', 'nominal')} className={`radio-mode${settings.diskon_type === 'nominal' ? ' selected' : ''}`}>
+                        <div className="dot" /> Nominal (Rp)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">
+                        {settings.diskon_type === 'nominal' ? 'Besar Diskon (Rp)' : 'Besar Diskon (%)'}
+                      </label>
+                      <div className="relative">
+                        <input type="number" value={settings.diskon_value ?? '10'} onChange={e => set('diskon_value', e.target.value)} className="inp pr-10" placeholder="10" min="0" max={settings.diskon_type === 'nominal' ? undefined : 100} />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted text-sm font-bold">
+                          {settings.diskon_type === 'nominal' ? '' : '%'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Tanggal Mulai</label>
+                      <input type="date" value={settings.diskon_start ?? ''} onChange={e => set('diskon_start', e.target.value)} className="inp" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Tanggal Berakhir</label>
+                      <input type="date" value={settings.diskon_end ?? ''} onChange={e => set('diskon_end', e.target.value)} className="inp" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div>
+                      <div className="font-semibold text-sm text-brand-dark">Tampilkan Banner Diskon</div>
+                      <div className="text-xs text-brand-muted mt-0.5">Tampilkan banner promo di homepage</div>
+                    </div>
+                    <label className="toggle">
+                      <input type="checkbox" checked={settings.diskon_banner_enabled !== 'false'} onChange={e => set('diskon_banner_enabled', e.target.checked ? 'true' : 'false')} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Teks Banner</label>
+                    <input type="text" value={settings.diskon_banner_text ?? '🎯 Promo Idul Adha — Diskon 10% untuk semua hewan kurban!'} onChange={e => set('diskon_banner_text', e.target.value)} className="inp" placeholder="🎯 Promo Idul Adha..." />
+                  </div>
+
+                  <button onClick={() => handleSave(['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end','diskon_banner_enabled','diskon_banner_text'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
+                    <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Harga & Diskon Penyaluran */}
+            <div className="setting-card">
+              <h2 className="font-bold text-brand-dark text-base mb-1">Harga &amp; Diskon Penyaluran</h2>
+              <p className="text-sm text-brand-muted mb-5">Atur harga dan diskon per destinasi <span className="text-brand-surface font-semibold">program penyaluran qurban</span>.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {['Destinasi', 'Harga Normal', 'Diskon (%)', 'Harga Akhir', 'Aktif'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { flag: '🇮🇩', label: 'Pedalaman Indonesia', priceKey: 'penyaluran_harga_indonesia', discKey: 'penyaluran_disc_indonesia', defaultPrice: '1900000' },
+                      { flag: '🌍', label: 'Afrika Sub-Sahara', priceKey: 'penyaluran_harga_africa', discKey: 'penyaluran_disc_africa', defaultPrice: '2500000' },
+                      { flag: '🇵🇸', label: 'Palestina', priceKey: 'penyaluran_harga_palestine', discKey: 'penyaluran_disc_palestine', defaultPrice: '1900000' },
+                    ].map(({ flag, label, priceKey, discKey, defaultPrice }) => {
+                      const price = parseInt(settings[priceKey] ?? defaultPrice)
+                      const disc = parseInt(settings[discKey] ?? '0')
+                      const final = Math.round(price * (1 - disc / 100))
+                      return (
+                        <tr key={label} className="border-b border-brand-muted/8">
+                          <td className="px-4 py-3 font-medium text-sm">{flag} {label}</td>
+                          <td className="px-4 py-3">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted text-xs">Rp</span>
+                              <input type="number" value={settings[priceKey] ?? defaultPrice} onChange={e => set(priceKey, e.target.value)} className="inp pl-8 text-sm" style={{ height: 36 }} />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="relative">
+                              <input type="number" value={settings[discKey] ?? '0'} onChange={e => set(discKey, e.target.value)} className="inp text-sm" style={{ height: 36, width: 80 }} min={0} max={100} />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-brand-muted text-xs">%</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-brand-accent text-sm">
+                            Rp {final.toLocaleString('id-ID')}
+                          </td>
+                          <td className="px-4 py-3">
+                            <label className="toggle" style={{ width: 40, height: 22 }}>
+                              <input type="checkbox" defaultChecked />
+                              <span className="toggle-slider" />
+                            </label>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => handleSave(['penyaluran_harga_indonesia','penyaluran_disc_indonesia','penyaluran_harga_africa','penyaluran_disc_africa','penyaluran_harga_palestine','penyaluran_disc_palestine'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
+                  <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Perubahan
+                </button>
+              </div>
+            </div>
+
+            {/* Diskon Per Kategori Hewan */}
+            <div className="setting-card">
+              <h2 className="font-bold text-brand-dark text-base mb-1">Diskon Per Kategori Hewan</h2>
+              <p className="text-sm text-brand-muted mb-5">Atur diskon berbeda untuk setiap jenis hewan kurban.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {['Kategori', 'Diskon (%)', 'Berlaku Hingga', 'Aktif'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'Sapi', discKey: 'disc_sapi', defaultDisc: '5' },
+                      { label: 'Kambing', discKey: 'disc_kambing', defaultDisc: '0' },
+                      { label: 'Domba', discKey: 'disc_domba', defaultDisc: '10' },
+                      { label: 'Unta', discKey: 'disc_unta', defaultDisc: '0' },
+                    ].map(({ label, discKey, defaultDisc }) => (
+                      <tr key={label} className="border-b border-brand-muted/8">
+                        <td className="px-4 py-3 font-medium text-sm text-brand-dark">{label}</td>
+                        <td className="px-4 py-3">
+                          <input type="number" value={settings[discKey] ?? defaultDisc} onChange={e => set(discKey, e.target.value)} className="inp text-sm" style={{ height: 36, width: 80 }} min={0} max={100} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input type="date" value={settings[`${discKey}_until`] ?? ''} onChange={e => set(`${discKey}_until`, e.target.value)} className="inp text-sm" style={{ height: 36, width: 160 }} />
+                        </td>
+                        <td className="px-4 py-3">
+                          <label className="toggle" style={{ width: 40, height: 22 }}>
+                            <input type="checkbox" defaultChecked={parseInt(settings[discKey] ?? defaultDisc) > 0} />
+                            <span className="toggle-slider" />
+                          </label>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => handleSave(['disc_sapi','disc_kambing','disc_domba','disc_unta'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
+                  <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Perubahan
+                </button>
+              </div>
+            </div>
+
+            {/* Kode Voucher / Kupon */}
+            <div className="setting-card">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="font-bold text-brand-dark text-base mb-0.5">Kode Voucher / Kupon</h2>
+                  <p className="text-sm text-brand-muted">Kelola kode diskon yang bisa digunakan <span className="text-brand-surface font-semibold">pelanggan</span> saat checkout.</p>
+                </div>
+                <button onClick={() => setVoucherModal(true)} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-4 py-2 rounded-[8px] shadow-premium hover:scale-[1.02] transition-transform">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah Voucher
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {['Kode', 'Diskon', 'Min. Pembelian', 'Maks. Pakai', 'Terpakai', 'Status', 'Aksi'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vouchers.map((v, i) => (
+                      <tr key={i} className="border-b border-brand-muted/8 hover:bg-brand-light/40 transition-colors">
+                        <td className="px-4 py-3 font-mono font-bold text-sm text-brand-surface">{v.code}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-brand-accent">{v.disc}%</td>
+                        <td className="px-4 py-3 text-sm text-brand-muted">Rp {v.minBuy.toLocaleString('id-ID')}</td>
+                        <td className="px-4 py-3 text-sm text-brand-muted">{v.maxUse}x</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={v.used >= v.maxUse ? 'text-red-500 font-bold' : 'text-brand-dark'}>
+                            {v.used}
+                          </span>
+                          <span className="text-brand-muted">/{v.maxUse}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2.5 py-1 text-xs font-bold rounded-[20px] ${v.used >= v.maxUse ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                            {v.used >= v.maxUse ? 'Habis' : 'Aktif'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => setVouchers(prev => prev.filter((_, idx) => idx !== i))} className="w-8 h-8 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 rounded-[7px] flex items-center justify-center border border-red-100 transition-colors">
+                            <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {vouchers.length === 0 && (
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-brand-muted">Belum ada voucher</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === INFO SISTEM === */}
+        {activeSection === 'info' && (
           <div className="setting-card text-center py-16">
             <div className="text-4xl mb-4 opacity-30">⚙️</div>
-            <h3 className="font-serif text-lg font-bold text-brand-dark mb-2">
-              {activeSection === 'diskon' ? 'Manajemen Diskon' : 'Info Sistem'}
-            </h3>
+            <h3 className="font-serif text-lg font-bold text-brand-dark mb-2">Info Sistem</h3>
             <p className="text-brand-muted text-sm">Fitur ini akan tersedia segera.</p>
+          </div>
+        )}
+
+        {/* Voucher Modal */}
+        {voucherModal && (
+          <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setVoucherModal(false) }}>
+            <div className="bg-white rounded-[16px] w-full max-w-md shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-brand-muted/10">
+                <h3 className="font-serif text-lg font-bold text-brand-dark">Tambah Voucher Baru</h3>
+                <button onClick={() => setVoucherModal(false)} className="text-brand-muted hover:text-brand-dark">
+                  <FontAwesomeIcon icon={faMinus} className="text-lg" />
+                </button>
+              </div>
+              <div className="p-6 flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Kode Voucher *</label>
+                    <input type="text" value={newVoucher.code} onChange={e => setNewVoucher(p => ({ ...p, code: e.target.value.toUpperCase() }))} className="inp" placeholder="IDULADHA25" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Diskon (%)</label>
+                    <input type="number" value={newVoucher.disc} onChange={e => setNewVoucher(p => ({ ...p, disc: parseInt(e.target.value) || 0 }))} className="inp" placeholder="10" min={1} max={100} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Min. Pembelian (Rp)</label>
+                    <input type="number" value={newVoucher.minBuy || ''} onChange={e => setNewVoucher(p => ({ ...p, minBuy: parseInt(e.target.value) || 0 }))} className="inp" placeholder="2000000" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Maks. Penggunaan</label>
+                    <input type="number" value={newVoucher.maxUse || ''} onChange={e => setNewVoucher(p => ({ ...p, maxUse: parseInt(e.target.value) || 0 }))} className="inp" placeholder="100" />
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 pb-6 flex gap-3">
+                <button onClick={() => setVoucherModal(false)} className="flex-1 py-2.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light">Batal</button>
+                <button
+                  onClick={() => {
+                    if (newVoucher.code) {
+                      setVouchers(prev => [...prev, { ...newVoucher, used: 0 }])
+                      setNewVoucher({ code: '', disc: 10, minBuy: 0, maxUse: 100 })
+                      setVoucherModal(false)
+                    }
+                  }}
+                  className="flex-1 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[8px] flex items-center justify-center gap-2"
+                >
+                  <FontAwesomeIcon icon={faPlus} /> Tambah Voucher
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
