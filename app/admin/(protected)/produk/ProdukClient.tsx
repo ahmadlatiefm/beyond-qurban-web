@@ -5,7 +5,6 @@ import {
   faMagnifyingGlass, faPlus, faDownload, faPen, faTrash,
   faFloppyDisk, faXmark, faBell, faCloudArrowUp, faCircleCheck,
 } from '@fortawesome/free-solid-svg-icons'
-import { formatCurrency } from '@/lib/utils'
 import { createProduct, updateProduct, deleteProduct } from '@/lib/actions/products'
 import type { Product } from '@prisma/client'
 
@@ -127,7 +126,7 @@ export default function ProdukClient({ initialProducts }: Props) {
       <div className="p-6 md:p-8 max-w-[1200px] mx-auto w-full flex flex-col gap-6">
 
         {/* Actions bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-brand-light p-4 rounded-[12px] border border-brand-muted/20 shadow-sm">
           <div className="flex gap-2 flex-wrap">
             {/* Search */}
             <div className="relative">
@@ -150,6 +149,9 @@ export default function ProdukClient({ initialProducts }: Props) {
               <option value="aktif">Aktif</option>
               <option value="nonaktif">Nonaktif</option>
             </select>
+            <button className="h-9 px-4 border border-brand-muted/20 rounded-[8px] text-sm bg-white text-brand-dark hover:bg-brand-surface hover:text-white hover:border-brand-surface transition-colors font-medium">
+              Filter
+            </button>
           </div>
           <button
             onClick={openAdd}
@@ -170,59 +172,124 @@ export default function ProdukClient({ initialProducts }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr>
-                  {['Produk', 'Berat', 'Harga', 'Stok', 'Status', 'Aksi'].map(h => (
-                    <th key={h} className="text-left px-5 py-3 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
-                  ))}
+                <tr className="bg-brand-surface text-brand-light border-b border-brand-surface/30">
+                  <th className="py-4 px-6 font-medium text-sm w-12 text-center">
+                    <input type="checkbox" className="w-4 h-4 rounded border-brand-muted/30" />
+                  </th>
+                  <th className="py-4 px-6 font-medium text-sm">Produk</th>
+                  <th className="py-4 px-6 font-medium text-sm w-32">Tipe</th>
+                  <th className="py-4 px-6 font-medium text-sm w-24">Berat</th>
+                  <th className="py-4 px-6 font-medium text-sm w-40">Harga (Inline)</th>
+                  <th className="py-4 px-6 font-medium text-sm w-24">Stok</th>
+                  <th className="py-4 px-6 font-medium text-sm w-32">Status</th>
+                  <th className="py-4 px-6 font-medium text-sm w-20 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => (
-                  <tr key={p.id} className={`border-b border-brand-muted/7 hover:bg-brand-light/40 transition-colors ${i % 2 === 1 ? 'bg-brand-light/20' : ''}`}>
-                    {/* Product */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-[8px] overflow-hidden bg-brand-light border border-brand-muted/15 shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.imageUrl} className="w-full h-full object-cover" alt={p.name} />
+                {filtered.map((p) => {
+                  const tipe = p.name.toLowerCase().includes('sapi') ? 'Sapi' : p.name.toLowerCase().includes('kambing') ? 'Kambing' : 'Domba'
+                  return (
+                    <tr key={p.id} className="hover:bg-brand-surface/5 transition-colors group border-b border-brand-muted/10">
+                      {/* Checkbox */}
+                      <td className="py-3 px-6 text-center">
+                        <input type="checkbox" className="w-4 h-4 rounded border-brand-muted/30 text-brand-surface" />
+                      </td>
+                      {/* Product */}
+                      <td className="py-3 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-[12px] overflow-hidden border border-brand-muted/20 shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={p.imageUrl} className="w-full h-full object-cover" alt={p.name} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-brand-dark text-sm">{p.name}</p>
+                            <p className="text-xs text-brand-muted">{p.description.substring(0, 40)}...</p>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold text-sm text-brand-dark">{p.name}</div>
-                          <div className="text-xs text-brand-muted">{p.description.substring(0, 40)}...</div>
+                      </td>
+                      {/* Tipe */}
+                      <td className="py-3 px-6 text-sm text-brand-muted">{tipe}</td>
+                      {/* Berat */}
+                      <td className="py-3 px-6 text-sm text-brand-muted">{p.weight} kg</td>
+                      {/* Harga inline */}
+                      <td className="py-3 px-6">
+                        <div className="relative group/edit">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-brand-muted text-sm">Rp</span>
+                          <input
+                            type="text"
+                            defaultValue={p.price.toLocaleString('id-ID')}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value.replace(/\./g, '').replace(/,/g, ''))
+                              if (!isNaN(val) && val !== p.price) {
+                                const fd = new FormData()
+                                fd.set('price', val.toString())
+                                updateProduct(p.id, fd)
+                              }
+                            }}
+                            className="w-full pl-8 pr-2 py-1.5 text-sm font-bold text-brand-accent bg-transparent border border-transparent hover:border-brand-accent/30 focus:border-brand-accent focus:bg-brand-light rounded-[8px] transition-all outline-none"
+                          />
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-brand-muted">{p.weight} kg</td>
-                    <td className="px-5 py-3.5 text-sm font-bold text-brand-accent">{formatCurrency(p.price)}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-sm font-bold px-2 py-0.5 rounded-[6px] ${p.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>{p.stock}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-[20px] ${p.status === 'ACTIVE' ? 'bg-brand-surface/10 text-brand-surface' : 'bg-brand-muted/10 text-brand-muted'}`}>
-                        {p.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="w-8 h-8 rounded-[7px] bg-brand-surface/8 hover:bg-brand-surface hover:text-white text-brand-surface flex items-center justify-center transition-colors border border-brand-surface/20 text-xs"
-                        >
-                          <FontAwesomeIcon icon={faPen} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteModal({ open: true, id: p.id, name: p.name })}
-                          className="w-8 h-8 rounded-[7px] bg-red-50 hover:bg-red-500 hover:text-white text-red-500 flex items-center justify-center transition-colors border border-red-100 text-xs"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      {/* Stok inline */}
+                      <td className="py-3 px-6">
+                        <input
+                          type="number"
+                          defaultValue={p.stock}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value)
+                            if (!isNaN(val) && val !== p.stock) {
+                              const fd = new FormData()
+                              fd.set('stock', val.toString())
+                              updateProduct(p.id, fd)
+                            }
+                          }}
+                          className="w-16 px-2 py-1.5 text-sm text-brand-dark bg-transparent border border-transparent hover:border-brand-accent/30 focus:border-brand-accent focus:bg-brand-light rounded-[8px] transition-all outline-none text-center"
+                        />
+                      </td>
+                      {/* Status toggle */}
+                      <td className="py-3 px-6">
+                        <div className="flex items-center gap-2">
+                          <label className="toggle">
+                            <input
+                              type="checkbox"
+                              checked={p.status === 'ACTIVE'}
+                              onChange={() => {
+                                const fd = new FormData()
+                                fd.set('status', p.status === 'ACTIVE' ? 'false' : 'true')
+                                updateProduct(p.id, fd)
+                                setProducts(prev => prev.map(x => x.id === p.id ? { ...x, status: p.status === 'ACTIVE' ? 'INACTIVE' as const : 'ACTIVE' as const } : x))
+                              }}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                          <span className={`px-2.5 py-1 rounded-[20px] text-xs font-bold ${p.status === 'ACTIVE' ? 'bg-brand-surface/10 text-brand-surface' : 'bg-brand-muted/10 text-brand-muted'}`}>
+                            {p.status === 'ACTIVE' ? 'Tersedia' : 'Nonaktif'}
+                          </span>
+                        </div>
+                      </td>
+                      {/* Aksi */}
+                      <td className="py-3 px-6 text-right">
+                        <div className="flex gap-1 justify-end">
+                          <button
+                            onClick={() => openEdit(p)}
+                            className="w-8 h-8 rounded-[7px] bg-brand-surface/8 hover:bg-brand-surface hover:text-white text-brand-surface flex items-center justify-center transition-colors border border-brand-surface/20 text-xs"
+                          >
+                            <FontAwesomeIcon icon={faPen} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteModal({ open: true, id: p.id, name: p.name })}
+                            className="w-8 h-8 rounded-[7px] bg-red-50 hover:bg-red-500 hover:text-white text-red-500 flex items-center justify-center transition-colors border border-red-100 text-xs"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-brand-muted">Tidak ada produk ditemukan</td>
+                    <td colSpan={8} className="px-5 py-10 text-center text-sm text-brand-muted">Tidak ada produk ditemukan</td>
                   </tr>
                 )}
               </tbody>
