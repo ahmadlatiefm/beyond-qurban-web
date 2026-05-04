@@ -9,6 +9,9 @@ export async function createDonation(formData: FormData) {
   const whatsapp = formData.get('whatsapp') as string
   const quantity = parseInt(formData.get('quantity') as string) || 1
   const paymentMethod = formData.get('paymentMethod') as string
+  const qurbanName = formData.get('qurbanName') as string
+  const forWhom = formData.get('forWhom') as string
+  const email = formData.get('email') as string
 
   if (!campaignSlug || !customerName || !whatsapp) {
     throw new Error('Data tidak lengkap')
@@ -27,6 +30,9 @@ export async function createDonation(formData: FormData) {
       customerName,
       phone: whatsapp,
       whatsapp,
+      qurbanName: qurbanName || customerName,  // fallback ke nama donatur jika kosong
+      forWhom: forWhom || 'self',
+      email: email || null,
       quantity,
       totalAmount,
       paymentMethod: paymentMethod || 'BANK_TRANSFER',

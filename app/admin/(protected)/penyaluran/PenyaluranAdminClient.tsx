@@ -257,6 +257,9 @@ export default function PenyaluranAdminClient({ donations, stats }: { donations:
                     <div>
                       <div className="font-semibold text-sm text-brand-dark">{detailModal.customerName}</div>
                       <div className="text-xs text-brand-muted">+62 {detailModal.whatsapp}</div>
+                      {(detailModal as any).email && (
+                        <div className="text-xs text-brand-muted">{(detailModal as any).email}</div>
+                      )}
                     </div>
                     <a
                       href={`https://wa.me/${detailModal.whatsapp}`}
@@ -265,6 +268,38 @@ export default function PenyaluranAdminClient({ donations, stats }: { donations:
                     >
                       <FontAwesomeIcon icon={faWhatsapp} /> Chat WA
                     </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Atas Nama Qurban */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Atas Nama Qurban</div>
+                <div className="bg-brand-accent-light/40 border border-brand-accent/20 rounded-[10px] p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-brand-accent/15 flex items-center justify-center shrink-0">
+                      <span className="text-base">📜</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs text-brand-muted mb-1">
+                        Qurban untuk{' '}
+                        <span className="font-semibold text-brand-dark">
+                          {(detailModal as any).forWhom === 'other' ? 'Orang Lain' : 'Diri Sendiri'}
+                        </span>
+                      </div>
+                      <div className="font-serif text-base font-bold text-brand-dark">
+                        {(detailModal as any).qurbanName || detailModal.customerName}
+                      </div>
+                      <div className="text-xs text-brand-muted mt-1">
+                        Nama ini akan tertera di sertifikat dan laporan qurban
+                      </div>
+                    </div>
+                    {(detailModal as any).forWhom === 'other' && (
+                      <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full shrink-0">Orang Lain</span>
+                    )}
+                    {(!(detailModal as any).forWhom || (detailModal as any).forWhom === 'self') && (
+                      <span className="text-[10px] bg-brand-surface/10 text-brand-surface font-bold px-2 py-0.5 rounded-full shrink-0">Diri Sendiri</span>
+                    )}
                   </div>
                 </div>
               </div>

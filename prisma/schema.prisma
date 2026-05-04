@@ -113,6 +113,9 @@ model Donation {
   customerName     String
   phone            String
   whatsapp         String
+  qurbanName       String?       // Nama atas nama qurban
+  forWhom          String?       // "self" | "other"
+  email            String?
   quantity         Int           @default(1)
   totalAmount      Int
   paymentMethod    String?
