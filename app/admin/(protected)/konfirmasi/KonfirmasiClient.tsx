@@ -126,7 +126,7 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  {['No. Pesanan', 'Nama Pelanggan', 'Nominal', 'Metode', 'Tanggal', 'Status', 'Aksi'].map(h => (
+                  {['No. Pesanan', 'Nama Pelanggan', 'Nominal', 'Metode', 'Tanggal', 'Bukti', 'Status', 'Aksi'].map(h => (
                     <th key={h} className="text-left px-5 py-3 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
                   ))}
                 </tr>
@@ -140,18 +140,20 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
                     <td className="px-5 py-3.5 text-sm text-brand-muted">{order.paymentMethod ?? 'Transfer Bank'}</td>
                     <td className="px-5 py-3.5 text-xs text-brand-muted">{formatDate(order.createdAt)}</td>
                     <td className="px-5 py-3.5">
+                      <button
+                        onClick={() => setPreviewModal({ open: true, order })}
+                        className="flex items-center gap-1.5 text-xs font-bold text-brand-surface hover:text-brand-accent border border-brand-surface/30 hover:border-brand-accent px-3 py-1.5 rounded-[8px] transition-colors"
+                      >
+                        <FontAwesomeIcon icon={faEye} /> Lihat Bukti
+                      </button>
+                    </td>
+                    <td className="px-5 py-3.5">
                       <span className={STATUS_BADGE[order.paymentStatus] ?? 'text-xs text-brand-muted'}>
                         {STATUS_LABEL[order.paymentStatus] ?? order.paymentStatus}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => setPreviewModal({ open: true, order })}
-                          className="flex items-center gap-1.5 text-xs font-bold text-brand-surface hover:text-brand-accent border border-brand-surface/30 hover:border-brand-accent px-3 py-1.5 rounded-[8px]"
-                        >
-                          <FontAwesomeIcon icon={faEye} /> Lihat
-                        </button>
                         {order.paymentStatus === 'UNPAID' && (
                           <>
                             <button onClick={() => handleConfirm(order.id)} disabled={isPending} className="w-8 h-8 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[7px] flex items-center justify-center text-xs disabled:opacity-60">
@@ -175,52 +177,115 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
         </div>
       </div>
 
-      {/* Preview modal */}
+      {/* Preview modal — detail bukti pembayaran */}
       {previewModal.open && previewModal.order && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setPreviewModal({ open: false, order: null }) }}>
-          <div className="bg-white rounded-[16px] w-full max-w-lg shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-muted/10">
-              <h3 className="font-serif text-lg font-bold text-brand-dark">Bukti Bayar &mdash; {previewModal.order.orderNumber}</h3>
-              <button onClick={() => setPreviewModal({ open: false, order: null })} className="text-brand-muted hover:text-brand-dark">
+          <div className="bg-white rounded-[16px] w-full max-w-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-muted/10 shrink-0">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-brand-dark">Detail Bukti Pembayaran</h3>
+                <p className="text-xs text-brand-muted mt-0.5 font-mono">{previewModal.order.orderNumber}</p>
+              </div>
+              <button onClick={() => setPreviewModal({ open: false, order: null })} className="text-brand-muted hover:text-brand-dark w-8 h-8 rounded-full hover:bg-brand-light flex items-center justify-center">
                 <FontAwesomeIcon icon={faXmark} className="text-lg" />
               </button>
             </div>
-            <div className="p-6">
-              <div className="rounded-[10px] overflow-hidden bg-brand-light border border-brand-muted/15 mb-4 flex items-center justify-center" style={{ height: 280 }}>
-                {previewModal.order.paymentProofUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={previewModal.order.paymentProofUrl} className="w-full h-full object-contain" alt="Bukti bayar" />
-                ) : (
-                  <div className="text-center text-brand-muted">
-                    <FontAwesomeIcon icon={faEye} className="text-5xl mb-2 opacity-20" />
-                    <p className="text-sm">Belum ada bukti bayar diunggah</p>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm mb-5">
-                {[
-                  { label: 'No. Pesanan', value: previewModal.order.orderNumber, cls: '' },
-                  { label: 'Nominal', value: formatCurrency(previewModal.order.totalAmount), cls: 'text-brand-accent font-bold' },
-                  { label: 'Pelanggan', value: previewModal.order.customerName, cls: '' },
-                  { label: 'Metode', value: previewModal.order.paymentMethod ?? 'Transfer Bank', cls: '' },
-                ].map(({ label, value, cls }) => (
-                  <div key={label} className="bg-brand-light rounded-[8px] p-3">
-                    <div className="text-xs text-brand-muted mb-1">{label}</div>
-                    <div className={`font-bold text-brand-dark ${cls}`}>{value}</div>
-                  </div>
-                ))}
-              </div>
-              {previewModal.order.paymentStatus === 'UNPAID' && (
-                <div className="flex gap-3">
-                  <button onClick={() => handleConfirm(previewModal.order!.id)} disabled={isPending} className="flex-1 py-3 bg-emerald-500 text-white font-bold rounded-[10px] hover:bg-emerald-600 flex items-center justify-center gap-2 disabled:opacity-60">
-                    <FontAwesomeIcon icon={faCircleCheck} /> Konfirmasi
-                  </button>
-                  <button onClick={() => handleReject(previewModal.order!.id)} disabled={isPending} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-[10px] hover:bg-red-600 flex items-center justify-center gap-2 disabled:opacity-60">
-                    <FontAwesomeIcon icon={faCircleXmark} /> Tolak
-                  </button>
+
+            {/* Body — scrollable */}
+            <div className="overflow-y-auto p-6 flex flex-col gap-5">
+
+              {/* Bukti foto */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-2">Foto Bukti Transfer</div>
+                <div className="rounded-[10px] overflow-hidden bg-brand-light border border-brand-muted/15 flex items-center justify-center" style={{ height: 240 }}>
+                  {previewModal.order.paymentProofUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previewModal.order.paymentProofUrl} className="w-full h-full object-contain" alt="Bukti bayar" />
+                  ) : (
+                    <div className="text-center text-brand-muted py-10">
+                      <FontAwesomeIcon icon={faEye} className="text-5xl mb-3 opacity-20" />
+                      <p className="text-sm font-medium">Belum ada bukti bayar diunggah</p>
+                      <p className="text-xs mt-1">Pelanggan belum upload bukti transfer</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Info pembayaran */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Informasi Pembayaran</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'No. Pesanan', value: previewModal.order.orderNumber },
+                    { label: 'Total Bayar', value: formatCurrency(previewModal.order.totalAmount), cls: 'text-brand-accent font-bold' },
+                    { label: 'Metode', value: previewModal.order.paymentMethod ?? 'Transfer Bank' },
+                    { label: 'Tanggal', value: formatDate(previewModal.order.createdAt) },
+                    { label: 'Status Bayar', value: STATUS_LABEL[previewModal.order.paymentStatus] ?? previewModal.order.paymentStatus },
+                    { label: 'Ongkir', value: previewModal.order.shippingCost === 0 ? 'Gratis' : formatCurrency(previewModal.order.shippingCost) },
+                  ].map(({ label, value, cls }) => (
+                    <div key={label} className="bg-brand-light rounded-[8px] p-3">
+                      <div className="text-xs text-brand-muted mb-1">{label}</div>
+                      <div className={`font-bold text-brand-dark text-sm ${cls ?? ''}`}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Info pemesan */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Data Pemesan</div>
+                <div className="bg-brand-light rounded-[10px] p-4 flex flex-col gap-2.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-brand-surface text-xs w-4">👤</span>
+                    <span className="font-semibold text-brand-dark">{previewModal.order.customerName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#25D366] text-xs w-4">📱</span>
+                    <span className="text-brand-muted">+62 {previewModal.order.whatsapp}</span>
+                    <a href={`https://wa.me/${previewModal.order.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-xs text-[#25D366] font-bold hover:underline ml-auto">Chat WA →</a>
+                  </div>
+                  {previewModal.order.address && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-brand-surface text-xs w-4 mt-0.5">📍</span>
+                      <span className="text-brand-muted text-xs leading-relaxed">{previewModal.order.address}{previewModal.order.city ? `, ${previewModal.order.city}` : ''}</span>
+                    </div>
+                  )}
+                  {previewModal.order.deliveryDate && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-brand-surface text-xs w-4">📅</span>
+                      <span className="text-brand-muted">Jadwal kirim: {formatDate(previewModal.order.deliveryDate)}</span>
+                    </div>
+                  )}
+                  {previewModal.order.notes && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-brand-surface text-xs w-4 mt-0.5">📝</span>
+                      <span className="text-brand-muted text-xs italic">{previewModal.order.notes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Footer actions */}
+            {previewModal.order.paymentStatus === 'UNPAID' && (
+              <div className="px-6 pb-6 flex gap-3 shrink-0 border-t border-brand-muted/10 pt-4">
+                <button onClick={() => handleConfirm(previewModal.order!.id)} disabled={isPending} className="flex-1 py-3 bg-emerald-500 text-white font-bold rounded-[10px] hover:bg-emerald-600 flex items-center justify-center gap-2 disabled:opacity-60">
+                  <FontAwesomeIcon icon={faCircleCheck} /> Konfirmasi Pembayaran
+                </button>
+                <button onClick={() => handleReject(previewModal.order!.id)} disabled={isPending} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-[10px] hover:bg-red-600 flex items-center justify-center gap-2 disabled:opacity-60">
+                  <FontAwesomeIcon icon={faCircleXmark} /> Tolak
+                </button>
+              </div>
+            )}
+            {previewModal.order.paymentStatus !== 'UNPAID' && (
+              <div className="px-6 pb-6 shrink-0">
+                <div className={`w-full py-3 font-bold rounded-[10px] flex items-center justify-center gap-2 text-sm ${previewModal.order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                  <FontAwesomeIcon icon={previewModal.order.paymentStatus === 'PAID' ? faCircleCheck : faCircleXmark} />
+                  {previewModal.order.paymentStatus === 'PAID' ? 'Pembayaran telah dikonfirmasi' : 'Pembayaran ditolak'}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

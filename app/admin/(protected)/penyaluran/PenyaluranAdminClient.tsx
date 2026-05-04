@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDownload, faXmark, faFloppyDisk, faPlus, faBell } from '@fortawesome/free-solid-svg-icons'
+import { faDownload, faXmark, faFloppyDisk, faPlus, faBell, faEye } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Donation, Campaign } from '@prisma/client'
@@ -45,6 +45,7 @@ export default function PenyaluranAdminClient({ donations, stats }: { donations:
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [updateModal, setUpdateModal] = useState(false)
   const [updateForm, setUpdateForm] = useState({ orderId: '', status: 'CONFIRMED', link: '', note: '' })
+  const [detailModal, setDetailModal] = useState<DonationWithCampaign | null>(null)
 
   const filtered = useMemo(() => donations.filter(d => {
     const matchDest = destFilter === 'all' || d.campaign.location === destFilter
@@ -158,7 +159,7 @@ export default function PenyaluranAdminClient({ donations, stats }: { donations:
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  {['No. Pesanan', 'Pemesan', 'Destinasi', 'Nominal', 'Status', 'Tanggal', 'Follow Up'].map(h => (
+                  {['No. Pesanan', 'Pemesan', 'Destinasi', 'Nominal', 'Status', 'Tanggal', 'Aksi'].map(h => (
                     <th key={h} className="text-left px-5 py-3 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
                   ))}
                 </tr>
@@ -179,13 +180,21 @@ export default function PenyaluranAdminClient({ donations, stats }: { donations:
                     </td>
                     <td className="px-5 py-3.5 text-xs text-brand-muted">{formatDate(d.createdAt)}</td>
                     <td className="px-5 py-3.5">
-                      <a
-                        href={`https://wa.me/${d.whatsapp}?text=${encodeURIComponent(`Halo ${d.customerName}, update penyaluran qurban Anda (${d.orderNumber}): Status saat ini ${STATUS_LABELS[d.status] ?? d.status}.`)}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-xs font-bold text-[#25D366] border border-[#25D366]/30 px-3 py-1.5 rounded-[8px] hover:bg-[#25D366] hover:text-white transition-colors w-fit"
-                      >
-                        <FontAwesomeIcon icon={faWhatsapp} className="text-sm" /> WA
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setDetailModal(d)}
+                          className="flex items-center gap-1.5 text-xs font-bold text-brand-surface hover:text-brand-accent border border-brand-surface/30 hover:border-brand-accent px-3 py-1.5 rounded-[8px] transition-colors"
+                        >
+                          <FontAwesomeIcon icon={faEye} /> Detail
+                        </button>
+                        <a
+                          href={`https://wa.me/${d.whatsapp}?text=${encodeURIComponent(`Halo ${d.customerName}, update penyaluran qurban Anda (${d.orderNumber}): Status saat ini ${STATUS_LABELS[d.status] ?? d.status}.`)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs font-bold text-[#25D366] border border-[#25D366]/30 px-2.5 py-1.5 rounded-[8px] hover:bg-[#25D366] hover:text-white transition-colors"
+                        >
+                          <FontAwesomeIcon icon={faWhatsapp} className="text-sm" /> WA
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -197,6 +206,102 @@ export default function PenyaluranAdminClient({ donations, stats }: { donations:
           </div>
         </div>
       </div>
+
+      {/* Detail Pesanan Penyaluran Modal */}
+      {detailModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setDetailModal(null) }}>
+          <div className="bg-white rounded-[16px] w-full max-w-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-muted/10 shrink-0">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-brand-dark">Detail Pesanan Penyaluran</h3>
+                <p className="text-xs font-mono text-brand-muted mt-0.5">{detailModal.orderNumber}</p>
+              </div>
+              <button onClick={() => setDetailModal(null)} className="text-brand-muted hover:text-brand-dark w-8 h-8 rounded-full hover:bg-brand-light flex items-center justify-center">
+                <FontAwesomeIcon icon={faXmark} className="text-lg" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto p-6 flex flex-col gap-5">
+
+              {/* Campaign / Destinasi */}
+              <div className="rounded-[12px] border-2 border-brand-accent/30 p-4 relative overflow-hidden" style={{ background: 'rgba(200,150,42,.03)' }}>
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">{getFlag(detailModal.campaign.location)}</span>
+                  <div className="flex-1">
+                    <div className="font-bold text-brand-dark mb-0.5">{detailModal.campaign.title}</div>
+                    <div className="text-xs text-brand-muted">{getLocationLabel(detailModal.campaign.location)}</div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="text-xs bg-brand-surface/10 text-brand-surface px-2.5 py-1 rounded-full font-medium">{detailModal.quantity} ekor</span>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${STATUS_CLS[detailModal.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {STATUS_LABELS[detailModal.status] ?? detailModal.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-xs text-brand-muted">Total Donasi</div>
+                    <div className="font-serif text-xl font-bold text-brand-accent">{formatCurrency(detailModal.totalAmount)}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Donatur */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Data Donatur</div>
+                <div className="bg-brand-light rounded-[10px] p-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-surface/10 border border-brand-surface/20 flex items-center justify-center font-bold text-brand-surface">
+                      {detailModal.customerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-sm text-brand-dark">{detailModal.customerName}</div>
+                      <div className="text-xs text-brand-muted">+62 {detailModal.whatsapp}</div>
+                    </div>
+                    <a
+                      href={`https://wa.me/${detailModal.whatsapp}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="ml-auto flex items-center gap-1.5 text-xs font-bold text-[#25D366] border border-[#25D366]/30 px-3 py-1.5 rounded-[8px] hover:bg-[#25D366] hover:text-white transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faWhatsapp} /> Chat WA
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Pembayaran */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Informasi Pembayaran</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'No. Pesanan', value: detailModal.orderNumber },
+                    { label: 'Nominal', value: formatCurrency(detailModal.totalAmount), cls: 'text-brand-accent font-bold' },
+                    { label: 'Metode', value: detailModal.paymentMethod ?? 'Transfer Bank' },
+                    { label: 'Status Bayar', value: detailModal.paymentStatus === 'PAID' ? 'Lunas' : detailModal.paymentStatus === 'UNPAID' ? 'Menunggu' : 'Kadaluarsa' },
+                    { label: 'Jumlah Hewan', value: `${detailModal.quantity} ekor` },
+                    { label: 'Tanggal', value: formatDate(detailModal.createdAt) },
+                  ].map(({ label, value, cls }) => (
+                    <div key={label} className="bg-brand-light rounded-[8px] p-3">
+                      <div className="text-xs text-brand-muted mb-1">{label}</div>
+                      <div className={`font-bold text-brand-dark text-sm ${cls ?? ''}`}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-6 pt-4 border-t border-brand-muted/10 shrink-0">
+              <button
+                onClick={() => setDetailModal(null)}
+                className="w-full py-2.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Update Status Modal */}
       {updateModal && (
