@@ -38,12 +38,22 @@ const inputCls = 'w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg
 export default function CheckoutForm({ product }: { product: Product }) {
   const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER')
   const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
     const fd = new FormData(e.currentTarget)
     fd.set('paymentMethod', paymentMethod)
-    startTransition(() => { createOrder(fd) })
+    startTransition(async () => {
+      try {
+        await createOrder(fd)
+      } catch (err: any) {
+        // redirect() throws NEXT_REDIRECT which is not a real error
+        if (err?.message?.includes('NEXT_REDIRECT') || err?.digest?.startsWith('NEXT_REDIRECT')) return
+        setError(err?.message ?? 'Terjadi kesalahan. Silakan coba lagi.')
+      }
+    })
   }
 
   return (
@@ -150,6 +160,14 @@ export default function CheckoutForm({ product }: { product: Product }) {
                 <p className="text-xs text-brand-muted"><span className="font-bold text-brand-text-dark">Pembayaran Aman:</span> Semua transaksi dienkripsi dan dilindungi sistem keamanan berlapis.</p>
               </div>
             </div>
+
+            {/* Error */}
+            {error && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-[8px] p-3 text-sm text-red-700">
+                <span className="shrink-0">⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
 
             {/* Consent */}
             <div className="flex items-start gap-3 pt-4 border-t border-dashed border-brand-muted/20">

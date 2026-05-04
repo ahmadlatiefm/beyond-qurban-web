@@ -91,6 +91,20 @@ async function main() {
 
   // Campaigns
   await prisma.campaign.upsert({
+    where: { slug: 'qurban-indonesia-2025' },
+    update: {},
+    create: {
+      slug: 'qurban-indonesia-2025',
+      title: 'Qurban Pedalaman Indonesia 2025',
+      location: 'INDONESIA',
+      targetCount: 200,
+      price: 1900000,
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
+      description: 'Hewan akan disembelih dan didistribusikan langsung ke komunitas adat terpencil di Papua, NTT, dan Kalimantan. Anda akan menerima foto dan laporan via WhatsApp.',
+    },
+  })
+
+  await prisma.campaign.upsert({
     where: { slug: 'qurban-afrika-2025' },
     update: {},
     create: {

@@ -1,12 +1,11 @@
 'use server'
+import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { calculateShipping } from '@/lib/shipping'
+import { generateOrderNumber } from '@/lib/utils'
 
 export async function createOrder(formData: FormData) {
-  const { redirect } = await import('next/navigation')
-  const { calculateShipping } = await import('@/lib/shipping')
-  const { generateOrderNumber } = await import('@/lib/utils')
-
   const slug = formData.get('slug') as string
   const customerName = formData.get('customerName') as string
   const whatsapp = formData.get('whatsapp') as string
@@ -17,7 +16,7 @@ export async function createOrder(formData: FormData) {
   const paymentMethod = formData.get('paymentMethod') as string
 
   if (!slug || !customerName || !whatsapp || !paymentMethod) {
-    throw new Error('Data tidak lengkap')
+    throw new Error('Data tidak lengkap — pastikan semua field wajib terisi')
   }
 
   const product = await prisma.product.findUnique({ where: { slug } })
@@ -50,6 +49,9 @@ export async function createOrder(formData: FormData) {
     },
   })
 
+  revalidatePath('/admin/pesanan')
+  revalidatePath('/admin/dashboard')
+  revalidatePath('/admin/konfirmasi')
   redirect(`/checkout/pembayaran?order=${order.orderNumber}`)
 }
 
