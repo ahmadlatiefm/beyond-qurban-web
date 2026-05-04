@@ -22,6 +22,8 @@ const emptyForm = {
   ctaButtonText: '',
   allowShare: 'false',
   richContent: '[]',
+  animals: '[]',
+  gallery: '[]',
 }
 
 const ANIMAL_OPTIONS = [
@@ -124,6 +126,128 @@ function RichContentEditor({ value, onChange }: { value: string; onChange: (v: s
   )
 }
 
+interface AnimalItem {
+  id: string; name: string; weight: string
+  originalPrice: number; price: number; imageUrl: string; stock: number
+}
+
+function AnimalsEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [items, setItems] = useState<AnimalItem[]>(() => {
+    try { return JSON.parse(value) } catch { return [] }
+  })
+
+  useEffect(() => {
+    try { setItems(JSON.parse(value)) } catch { setItems([]) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value === '[]' ? value : undefined])
+
+  function update(newItems: AnimalItem[]) {
+    setItems(newItems)
+    onChange(JSON.stringify(newItems))
+  }
+
+  function addAnimal() {
+    const newId = Date.now().toString()
+    update([...items, { id: newId, name: 'Domba/Kambing Jantan', weight: '23-25 Kg', originalPrice: 0, price: 0, imageUrl: '', stock: 10 }])
+  }
+
+  function removeAnimal(idx: number) { update(items.filter((_, i) => i !== idx)) }
+
+  function updateAnimal(idx: number, partial: Partial<AnimalItem>) {
+    update(items.map((item, i) => i === idx ? { ...item, ...partial } : item))
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((item, idx) => (
+        <div key={item.id} className="border border-brand-muted/20 rounded-[10px] p-4 bg-brand-light relative">
+          <button type="button" onClick={() => removeAnimal(idx)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs font-bold">✕</button>
+          <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">🐑 Hewan #{idx + 1}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Nama Hewan *</label>
+              <input type="text" value={item.name} onChange={e => updateAnimal(idx, { name: e.target.value })} className="inp text-sm" placeholder="Contoh: Domba Garut Jantan" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Berat (Range)</label>
+              <input type="text" value={item.weight} onChange={e => updateAnimal(idx, { weight: e.target.value })} className="inp text-sm" placeholder="23-25 Kg" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Stok</label>
+              <input type="number" value={item.stock} onChange={e => updateAnimal(idx, { stock: parseInt(e.target.value) || 0 })} className="inp text-sm" min="0" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Harga Asli (Rp)</label>
+              <input type="number" value={item.originalPrice || ''} onChange={e => updateAnimal(idx, { originalPrice: parseInt(e.target.value) || 0 })} className="inp text-sm" placeholder="Kosongkan jika tidak ada coret" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Harga Jual (Rp) *</label>
+              <input type="number" value={item.price || ''} onChange={e => updateAnimal(idx, { price: parseInt(e.target.value) || 0 })} className="inp text-sm" placeholder="0" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">URL Foto Hewan</label>
+              <input type="text" value={item.imageUrl} onChange={e => updateAnimal(idx, { imageUrl: e.target.value })} className="inp text-sm" placeholder="https://..." />
+              {item.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.imageUrl} alt="" className="mt-2 w-full h-20 object-cover rounded-[6px]" />
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+      <button type="button" onClick={addAnimal} className="py-2.5 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[8px] text-xs font-medium transition-colors">
+        + Tambah Pilihan Hewan
+      </button>
+    </div>
+  )
+}
+
+function GalleryEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [urls, setUrls] = useState<string[]>(() => {
+    try { return JSON.parse(value) } catch { return [] }
+  })
+
+  function update(newUrls: string[]) { setUrls(newUrls); onChange(JSON.stringify(newUrls)) }
+  function removePhoto(i: number) { update(urls.filter((_, idx) => idx !== i)) }
+  function addUrl(url: string) { if (url) update([...urls, url]) }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-3 gap-2">
+        {urls.map((url, i) => (
+          <div key={i} className="relative aspect-square">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" className="w-full h-full object-cover rounded-[8px]" />
+            <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">✕</button>
+          </div>
+        ))}
+        {urls.length < 5 && (
+          <label className="aspect-square border-2 border-dashed border-brand-muted/30 rounded-[8px] flex flex-col items-center justify-center cursor-pointer hover:border-brand-surface/40 transition-colors bg-brand-light">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const fd = new FormData()
+                fd.append('file', file)
+                const res = await fetch('/api/uploads', { method: 'POST', body: fd })
+                const data = await res.json()
+                if (data.url) addUrl(data.url)
+              }}
+            />
+            <div className="text-brand-muted text-center">
+              <div className="text-xl mb-0.5">+</div>
+              <div className="text-[10px]">Foto</div>
+            </div>
+          </label>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function CampaignClient({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
   const [campaigns, setCampaigns] = useState(initialCampaigns)
   const [modalOpen, setModalOpen] = useState(false)
@@ -150,6 +274,8 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
       ctaButtonText: (c as any).ctaButtonText ?? '',
       allowShare: (c as any).allowShare ? 'true' : 'false',
       richContent: (c as any).richContent ?? '[]',
+      animals: (c as any).animals ?? '[]',
+      gallery: (c as any).gallery ?? '[]',
     })
     setModalOpen(true)
   }
@@ -301,26 +427,63 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
               </button>
             </div>
             <div className="p-7 flex flex-col gap-5 max-h-[70vh] overflow-y-auto">
-              {/* Foto URL */}
+              {/* Cover Image */}
               <div>
-                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">URL Foto Campaign</label>
-                <div className="flex gap-2 mb-2">
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Cover Campaign *</label>
+                <div className="flex flex-col gap-2">
                   {form.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={form.imageUrl} className="w-20 h-20 rounded-[8px] object-cover border border-brand-muted/20 shrink-0" alt="" />
-                  ) : (
-                    <div className="flex items-center justify-center w-20 h-20 rounded-[8px] bg-brand-light border border-dashed border-brand-muted/30 shrink-0">
-                      <FontAwesomeIcon icon={faCloudArrowUp} className="text-brand-muted text-2xl opacity-40" />
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={form.imageUrl} alt="" className="w-full h-36 object-cover rounded-[10px]" />
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
+                        className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded font-bold"
+                      >
+                        ✕ Hapus
+                      </button>
                     </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-brand-muted/30 rounded-[10px] cursor-pointer hover:border-brand-accent/50 transition-colors bg-brand-light">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const fd = new FormData()
+                          fd.append('file', file)
+                          const res = await fetch('/api/uploads', { method: 'POST', body: fd })
+                          const data = await res.json()
+                          if (data.url) setForm(f => ({ ...f, imageUrl: data.url }))
+                        }}
+                      />
+                      <div className="text-brand-muted text-center">
+                        <div className="text-2xl mb-1">📷</div>
+                        <div className="text-xs font-medium">Upload Cover (650×350)</div>
+                        <div className="text-[10px] text-brand-muted/60 mt-0.5">JPG, PNG, WebP · Max 2MB</div>
+                      </div>
+                    </label>
                   )}
                   <input
                     type="text"
                     value={form.imageUrl}
                     onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
-                    placeholder="https://... (URL foto campaign)"
-                    className="inp flex-1"
+                    className="inp text-xs"
+                    placeholder="Atau paste URL langsung: https://..."
                   />
                 </div>
+              </div>
+
+              {/* Gallery Photos */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Foto Gallery Campaign (Opsional)</label>
+                <p className="text-xs text-brand-muted mb-2">Tambahkan foto-foto tambahan kampanye untuk ditampilkan di halaman detail.</p>
+                <GalleryEditor
+                  value={form.gallery ?? '[]'}
+                  onChange={v => setForm(f => ({ ...f, gallery: v }))}
+                />
               </div>
 
               {/* Judul */}
@@ -347,6 +510,20 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Animals Editor — allow per-animal pricing */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">
+                  Pilihan Hewan Qurban
+                </label>
+                <p className="text-xs text-brand-muted mb-3">
+                  Tambahkan pilihan hewan dengan harga masing-masing. Jika diisi, donatur bisa memilih langsung dari halaman campaign.
+                </p>
+                <AnimalsEditor
+                  value={form.animals ?? '[]'}
+                  onChange={v => setForm(f => ({ ...f, animals: v }))}
+                />
               </div>
 
               {/* Tipe Program */}

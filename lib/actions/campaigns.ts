@@ -15,6 +15,8 @@ export async function createCampaign(formData: FormData) {
   const ctaButtonText = (formData.get('ctaButtonText') as string) || null
   const allowShare = formData.get('allowShare') === 'true'
   const richContent = (formData.get('richContent') as string) || null
+  const animals = (formData.get('animals') as string) || null
+  const gallery = (formData.get('gallery') as string) || null
 
   if (!title || !location || !price) throw new Error('Data tidak lengkap')
 
@@ -36,6 +38,8 @@ export async function createCampaign(formData: FormData) {
       ctaButtonText,
       allowShare,
       richContent,
+      animals: animals || null,
+      gallery: gallery || null,
       isActive: true,
     },
   })
@@ -74,6 +78,10 @@ export async function updateCampaign(id: string, formData: FormData) {
   if (allowShareRaw !== null) data.allowShare = allowShareRaw === 'true'
   const richContent = formData.get('richContent') as string | null
   if (richContent !== null) data.richContent = richContent || null
+  const animals = formData.get('animals') as string | null
+  if (animals !== null) data.animals = animals || null
+  const gallery = formData.get('gallery') as string | null
+  if (gallery !== null) data.gallery = gallery || null
 
   if (Object.keys(data).length === 0) return
 

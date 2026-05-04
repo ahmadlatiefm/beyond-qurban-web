@@ -184,6 +184,53 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               </div>
             </div>
 
+            {/* Animal Picker — rendered if campaign has animals data */}
+            {campaign.animals && (() => {
+              try {
+                const animals: {id:string;name:string;weight:string;originalPrice?:number;price:number;imageUrl:string;stock?:number}[] = JSON.parse(campaign.animals!)
+                if (!animals.length) return null
+                return (
+                  <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-6 mb-6">
+                    <h2 className="font-serif text-xl font-bold text-brand-dark mb-4">Pilih Hewan Qurban</h2>
+                    <div className="flex flex-col gap-4">
+                      {animals.map((animal, i) => (
+                        <div key={i} className="flex items-center gap-4 p-4 border border-brand-muted/15 rounded-[12px] hover:border-brand-accent/30 hover:bg-brand-light/50 transition-all group">
+                          {/* Animal image */}
+                          <div className="w-24 h-20 rounded-[10px] overflow-hidden bg-brand-light shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={animal.imageUrl} alt={animal.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-sm text-brand-dark mb-1">{animal.name}</div>
+                            <div className="flex flex-wrap gap-2 text-xs text-brand-muted">
+                              <span>⚖️ {animal.weight}</span>
+                              {animal.stock !== undefined && animal.stock > 0 && (
+                                <span className="text-emerald-600 font-medium">● Tersedia ({animal.stock} ekor)</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {animal.originalPrice && animal.originalPrice > animal.price && (
+                                <span className="text-xs text-brand-muted line-through">Rp {animal.originalPrice.toLocaleString('id-ID')}</span>
+                              )}
+                              <span className="font-bold text-brand-accent">Rp {animal.price.toLocaleString('id-ID')}</span>
+                            </div>
+                          </div>
+                          {/* Select button */}
+                          <Link
+                            href={`/penyaluran/checkout?campaign=${campaign.slug}&qty=1&animal=${encodeURIComponent(animal.name)}&animalPrice=${animal.price}&share=1/1`}
+                            className="shrink-0 bg-brand-surface text-white font-bold text-xs px-5 py-2.5 rounded-[8px] hover:bg-brand-dark transition-colors"
+                          >
+                            Pilih Hewan
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              } catch { return null }
+            })()}
+
             {/* Donatur terbaru */}
             {campaign.donations.length > 0 && (
               <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-6">
@@ -224,6 +271,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               animalType: campaign.animalType,
               allowShare: campaign.allowShare,
               ctaButtonText: campaign.ctaButtonText,
+              hasAnimals: !!(campaign.animals && (() => { try { return JSON.parse(campaign.animals!).length > 0 } catch { return false } })()),
             }} />
           </div>
         </div>

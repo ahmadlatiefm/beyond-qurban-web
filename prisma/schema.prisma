@@ -104,6 +104,10 @@ model Campaign {
   programType   String         @default("qurban") // qurban|sedekah|keduanya
   ctaButtonText String?                           // Custom button text override
   allowShare    Boolean        @default(false)    // Allow 1/7 sapi share
+  // JSON: [{id,name,weight,originalPrice,price,imageUrl,stock}]
+  animals       String?        @db.Text
+  // JSON: [url1, url2, ...] — campaign photo gallery
+  gallery       String?        @db.Text
   isActive      Boolean        @default(true)
   donations     Donation[]
   createdAt     DateTime       @default(now())

@@ -191,7 +191,7 @@ export default function DonationForm({ campaign, qty, shareType }: { campaign: C
                       <span className="text-sm font-medium text-brand-dark">Orang lain</span>
                     </label>
                   </div>
-                  <input name="qurbanName" type="text" placeholder="Nama atas nama qurban" className={inpCls} />
+                  <input name="qurbanName" type="text" required placeholder="Nama atas nama qurban" className={inpCls} />
                 </div>
               )}
 
@@ -207,7 +207,8 @@ export default function DonationForm({ campaign, qty, shareType }: { campaign: C
                       <input
                         name={`qurbanName_${i}`}
                         type="text"
-                        placeholder={`Nama ke-${i + 1} atas nama qurban`}
+                        required={i === 0}
+                        placeholder={i === 0 ? `Nama ke-${i + 1} atas nama qurban (wajib)` : `Nama ke-${i + 1} atas nama qurban (opsional)`}
                         className={inpCls}
                       />
                     </div>

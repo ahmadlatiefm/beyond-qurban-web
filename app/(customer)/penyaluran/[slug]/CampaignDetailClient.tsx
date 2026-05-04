@@ -16,6 +16,7 @@ interface Props {
     animalType: string
     allowShare: boolean
     ctaButtonText: string | null
+    hasAnimals?: boolean
   }
 }
 
@@ -116,29 +117,35 @@ export default function CampaignDetailClient({ campaign }: Props) {
           </div>
         )}
 
-        {/* Qty selector */}
-        <div>
-          <div className="text-xs font-bold text-brand-dark uppercase tracking-wider mb-2">Jumlah Hewan</div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-9 h-9 rounded-[8px] border border-brand-muted/20 text-brand-dark font-bold flex items-center justify-center hover:border-brand-accent transition-colors"
-            >
-              <FontAwesomeIcon icon={faMinus} className="text-xs" />
-            </button>
-            <span className="text-xl font-bold text-brand-dark w-8 text-center">{qty}</span>
-            <button
-              onClick={() => setQty(q => q + 1)}
-              className="w-9 h-9 rounded-[8px] border border-brand-muted/20 text-brand-dark font-bold flex items-center justify-center hover:border-brand-accent transition-colors"
-            >
-              <FontAwesomeIcon icon={faPlus} className="text-xs" />
-            </button>
-            <span className="text-xs text-brand-muted ml-1">ekor</span>
+        {/* Qty selector — hidden if campaign has per-animal picker */}
+        {campaign.hasAnimals ? (
+          <div className="text-xs text-brand-muted bg-brand-light rounded-[8px] p-3 text-center">
+            Pilih hewan dari daftar di bawah halaman ini
           </div>
-        </div>
+        ) : (
+          <div>
+            <div className="text-xs font-bold text-brand-dark uppercase tracking-wider mb-2">Jumlah Hewan</div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setQty(q => Math.max(1, q - 1))}
+                className="w-9 h-9 rounded-[8px] border border-brand-muted/20 text-brand-dark font-bold flex items-center justify-center hover:border-brand-accent transition-colors"
+              >
+                <FontAwesomeIcon icon={faMinus} className="text-xs" />
+              </button>
+              <span className="text-xl font-bold text-brand-dark w-8 text-center">{qty}</span>
+              <button
+                onClick={() => setQty(q => q + 1)}
+                className="w-9 h-9 rounded-[8px] border border-brand-muted/20 text-brand-dark font-bold flex items-center justify-center hover:border-brand-accent transition-colors"
+              >
+                <FontAwesomeIcon icon={faPlus} className="text-xs" />
+              </button>
+              <span className="text-xs text-brand-muted ml-1">ekor</span>
+            </div>
+          </div>
+        )}
 
         {/* Info atas nama — will be collected in checkout form */}
-        {qty > 1 && campaign.programType !== 'sedekah' && (
+        {!campaign.hasAnimals && qty > 1 && campaign.programType !== 'sedekah' && (
           <div className="text-xs text-brand-muted bg-brand-light rounded-[8px] p-3 flex items-start gap-2">
             <span>📜</span>
             <span>Formulir checkout akan meminta <strong className="text-brand-dark">{qty} nama</strong> atas nama qurban (1 per ekor)</span>
@@ -146,20 +153,24 @@ export default function CampaignDetailClient({ campaign }: Props) {
         )}
 
         {/* Total */}
-        <div className="bg-brand-light rounded-[10px] p-4 flex justify-between items-center">
-          <span className="text-sm font-medium text-brand-dark">Total Donasi</span>
-          <span className="font-serif text-xl font-bold text-brand-accent">{formatCurrency(total)}</span>
-        </div>
+        {!campaign.hasAnimals && (
+          <div className="bg-brand-light rounded-[10px] p-4 flex justify-between items-center">
+            <span className="text-sm font-medium text-brand-dark">Total Donasi</span>
+            <span className="font-serif text-xl font-bold text-brand-accent">{formatCurrency(total)}</span>
+          </div>
+        )}
 
         {/* CTA */}
-        <Link
-          href={checkoutUrl}
-          className="w-full bg-cta-gradient text-brand-text-dark font-bold py-3.5 rounded-[12px] flex items-center justify-center gap-2 hover:scale-[1.02] hover:shadow-glow transition-all text-sm shadow-premium"
-        >
-          <FontAwesomeIcon icon={faHeart} className="text-xs" />
-          {buttonText}
-          <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
-        </Link>
+        {!campaign.hasAnimals && (
+          <Link
+            href={checkoutUrl}
+            className="w-full bg-cta-gradient text-brand-text-dark font-bold py-3.5 rounded-[12px] flex items-center justify-center gap-2 hover:scale-[1.02] hover:shadow-glow transition-all text-sm shadow-premium"
+          >
+            <FontAwesomeIcon icon={faHeart} className="text-xs" />
+            {buttonText}
+            <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
+          </Link>
+        )}
 
         <div className="flex items-center justify-center gap-1.5 text-brand-muted/50 text-xs">
           <FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent/50" />
