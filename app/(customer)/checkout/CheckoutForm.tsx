@@ -84,7 +84,17 @@ export default function CheckoutForm({ product }: { product: Product }) {
               <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest">ALAMAT PENGIRIMAN <span className="text-brand-surface">*</span></label>
               <textarea name="address" rows={3} placeholder="Masukkan alamat lengkap (Jalan, RT/RW, Kelurahan, Kecamatan, Kota)" className="w-full p-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm resize-none focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]" />
             </div>
-            <input type="hidden" name="city" value="" />
+            {/* Kota */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest">KOTA <span className="text-brand-surface">*</span></label>
+              <input
+                name="city"
+                type="text"
+                placeholder="Contoh: Bandung, Jakarta Selatan, Sumedang"
+                className="w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]"
+              />
+              <p className="text-xs text-brand-muted">Bandung Raya = gratis ongkir · Luar Bandung Raya = +Rp 150.000</p>
+            </div>
 
             {/* Tanggal */}
             <div className="flex flex-col gap-2">
