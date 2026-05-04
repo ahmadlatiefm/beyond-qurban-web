@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition, useMemo } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faUser, faMagnifyingGlass, faFilter, faSort, faDownload, faCircleCheck, faChevronDown, faBell } from '@fortawesome/free-solid-svg-icons'
+import { faUser, faMagnifyingGlass, faFilter, faSort, faDownload, faCircleCheck, faChevronDown, faBell, faPrint, faTrashCan } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { faCalendar as faCalendarRegular } from '@fortawesome/free-regular-svg-icons'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -165,7 +165,31 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
             <button className="px-3 py-2 bg-white border border-brand-muted/20 text-sm font-medium rounded-[8px] hover:bg-brand-surface/5 flex items-center gap-2 text-brand-dark">
               <FontAwesomeIcon icon={faSort} className="text-brand-muted" /> Urutkan
             </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent('Update pesanan Beyond Qurban')}`}
+              target="_blank" rel="noopener noreferrer"
+              className="wa-btn"
+            >
+              <FontAwesomeIcon icon={faWhatsapp} className="text-base" /> Kirim WA Massal
+            </a>
           </div>
+        </div>
+
+        {/* Bulk actions row */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" className="custom-checkbox" onChange={() => {}} />
+            <span className="text-sm font-medium text-brand-dark">Pilih Semua</span>
+          </label>
+          <button className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-sm font-medium rounded-[8px] flex items-center gap-2 hover:bg-amber-100">
+            <FontAwesomeIcon icon={faPrint} /> Print
+          </button>
+          <button className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-medium rounded-[8px] flex items-center gap-2 hover:bg-emerald-100">
+            Update Status
+          </button>
+          <button className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 border border-red-100 rounded-[8px] hover:bg-red-100">
+            <FontAwesomeIcon icon={faTrashCan} className="text-sm" />
+          </button>
         </div>
 
         {/* Order cards */}
@@ -179,6 +203,7 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
             return (
               <div key={order.id} className={`bg-white rounded-[12px] border ${isUnpaid ? 'border-amber-200' : 'border-brand-muted/15'} shadow-premium p-6`}>
                 <div className="flex items-start gap-4">
+                  <input type="checkbox" className="custom-checkbox mt-1" />
                   <div className="flex-1 min-w-0">
                     {/* Top row */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
@@ -221,9 +246,16 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
                         <a
                           href={`https://wa.me/${order.whatsapp}?text=${waText}`}
                           target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 bg-[#25D366] text-white text-xs font-bold px-3 py-1.5 rounded-[8px] hover:bg-[#1ea855]"
+                          className="wa-btn"
                         >
                           <FontAwesomeIcon icon={faWhatsapp} className="text-base" /> Kirim WA
+                        </a>
+                        <a
+                          href={`https://wa.me/${order.whatsapp}?text=${encodeURIComponent(`Halo ${order.customerName}, reminder pembayaran pesanan ${order.orderNumber} Anda dari Beyond Qurban.`)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="wa-followup-btn"
+                        >
+                          <FontAwesomeIcon icon={faWhatsapp} className="text-base" /> Follow Up WA
                         </a>
 
                         {/* Update Status */}

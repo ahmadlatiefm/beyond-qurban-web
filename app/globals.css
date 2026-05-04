@@ -110,3 +110,15 @@ textarea.inp { height: auto; padding: 10px 12px; resize: vertical; }
 .radio-mode .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(107,114,128,.4); transition: all .2s; flex-shrink: 0; }
 .radio-mode.selected { border-color: #1B5E3B; color: #1B5E3B; }
 .radio-mode.selected .dot { border-color: #1B5E3B; background: #1B5E3B; }
+
+/* Admin custom checkbox */
+.custom-checkbox { appearance: none; width: 17px; height: 17px; border: 2px solid #6B7280; border-radius: 4px; display: grid; place-content: center; flex-shrink: 0; cursor: pointer; transition: all .15s; }
+.custom-checkbox::before { content: ""; width: .6em; height: .6em; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; clip-path: polygon(14% 44%,0 65%,50% 100%,100% 16%,80% 0%,43% 62%); }
+.custom-checkbox:checked { background: #1B5E3B; border-color: #1B5E3B; }
+.custom-checkbox:checked::before { transform: scale(1); }
+
+/* WA buttons */
+.wa-btn { display: inline-flex; align-items: center; gap: 6px; background: #25D366; color: white; font-weight: 700; font-size: .78rem; padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.wa-btn:hover { background: #1ea855; transform: scale(1.02); }
+.wa-followup-btn { display: inline-flex; align-items: center; gap: 6px; background: rgba(37,211,102,.1); color: #1ea855; font-weight: 700; font-size: .78rem; padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(37,211,102,.4); cursor: pointer; transition: all .2s; white-space: nowrap; }
+.wa-followup-btn:hover { background: #25D366; color: white; }
