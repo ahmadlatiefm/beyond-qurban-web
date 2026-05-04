@@ -92,10 +92,10 @@ export default function PenyaluranClient({ campaigns }: { campaigns: Campaign[] 
       </section>
 
       {/* ── Katalog Campaign ─────────────────────────────────────────────── */}
-      <section className="max-w-[1100px] mx-auto px-6 md:px-12 -mt-6 pb-24">
+      <section className="relative z-10 max-w-[1100px] mx-auto px-6 md:px-12 -mt-4 pb-24">
 
         {/* Filter chips */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="flex flex-wrap gap-2 mb-8 pt-4">
           {FILTERS.map(({ key, label }) => (
             <button
               key={key}

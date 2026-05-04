@@ -21,6 +21,35 @@ interface Props {
 
 type DonationType = 'qurban' | 'sedekah'
 
+// Default animal photos berdasarkan nama hewan
+const ANIMAL_DEFAULT_PHOTOS: { keywords: string[]; url: string }[] = [
+  {
+    keywords: ['sapi', 'lembu', 'cow', 'limosin', 'simental'],
+    url: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/4aa755a4cf-d8191206751ab0936532.png',
+  },
+  {
+    keywords: ['kambing', 'etawa', 'goat'],
+    url: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/a9f65ae09d-dbb9748e6b272c117e01.png',
+  },
+  {
+    keywords: ['domba', 'garut', 'merino', 'priangan', 'ekor', 'sheep', 'lamb'],
+    url: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
+  },
+  {
+    keywords: ['unta', 'camel'],
+    url: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-c4fe96d3e4365e7ee53c.png',
+  },
+]
+
+function getDefaultAnimalPhoto(name: string): string {
+  const lower = name.toLowerCase()
+  for (const { keywords, url } of ANIMAL_DEFAULT_PHOTOS) {
+    if (keywords.some(k => lower.includes(k))) return url
+  }
+  // fallback: domba
+  return 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png'
+}
+
 function getButtonText(programType: string, donationType: DonationType, ctaText: string | null, hasAnimals: boolean): string {
   if (ctaText) return ctaText
   if (programType === 'sedekah') return 'Sedekah Sekarang'
@@ -97,21 +126,20 @@ export default function CampaignDetailClient({ campaign }: Props) {
                         : 'border-brand-muted/20 hover:border-brand-accent/40'
                     }`}
                   >
-                    {/* Animal image */}
-                    <div className="w-14 h-12 rounded-[8px] overflow-hidden bg-brand-light shrink-0 border border-brand-muted/15">
-                      {animal.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={animal.imageUrl}
-                          alt={animal.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none'
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xl">🐑</div>
-                      )}
+                    {/* Animal image — pakai foto default jika tidak ada */}
+                    <div className="w-16 h-14 rounded-[8px] overflow-hidden bg-brand-light shrink-0 border border-brand-muted/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={animal.imageUrl || getDefaultAnimalPhoto(animal.name)}
+                        alt={animal.name}
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => {
+                          // Fallback ke default photo jika URL gagal
+                          const img = e.target as HTMLImageElement
+                          const fallback = getDefaultAnimalPhoto(animal.name)
+                          if (img.src !== fallback) img.src = fallback
+                        }}
+                      />
                     </div>
 
                     {/* Info */}
