@@ -5,8 +5,9 @@ import {
   faFloppyDisk, faRotateLeft, faPaperPlane, faCreditCard,
   faTag, faCode, faSliders, faCircleInfo, faBell, faEye,
   faCopy, faPlugCircleCheck, faExternalLinkAlt,
+  faMinus, faPlus,
 } from '@fortawesome/free-solid-svg-icons'
-import { faWhatsapp, faWhatsapp as faWhatsappPrev } from '@fortawesome/free-brands-svg-icons'
+import { faWhatsapp, faWhatsapp as faWhatsappPrev, faFacebookF, faTiktok } from '@fortawesome/free-brands-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
 
 type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'info'
@@ -14,7 +15,7 @@ type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'info'
 export default function PengaturanClient({ initialSettings }: { initialSettings: Record<string, string> }) {
   const [activeSection, setActiveSection] = useState<SectionKey>('onesender')
   const [settings, setSettings] = useState(initialSettings)
-  const [showKeys, setShowKeys] = useState({ apiKey: false, privKey: false })
+  const [showKeys, setShowKeys] = useState({ apiKey: false, privKey: false, fbToken: false })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
 
@@ -502,12 +503,204 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
           </div>
         )}
 
+        {/* === PIXEL & TRACKING === */}
+        {activeSection === 'pixel' && (
+          <div className="flex flex-col gap-6">
+
+            {/* Facebook / Meta Pixel */}
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-[8px] bg-[#1877F2] flex items-center justify-center">
+                      <FontAwesomeIcon icon={faFacebookF} className="text-white text-sm" />
+                    </div>
+                    <h2 className="font-bold text-brand-dark text-base">Facebook / Meta Pixel</h2>
+                  </div>
+                  <p className="text-brand-muted text-sm leading-relaxed">Tambahkan satu atau beberapa Pixel ID untuk tracking konversi dan remarketing di Meta Ads.</p>
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-[8px] text-xs text-blue-700">
+                    <FontAwesomeIcon icon={faCircleInfo} className="mr-1" />Gunakan Secret Token untuk Conversions API (server-side tracking).
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col gap-4">
+                  {/* Pixel #1 */}
+                  <div className="flex flex-col gap-3 p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-brand-dark uppercase tracking-wider">Pixel #1</span>
+                      <button className="text-red-400 hover:text-red-600 text-sm"><FontAwesomeIcon icon={faMinus} /></button>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Pixel ID</label>
+                        <span className="text-[10px] bg-red-100 text-red-500 px-1.5 py-0.5 rounded font-bold">Wajib</span>
+                      </div>
+                      <input type="text" value={settings.fb_pixel_id ?? ''} onChange={e => set('fb_pixel_id', e.target.value)} className="inp" placeholder="8676065248B3158" />
+                      <p className="text-xs text-brand-muted">Temukan di Meta Business Suite → Events Manager → Pixel</p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Secret Token</label>
+                          <span className="text-[10px] bg-red-100 text-red-500 px-1.5 py-0.5 rounded font-bold">Wajib</span>
+                        </div>
+                        <button type="button" onClick={() => setShowKeys(p => ({ ...p, fbToken: !p.fbToken }))} className="text-brand-surface text-xs font-semibold hover:text-brand-accent">
+                          {(showKeys as any).fbToken ? 'hide' : 'show'}
+                        </button>
+                      </div>
+                      <input type={(showKeys as any).fbToken ? 'text' : 'password'} value={settings.fb_secret_token ?? ''} onChange={e => set('fb_secret_token', e.target.value)} className="inp" placeholder="••••••••••••••••" />
+                      <p className="text-xs text-brand-muted">Untuk Conversions API → server-side event tracking</p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Test Event Code</label>
+                        <span className="text-[10px] bg-brand-muted/20 text-brand-muted px-1.5 py-0.5 rounded font-bold">Opsional</span>
+                      </div>
+                      <input type="text" value={settings.fb_test_code ?? ''} onChange={e => set('fb_test_code', e.target.value)} className="inp" placeholder="TEST54184" />
+                      <p className="text-xs text-brand-muted">Hanya untuk testing — kosongkan saat LIVE</p>
+                    </div>
+                  </div>
+
+                  {/* Add pixel button */}
+                  <button className="flex items-center gap-2 text-brand-surface font-bold text-sm border-2 border-dashed border-brand-surface/30 hover:border-brand-surface px-4 py-2.5 rounded-[8px] transition-colors w-fit">
+                    <FontAwesomeIcon icon={faPlus} /> Tambah Pixel ID
+                  </button>
+
+                  {/* Event Mapping */}
+                  <div>
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-3">Event Mapping per Halaman</label>
+                    <div className="flex flex-col gap-2">
+                      {[
+                        { label: 'Page Campaign', sub: 'qurban-penyaluran.html', key: 'fb_event_campaign', options: ['ViewContent', 'PageView', 'Lead', 'Purchase', 'Donate', 'AddToCart', 'InitiateCheckout'], default: 'ViewContent' },
+                        { label: 'Page Form / Checkout', sub: 'Checkout _ Form P.html', key: 'fb_event_checkout', options: ['AddToCart', 'InitiateCheckout', 'Lead', 'ViewContent'], default: 'AddToCart' },
+                        { label: 'Page Invoice / Pembayaran', sub: 'Detail pembayaran', key: 'fb_event_payment', options: ['Purchase', 'InitiateCheckout', 'Lead'], default: 'Purchase' },
+                        { label: 'Page Sukses Pembayaran', sub: 'Setelah konfirmasi bayar', key: 'fb_event_success', options: ['Donate', 'Purchase', 'Lead', 'CompleteRegistration'], default: 'Donate' },
+                      ].map(({ label, sub, key, options, default: def }) => (
+                        <div key={key} className="grid grid-cols-2 items-center gap-3 p-3 bg-brand-light rounded-[8px] border border-brand-muted/10">
+                          <div>
+                            <div className="text-sm font-semibold text-brand-dark">{label}</div>
+                            <div className="text-xs text-brand-muted">{sub}</div>
+                          </div>
+                          <select
+                            value={settings[key] ?? def}
+                            onChange={e => set(key, e.target.value)}
+                            className="inp"
+                            style={{ height: 38, fontSize: '.8rem' }}
+                          >
+                            {options.map(o => <option key={o}>{o}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleSave(['fb_pixel_id', 'fb_secret_token', 'fb_test_code', 'fb_event_campaign', 'fb_event_checkout', 'fb_event_payment', 'fb_event_success'])}
+                    disabled={isPending}
+                    className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60"
+                  >
+                    <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Pengaturan Pixel
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* TikTok Pixel */}
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-[8px] bg-black flex items-center justify-center">
+                      <FontAwesomeIcon icon={faTiktok} className="text-white text-sm" />
+                    </div>
+                    <h2 className="font-bold text-brand-dark text-base">TikTok Pixel</h2>
+                  </div>
+                  <p className="text-brand-muted text-sm leading-relaxed">Pasang TikTok Pixel untuk mengukur performa iklan dan membuat custom audience di TikTok Ads.</p>
+                  <div className="mt-3 p-3 bg-brand-light border border-brand-muted/10 rounded-[8px] text-xs text-brand-muted">
+                    <FontAwesomeIcon icon={faCircleInfo} className="mr-1 text-brand-accent" />Pixel ID tersedia di TikTok Ads Manager → Assets → Events.
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div className="font-semibold text-sm text-brand-dark">Aktifkan TikTok Pixel</div>
+                    <label className="toggle">
+                      <input type="checkbox" checked={settings.tiktok_enabled !== 'false'} onChange={e => set('tiktok_enabled', e.target.checked ? 'true' : 'false')} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Pixel ID</label>
+                      <span className="text-[10px] bg-red-100 text-red-500 px-1.5 py-0.5 rounded font-bold">Wajib</span>
+                    </div>
+                    <input type="text" value={settings.tiktok_pixel_id ?? ''} onChange={e => set('tiktok_pixel_id', e.target.value)} className="inp" placeholder="CO5GPMRC77UDHQA4UGI0" />
+                    <p className="text-xs text-brand-muted mt-0.5">Format: 20 karakter alfanumerik</p>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => handleSave(['tiktok_enabled', 'tiktok_pixel_id'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
+                      <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
+                    </button>
+                    <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
+                      <FontAwesomeIcon icon={faPlugCircleCheck} /> Test Pixel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Google Tag Manager */}
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-[8px] bg-[#246FDB] flex items-center justify-center font-bold text-white text-xs">GTM</div>
+                    <h2 className="font-bold text-brand-dark text-base">Google Tag Manager</h2>
+                  </div>
+                  <p className="text-brand-muted text-sm leading-relaxed">Pasang GTM Container ID untuk mengelola semua tag tracking dari satu dashboard tanpa ubah kode.</p>
+                  <div className="mt-3 p-3 bg-brand-light border border-brand-muted/10 rounded-[8px] text-xs text-brand-muted">
+                    <FontAwesomeIcon icon={faCircleInfo} className="mr-1 text-brand-accent" />GTM ID tersedia di tagmanager.google.com, format: GTM-XXXXXXX.
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div className="font-semibold text-sm text-brand-dark">Aktifkan Google Tag Manager</div>
+                    <label className="toggle">
+                      <input type="checkbox" checked={settings.gtm_enabled !== 'false'} onChange={e => set('gtm_enabled', e.target.checked ? 'true' : 'false')} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">GTM Container ID</label>
+                      <span className="text-[10px] bg-red-100 text-red-500 px-1.5 py-0.5 rounded font-bold">Wajib</span>
+                    </div>
+                    <input type="text" value={settings.gtm_id ?? ''} onChange={e => set('gtm_id', e.target.value)} className="inp" placeholder="GTM-XXXXXXX" />
+                    <p className="text-xs text-brand-muted mt-0.5">Format: GTM- diikuti 7 karakter</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Google Analytics 4 (Opsional)</label>
+                    <input type="text" value={settings.ga4_id ?? ''} onChange={e => set('ga4_id', e.target.value)} className="inp" placeholder="G-XXXXXXXXXX" />
+                    <p className="text-xs text-brand-muted mt-0.5">Jika sudah dikelola via GTM, kosongkan field ini.</p>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => handleSave(['gtm_enabled', 'gtm_id', 'ga4_id'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
+                      <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
+                    </button>
+                    <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
+                      <FontAwesomeIcon icon={faPlugCircleCheck} /> Test GTM
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* === OTHER SECTIONS === */}
-        {['diskon', 'pixel', 'info'].includes(activeSection) && (
+        {['diskon', 'info'].includes(activeSection) && (
           <div className="setting-card text-center py-16">
             <div className="text-4xl mb-4 opacity-30">⚙️</div>
             <h3 className="font-serif text-lg font-bold text-brand-dark mb-2">
-              {activeSection === 'diskon' ? 'Manajemen Diskon' : activeSection === 'pixel' ? 'Pixel & Tracking' : 'Info Sistem'}
+              {activeSection === 'diskon' ? 'Manajemen Diskon' : 'Info Sistem'}
             </h3>
             <p className="text-brand-muted text-sm">Fitur ini akan tersedia segera.</p>
           </div>
