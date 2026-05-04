@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faFloppyDisk, faRotateLeft, faPaperPlane, faCreditCard,
   faTag, faCode, faSliders, faCircleInfo, faBell, faEye,
+  faCopy, faPlugCircleCheck, faExternalLinkAlt,
 } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp, faWhatsapp as faWhatsappPrev } from '@fortawesome/free-brands-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
@@ -13,6 +14,7 @@ type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'info'
 export default function PengaturanClient({ initialSettings }: { initialSettings: Record<string, string> }) {
   const [activeSection, setActiveSection] = useState<SectionKey>('onesender')
   const [settings, setSettings] = useState(initialSettings)
+  const [showKeys, setShowKeys] = useState({ apiKey: false, privKey: false })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
 
@@ -240,35 +242,237 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
 
         {/* === TRIPAY === */}
         {activeSection === 'tripay' && (
-          <div className="setting-card flex flex-col gap-5">
-            <h2 className="font-bold text-brand-dark text-base">Konfigurasi Tripay</h2>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">API Key</label>
-              <input type="text" value={settings.tripay_api_key ?? ''} onChange={e => set('tripay_api_key', e.target.value)} className="inp" placeholder="DEV-..." />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Private Key</label>
-              <input type="password" value={settings.tripay_private_key ?? ''} onChange={e => set('tripay_private_key', e.target.value)} className="inp" placeholder="..." />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Merchant Code</label>
-              <input type="text" value={settings.tripay_merchant_code ?? ''} onChange={e => set('tripay_merchant_code', e.target.value)} className="inp" placeholder="T12345" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Mode</label>
-              <div className="flex gap-3">
-                {['sandbox', 'production'].map(mode => (
-                  <label key={mode} className={`radio-mode${settings.tripay_mode === mode ? ' selected' : ''}`}>
-                    <div className="dot" />
-                    <input type="radio" name="tripay_mode" value={mode} checked={settings.tripay_mode === mode} onChange={() => set('tripay_mode', mode)} className="sr-only" />
-                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          <div className="flex flex-col gap-6">
+
+            {/* Konfigurasi Tripay card */}
+            <div className="setting-card">
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <h2 className="font-bold text-brand-dark text-base mb-1">Konfigurasi Tripay</h2>
+                  <p className="text-sm text-brand-muted">Masukkan kredensial Tripay untuk mengaktifkan payment gateway.</p>
+                  <a href="https://tripay.co.id/register" target="_blank" rel="noopener noreferrer" className="text-xs text-brand-surface font-semibold hover:text-brand-accent flex items-center gap-1 mt-1">
+                    <FontAwesomeIcon icon={faExternalLinkAlt} className="text-[10px]" /> Daftar akun Tripay sekarang
+                  </a>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${settings.tripay_mode === 'production' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {settings.tripay_mode === 'production' ? 'LIVE' : 'SANDBOX'}
+                </span>
+              </div>
+
+              {/* Mode selector */}
+              <div className="mb-5">
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-1">Tripay Mode</label>
+                <p className="text-xs text-brand-muted mb-3">Gunakan mode Sandbox untuk uji coba dan LIVE jika sistem sudah berjalan.</p>
+                <div className="flex gap-3 flex-wrap">
+                  <button
+                    onClick={() => set('tripay_mode', 'sandbox')}
+                    className={`radio-mode${settings.tripay_mode !== 'production' ? ' selected' : ''}`}
+                  >
+                    <div className="dot" /> Sandbox
+                  </button>
+                  <button
+                    onClick={() => set('tripay_mode', 'production')}
+                    className={`radio-mode${settings.tripay_mode === 'production' ? ' selected' : ''}`}
+                  >
+                    <div className="dot" /> LIVE (Production)
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {/* API Key */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                      Tripay API Key — {settings.tripay_mode === 'production' ? 'Production' : 'Sandbox'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowKeys(p => ({ ...p, apiKey: !p.apiKey }))}
+                      className="text-brand-surface text-xs font-semibold hover:text-brand-accent"
+                    >
+                      {showKeys.apiKey ? 'hide' : 'show'}
+                    </button>
+                  </div>
+                  <input
+                    type={showKeys.apiKey ? 'text' : 'password'}
+                    value={settings.tripay_api_key ?? ''}
+                    onChange={e => set('tripay_api_key', e.target.value)}
+                    className="inp"
+                    placeholder="DEV-..."
+                  />
+                </div>
+
+                {/* Private Key */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                      Tripay Private Key — {settings.tripay_mode === 'production' ? 'Production' : 'Sandbox'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowKeys(p => ({ ...p, privKey: !p.privKey }))}
+                      className="text-brand-surface text-xs font-semibold hover:text-brand-accent"
+                    >
+                      {showKeys.privKey ? 'hide' : 'show'}
+                    </button>
+                  </div>
+                  <input
+                    type={showKeys.privKey ? 'text' : 'password'}
+                    value={settings.tripay_private_key ?? ''}
+                    onChange={e => set('tripay_private_key', e.target.value)}
+                    className="inp"
+                    placeholder="xxxxx-xxxxx-xxxxx"
+                  />
+                </div>
+
+                {/* Merchant Code */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">
+                    Kode Merchant — {settings.tripay_mode === 'production' ? 'Production' : 'Sandbox'}
                   </label>
-                ))}
+                  <input
+                    type="text"
+                    value={settings.tripay_merchant_code ?? ''}
+                    onChange={e => set('tripay_merchant_code', e.target.value)}
+                    className="inp"
+                    placeholder="T12345"
+                  />
+                </div>
+
+                {/* Callback URL */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">URL Callback</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://yourdomain.com'}/api/tripay/callback`}
+                      className="inp flex-1 bg-brand-light text-brand-muted cursor-default"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://yourdomain.com'}/api/tripay/callback`).catch(() => {})}
+                      className="flex items-center gap-1.5 px-4 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-surface hover:bg-brand-surface hover:text-white transition-colors bg-white shrink-0"
+                    >
+                      <FontAwesomeIcon icon={faCopy} /> Copy
+                    </button>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex items-center gap-3 pt-2 flex-wrap">
+                  <button
+                    onClick={() => handleSave(['tripay_api_key', 'tripay_private_key', 'tripay_merchant_code', 'tripay_mode'])}
+                    disabled={isPending}
+                    className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                  >
+                    <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Pengaturan
+                  </button>
+                  <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
+                    <FontAwesomeIcon icon={faPlugCircleCheck} /> Test Koneksi
+                  </button>
+                </div>
               </div>
             </div>
-            <button onClick={() => handleSave(['tripay_api_key', 'tripay_private_key', 'tripay_merchant_code', 'tripay_mode'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
-              <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
-            </button>
+
+            {/* Channel Pembayaran card */}
+            <div className="setting-card">
+              <h2 className="font-bold text-brand-dark text-base mb-1">Channel Pembayaran</h2>
+              <p className="text-sm text-brand-muted mb-5">Pilih channel pembayaran yang aktif ditampilkan ke pelanggan.</p>
+
+              {/* Virtual Account */}
+              <div className="mb-5">
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Virtual Account</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'BCA', label: 'BCA Virtual Account', sub: 'Transfer Bank BCA', abbr: 'BCA', color: 'text-blue-700' },
+                    { key: 'Mandiri', label: 'Mandiri Virtual Account', sub: 'Transfer Bank Mandiri', abbr: 'MNR', color: 'text-yellow-700' },
+                    { key: 'BNI', label: 'BNI Virtual Account', sub: 'Transfer Bank BNI', abbr: 'BNI', color: 'text-orange-600' },
+                    { key: 'BRI', label: 'BRI Virtual Account', sub: 'Transfer Bank BRI', abbr: 'BRI', color: 'text-blue-500', defaultOff: true },
+                  ].map(({ key, label, sub, abbr, color, defaultOff }) => {
+                    const settingKey = `ch_${key.toLowerCase()}`
+                    const isOn = settings[settingKey] !== 'false' && !defaultOff || settings[settingKey] === 'true'
+                    return (
+                      <div key={key} className={`channel-card${isOn ? ' on' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 bg-brand-light rounded-[8px] border border-brand-muted/15 flex items-center justify-center font-bold text-xs ${color}`}>{abbr}</div>
+                          <div><div className="font-semibold text-sm text-brand-dark">{label}</div><div className="text-xs text-brand-muted">{sub}</div></div>
+                        </div>
+                        <label className="toggle">
+                          <input type="checkbox" checked={isOn} onChange={e => set(settingKey, e.target.checked ? 'true' : 'false')} />
+                          <span className="toggle-slider" />
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* E-Wallet */}
+              <div className="mb-5">
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">E-Wallet</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'qris', label: 'QRIS', sub: 'Semua e-wallet mendukung QRIS', abbr: 'QRIS', bg: 'bg-[#00AED6]/10', color: 'text-[#00AED6]' },
+                    { key: 'ovo', label: 'OVO', sub: 'E-wallet OVO', abbr: 'OVO', bg: 'bg-[#4C3494]/10', color: 'text-[#4C3494]' },
+                    { key: 'dana', label: 'DANA', sub: 'E-wallet DANA', abbr: 'DANA', bg: 'bg-[#108EE9]/10', color: 'text-[#108EE9]' },
+                    { key: 'shopeepay', label: 'ShopeePay', sub: 'E-wallet ShopeePay', abbr: 'SPay', bg: 'bg-[#EE4D2D]/10', color: 'text-[#EE4D2D]', defaultOff: true },
+                  ].map(({ key, label, sub, abbr, bg, color, defaultOff }) => {
+                    const settingKey = `ch_${key}`
+                    const isOn = settings[settingKey] !== 'false' && !defaultOff || settings[settingKey] === 'true'
+                    return (
+                      <div key={key} className={`channel-card${isOn ? ' on' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 ${bg} rounded-[8px] border border-brand-muted/15 flex items-center justify-center font-bold text-xs ${color}`}>{abbr}</div>
+                          <div><div className="font-semibold text-sm text-brand-dark">{label}</div><div className="text-xs text-brand-muted">{sub}</div></div>
+                        </div>
+                        <label className="toggle">
+                          <input type="checkbox" checked={isOn} onChange={e => set(settingKey, e.target.checked ? 'true' : 'false')} />
+                          <span className="toggle-slider" />
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Ritel & Lainnya */}
+              <div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Ritel &amp; Lainnya</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'alfamart', label: 'Alfamart', sub: 'Bayar di gerai Alfamart', abbr: 'Alfa', bg: 'bg-orange-50', color: 'text-orange-500' },
+                    { key: 'indomaret', label: 'Indomaret', sub: 'Bayar di gerai Indomaret', abbr: 'Indo', bg: 'bg-red-50', color: 'text-red-500', defaultOff: true },
+                  ].map(({ key, label, sub, abbr, bg, color, defaultOff }) => {
+                    const settingKey = `ch_${key}`
+                    const isOn = settings[settingKey] !== 'false' && !defaultOff || settings[settingKey] === 'true'
+                    return (
+                      <div key={key} className={`channel-card${isOn ? ' on' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 ${bg} rounded-[8px] border border-brand-muted/15 flex items-center justify-center font-bold text-xs ${color}`}>{abbr}</div>
+                          <div><div className="font-semibold text-sm text-brand-dark">{label}</div><div className="text-xs text-brand-muted">{sub}</div></div>
+                        </div>
+                        <label className="toggle">
+                          <input type="checkbox" checked={isOn} onChange={e => set(settingKey, e.target.checked ? 'true' : 'false')} />
+                          <span className="toggle-slider" />
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => handleSave(Object.keys(settings).filter(k => k.startsWith('ch_')))}
+                  disabled={isPending}
+                  className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Perubahan
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
