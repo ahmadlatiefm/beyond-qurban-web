@@ -23,11 +23,8 @@ function getLocationLabel(location: string) {
 }
 function getAnimalLabel(animal: string) {
   const map: Record<string, string> = {
-    domba: '🐑 Domba',
-    kambing: '🐐 Kambing',
-    sapi: '🐄 Sapi',
-    unta: '🐪 Unta',
-    mix: '🐑🐄 Mix (Domba & Sapi)',
+    domba: '🐑 Domba', kambing: '🐐 Kambing', sapi: '🐄 Sapi',
+    unta: '🐪 Unta', mix: '🐑🐄 Mix',
   }
   return map[animal] ?? `🐑 ${animal}`
 }
@@ -138,6 +135,33 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               <p className="text-brand-muted text-sm leading-relaxed">{campaign.description}</p>
             </div>
 
+            {/* Rich Content — renders text and image blocks from admin */}
+            {campaign.richContent && (() => {
+              try {
+                const blocks: {type: string; value: string; caption?: string}[] = JSON.parse(campaign.richContent!)
+                if (!blocks.length) return null
+                return (
+                  <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-6 mb-6">
+                    <h2 className="font-serif text-xl font-bold text-brand-dark mb-4">Cerita Program</h2>
+                    <div className="flex flex-col gap-5">
+                      {blocks.map((block, i) => {
+                        if (block.type === 'image') return (
+                          <div key={i}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={block.value} alt={block.caption || ''} className="w-full rounded-[10px] object-cover max-h-[360px]" />
+                            {block.caption && <p className="text-xs text-brand-muted text-center mt-2 italic">{block.caption}</p>}
+                          </div>
+                        )
+                        return (
+                          <p key={i} className="text-brand-muted text-sm leading-relaxed whitespace-pre-line">{block.value}</p>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              } catch { return null }
+            })()}
+
             {/* What you get */}
             <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-6 mb-6">
               <h2 className="font-serif text-lg font-bold text-brand-dark mb-4">Yang Anda Dapatkan</h2>
@@ -197,6 +221,9 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               price: campaign.price,
               programType: campaign.programType,
               location: campaign.location,
+              animalType: campaign.animalType,
+              allowShare: campaign.allowShare,
+              ctaButtonText: campaign.ctaButtonText,
             }} />
           </div>
         </div>

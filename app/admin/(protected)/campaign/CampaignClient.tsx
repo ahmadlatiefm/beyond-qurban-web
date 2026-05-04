@@ -1,5 +1,5 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash, faPlus, faXmark, faFloppyDisk, faCloudArrowUp, faCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
@@ -19,6 +19,9 @@ const emptyForm = {
   imageUrl: '',
   animalType: 'domba',
   programType: 'qurban',
+  ctaButtonText: '',
+  allowShare: 'false',
+  richContent: '[]',
 }
 
 const ANIMAL_OPTIONS = [
@@ -44,6 +47,83 @@ function getProgramBadge(p: string) {
   return { label: 'Qurban', cls: 'bg-brand-surface/10 text-brand-surface' }
 }
 
+interface ContentBlock { type: 'text' | 'image'; value: string; caption?: string }
+
+function RichContentEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [blocks, setBlocks] = useState<ContentBlock[]>(() => {
+    try { return JSON.parse(value) } catch { return [] }
+  })
+
+  // Sync blocks when value prop changes (e.g. when opening edit modal)
+  useEffect(() => {
+    try { setBlocks(JSON.parse(value)) } catch { setBlocks([]) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value === '[]' ? value : undefined])
+
+  function update(newBlocks: ContentBlock[]) {
+    setBlocks(newBlocks)
+    onChange(JSON.stringify(newBlocks))
+  }
+
+  function addText() { update([...blocks, { type: 'text', value: '' }]) }
+  function addImage() { update([...blocks, { type: 'image', value: '', caption: '' }]) }
+  function removeBlock(i: number) { update(blocks.filter((_, idx) => idx !== i)) }
+  function updateBlock(i: number, partial: Partial<ContentBlock>) {
+    update(blocks.map((b, idx) => idx === i ? { ...b, ...partial } : b))
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {blocks.map((block, i) => (
+        <div key={i} className="border border-brand-muted/20 rounded-[8px] p-3 bg-brand-light relative">
+          <button type="button" onClick={() => removeBlock(i)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs">✕</button>
+          <div className="text-[10px] font-bold text-brand-muted uppercase tracking-wider mb-2">
+            {block.type === 'image' ? '📷 Gambar' : '📝 Teks'}
+          </div>
+          {block.type === 'text' ? (
+            <textarea
+              value={block.value}
+              onChange={e => updateBlock(i, { value: e.target.value })}
+              rows={4}
+              className="inp w-full"
+              placeholder="Tulis cerita di sini..."
+            />
+          ) : (
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                value={block.value}
+                onChange={e => updateBlock(i, { value: e.target.value })}
+                className="inp"
+                placeholder="URL foto (https://...)"
+              />
+              <input
+                type="text"
+                value={block.caption || ''}
+                onChange={e => updateBlock(i, { caption: e.target.value })}
+                className="inp"
+                placeholder="Keterangan foto (opsional)"
+              />
+              {block.value && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={block.value} alt="" className="w-full h-32 object-cover rounded-[6px]" />
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <button type="button" onClick={addText} className="flex-1 py-2 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[8px] text-xs font-medium transition-colors">
+          + Tambah Teks
+        </button>
+        <button type="button" onClick={addImage} className="flex-1 py-2 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[8px] text-xs font-medium transition-colors">
+          + Tambah Foto
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function CampaignClient({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
   const [campaigns, setCampaigns] = useState(initialCampaigns)
   const [modalOpen, setModalOpen] = useState(false)
@@ -67,6 +147,9 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
       imageUrl: c.imageUrl,
       animalType: (c as any).animalType ?? 'domba',
       programType: (c as any).programType ?? 'qurban',
+      ctaButtonText: (c as any).ctaButtonText ?? '',
+      allowShare: (c as any).allowShare ? 'true' : 'false',
+      richContent: (c as any).richContent ?? '[]',
     })
     setModalOpen(true)
   }
@@ -82,6 +165,7 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
           price: parseInt(form.price),
           targetCount: parseInt(form.targetCount),
           location: form.location as any,
+          allowShare: form.allowShare === 'true',
         } : c))
         showToast('Campaign berhasil diperbarui!')
       } else {
@@ -304,6 +388,46 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
               <div>
                 <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Deskripsi</label>
                 <textarea rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="inp" placeholder="Deskripsi program penyaluran..." />
+              </div>
+
+              {/* Teks Tombol CTA */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">
+                  Teks Tombol CTA (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={form.ctaButtonText ?? ''}
+                  onChange={e => setForm(f => ({ ...f, ctaButtonText: e.target.value }))}
+                  className="inp"
+                  placeholder="Kosongkan untuk default (Qurban/Sedekah Sekarang)"
+                />
+              </div>
+
+              {/* Allow 1/7 sapi toggle */}
+              {form.animalType === 'sapi' && (
+                <div className="flex items-center justify-between p-3 bg-brand-light rounded-[8px] border border-brand-muted/10">
+                  <div>
+                    <div className="text-sm font-semibold text-brand-dark">Aktifkan Opsi 1/7 Bagian Sapi</div>
+                    <div className="text-xs text-brand-muted mt-0.5">Donatur bisa pilih 1/7 bagian dari seekor sapi</div>
+                  </div>
+                  <label className="toggle">
+                    <input type="checkbox" checked={form.allowShare === 'true'} onChange={e => setForm(f => ({ ...f, allowShare: e.target.checked ? 'true' : 'false' }))} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              )}
+
+              {/* Rich Content Editor */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">
+                  Konten Cerita Program (Opsional)
+                </label>
+                <p className="text-xs text-brand-muted mb-3">Tambahkan foto dan teks untuk cerita program. Akan tampil di halaman detail campaign.</p>
+                <RichContentEditor
+                  value={form.richContent ?? '[]'}
+                  onChange={v => setForm(f => ({ ...f, richContent: v }))}
+                />
               </div>
             </div>
 

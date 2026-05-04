@@ -22,10 +22,11 @@ import type { Campaign } from '@prisma/client'
 const inpCls =
   'w-full h-11 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A] transition-[border-color]'
 
-export default function DonationForm({ campaign, qty }: { campaign: Campaign; qty: number }) {
+export default function DonationForm({ campaign, qty, shareType }: { campaign: Campaign; qty: number; shareType: '1/1' | '1/7' }) {
   const [isPending, startTransition] = useTransition()
   const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER')
-  const total = campaign.price * qty
+  const unitPrice = shareType === '1/7' ? Math.round(campaign.price / 7) : campaign.price
+  const total = unitPrice * qty
 
   function getFlag(loc: string) {
     if (loc === 'AFRICA') return '🌍'
@@ -157,48 +158,65 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
           </div>
 
           {/* Section 3: Atas Nama */}
-          <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-7">
-            <div className="flex items-center gap-3 mb-6 pb-5 border-b border-dashed border-brand-muted/10">
-              <div className="w-10 h-10 rounded-[10px] bg-brand-light border border-brand-muted/15 flex items-center justify-center">
-                <FontAwesomeIcon icon={faScroll} className="text-brand-surface" />
-              </div>
-              <div>
-                <h2 className="font-serif text-lg font-bold text-brand-text-dark">Atas Nama Qurban</h2>
-                <p className="text-xs text-brand-muted mt-0.5">
-                  Nama yang tertera dalam sertifikat dan laporan qurban
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-3">
-                  Qurban untuk siapa?
-                </label>
-                <div className="flex gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer flex-1">
-                    <input
-                      type="radio"
-                      name="forWhom"
-                      value="self"
-                      defaultChecked
-                      className="accent-brand-surface w-4 h-4"
-                    />
-                    <span className="text-sm font-medium text-brand-dark">Diri sendiri</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer flex-1">
-                    <input type="radio" name="forWhom" value="other" className="accent-brand-surface w-4 h-4" />
-                    <span className="text-sm font-medium text-brand-dark">Orang lain</span>
-                  </label>
+          {(campaign as any).programType !== 'sedekah' && (
+            <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-7">
+              <div className="flex items-center gap-3 mb-6 pb-5 border-b border-dashed border-brand-muted/10">
+                <div className="w-10 h-10 rounded-[10px] bg-brand-light border border-brand-muted/15 flex items-center justify-center">
+                  📜
+                </div>
+                <div>
+                  <h2 className="font-serif text-lg font-bold text-brand-text-dark">Atas Nama Qurban</h2>
+                  <p className="text-xs text-brand-muted mt-0.5">Nama yang tertera dalam sertifikat</p>
                 </div>
               </div>
-              <input
-                name="qurbanName"
-                type="text"
-                placeholder="Nama atas nama qurban (sama dengan nama donatur jika untuk diri sendiri)"
-                className={inpCls}
-              />
+
+              {shareType === '1/7' && (
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-[8px] px-3 py-2 text-xs text-amber-700 mb-4">
+                  <span>🐄</span>
+                  <span><strong>1/7 bagian sapi</strong> — Anda berkurban bersama 6 peserta lainnya dalam 1 ekor sapi</span>
+                </div>
+              )}
+              <input type="hidden" name="shareType" value={shareType} />
+
+              {/* Single name if qty=1 */}
+              {qty === 1 && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer flex-1">
+                      <input type="radio" name="forWhom" value="self" defaultChecked className="accent-brand-surface w-4 h-4" />
+                      <span className="text-sm font-medium text-brand-dark">Diri sendiri</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer flex-1">
+                      <input type="radio" name="forWhom" value="other" className="accent-brand-surface w-4 h-4" />
+                      <span className="text-sm font-medium text-brand-dark">Orang lain</span>
+                    </label>
+                  </div>
+                  <input name="qurbanName" type="text" placeholder="Nama atas nama qurban" className={inpCls} />
+                </div>
+              )}
+
+              {/* Multiple names if qty > 1 */}
+              {qty > 1 && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs text-brand-muted mb-2">Masukkan nama untuk masing-masing ekor hewan kurban:</p>
+                  {Array.from({ length: qty }, (_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-brand-surface/10 border border-brand-surface/20 flex items-center justify-center text-xs font-bold text-brand-surface shrink-0">
+                        {i + 1}
+                      </div>
+                      <input
+                        name={`qurbanName_${i}`}
+                        type="text"
+                        placeholder={`Nama ke-${i + 1} atas nama qurban`}
+                        className={inpCls}
+                      />
+                    </div>
+                  ))}
+                  <input type="hidden" name="qurbanCount" value={qty.toString()} />
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Section 4: Metode Pembayaran */}
           <div className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium p-7">
@@ -295,7 +313,7 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
             <div className="text-xs text-brand-accent-light/70 mb-1">Ringkasan Donasi</div>
             <div className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(total)}</div>
             <div className="text-xs text-brand-accent-light/60 mt-1">
-              {qty} ekor × {formatCurrency(campaign.price)}
+              {qty} ekor × {formatCurrency(unitPrice)}
             </div>
           </div>
           <div className="p-5 flex flex-col gap-3">
@@ -309,7 +327,7 @@ export default function DonationForm({ campaign, qty }: { campaign: Campaign; qt
             </div>
             <div className="flex justify-between text-sm text-brand-muted">
               <span>Harga/ekor</span>
-              <span className="font-medium text-brand-dark">{formatCurrency(campaign.price)}</span>
+              <span className="font-medium text-brand-dark">{formatCurrency(unitPrice)}</span>
             </div>
             <div className="border-t border-brand-muted/10 pt-3 flex justify-between">
               <span className="font-bold text-brand-dark">Total</span>

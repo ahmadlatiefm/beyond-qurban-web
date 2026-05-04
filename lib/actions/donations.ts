@@ -13,6 +13,15 @@ export async function createDonation(formData: FormData) {
   const forWhom = formData.get('forWhom') as string
   const email = formData.get('email') as string
 
+  const qurbanCount = parseInt(formData.get('qurbanCount') as string) || 0
+  let qurbanNames: string[] | null = null
+  if (qurbanCount > 1) {
+    qurbanNames = Array.from({ length: qurbanCount }, (_, i) =>
+      (formData.get(`qurbanName_${i}`) as string) || ''
+    )
+  }
+  const shareType = formData.get('shareType') as string | null
+
   if (!campaignSlug || !customerName || !whatsapp) {
     throw new Error('Data tidak lengkap')
   }
@@ -38,6 +47,8 @@ export async function createDonation(formData: FormData) {
       paymentMethod: paymentMethod || 'BANK_TRANSFER',
       paymentStatus: 'UNPAID',
       status: 'PENDING',
+      qurbanNames: qurbanNames ? JSON.stringify(qurbanNames) : null,
+      shareType: shareType || null,
     },
   })
 

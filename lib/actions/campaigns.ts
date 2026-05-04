@@ -12,6 +12,9 @@ export async function createCampaign(formData: FormData) {
   const imageUrl = formData.get('imageUrl') as string
   const animalType = formData.get('animalType') as string
   const programType = formData.get('programType') as string
+  const ctaButtonText = (formData.get('ctaButtonText') as string) || null
+  const allowShare = formData.get('allowShare') === 'true'
+  const richContent = (formData.get('richContent') as string) || null
 
   if (!title || !location || !price) throw new Error('Data tidak lengkap')
 
@@ -30,11 +33,16 @@ export async function createCampaign(formData: FormData) {
       imageUrl: imageUrl || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
       animalType: animalType || 'domba',
       programType: programType || 'qurban',
+      ctaButtonText,
+      allowShare,
+      richContent,
       isActive: true,
     },
   })
   revalidatePath('/admin/campaign')
   revalidatePath('/penyaluran')
+  revalidatePath('/penyaluran', 'layout')
+  revalidatePath('/penyaluran/[slug]', 'page')
 }
 
 export async function updateCampaign(id: string, formData: FormData) {
@@ -60,11 +68,20 @@ export async function updateCampaign(id: string, formData: FormData) {
   if (animalType) data.animalType = animalType
   if (programType) data.programType = programType
 
+  const ctaButtonText = formData.get('ctaButtonText') as string | null
+  if (ctaButtonText !== null) data.ctaButtonText = ctaButtonText || null
+  const allowShareRaw = formData.get('allowShare') as string | null
+  if (allowShareRaw !== null) data.allowShare = allowShareRaw === 'true'
+  const richContent = formData.get('richContent') as string | null
+  if (richContent !== null) data.richContent = richContent || null
+
   if (Object.keys(data).length === 0) return
 
   await prisma.campaign.update({ where: { id }, data })
   revalidatePath('/admin/campaign')
   revalidatePath('/penyaluran')
+  revalidatePath('/penyaluran', 'layout')
+  revalidatePath('/penyaluran/[slug]', 'page')
 }
 
 export async function deleteCampaign(id: string) {
