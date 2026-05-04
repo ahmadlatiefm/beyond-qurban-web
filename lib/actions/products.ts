@@ -36,27 +36,28 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
-  const name = formData.get('name') as string
-  const weight = parseFloat(formData.get('weight') as string)
-  const price = parseInt(formData.get('price') as string)
-  const stock = parseInt(formData.get('stock') as string)
-  const description = formData.get('description') as string
-  const imageUrl = formData.get('imageUrl') as string
-  const status = formData.get('status') === 'true' ? 'ACTIVE' : 'INACTIVE'
+  // Partial update — hanya update field yang ada di formData
+  const data: Record<string, any> = {}
 
-  await prisma.product.update({
-    where: { id },
-    data: {
-      name,
-      weight,
-      price,
-      stock: isNaN(stock) ? 0 : stock,
-      description,
-      ...(imageUrl && { imageUrl, images: [imageUrl] }),
-      status: status as 'ACTIVE' | 'INACTIVE',
-    },
-  })
+  const name = formData.get('name') as string | null
+  const weightRaw = formData.get('weight') as string | null
+  const priceRaw = formData.get('price') as string | null
+  const stockRaw = formData.get('stock') as string | null
+  const description = formData.get('description') as string | null
+  const imageUrl = formData.get('imageUrl') as string | null
+  const statusRaw = formData.get('status') as string | null
 
+  if (name !== null && name !== '') data.name = name
+  if (weightRaw !== null) { const v = parseFloat(weightRaw); if (!isNaN(v)) data.weight = v }
+  if (priceRaw !== null) { const v = parseInt(priceRaw); if (!isNaN(v)) data.price = v }
+  if (stockRaw !== null) { const v = parseInt(stockRaw); data.stock = isNaN(v) ? 0 : v }
+  if (description !== null) data.description = description
+  if (imageUrl) { data.imageUrl = imageUrl; data.images = [imageUrl] }
+  if (statusRaw !== null) data.status = statusRaw === 'true' ? 'ACTIVE' : 'INACTIVE'
+
+  if (Object.keys(data).length === 0) return
+
+  await prisma.product.update({ where: { id }, data })
   revalidatePath('/admin/produk')
 }
 
