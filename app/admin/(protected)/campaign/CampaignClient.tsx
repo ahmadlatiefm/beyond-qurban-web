@@ -10,7 +10,39 @@ function getFlag(l: string) { return l === 'AFRICA' ? '🌍' : l === 'PALESTINE'
 function getLocationLabel(l: string) { return l === 'AFRICA' ? 'Afrika Sub-Sahara' : l === 'PALESTINE' ? 'Palestina' : 'Pedalaman Indonesia' }
 function getLocationBadgeCls(l: string) { return l === 'AFRICA' ? 'bg-blue-100 text-blue-700' : l === 'PALESTINE' ? 'bg-red-100 text-red-600' : 'bg-brand-accent text-brand-dark' }
 
-const emptyForm = { title: '', location: 'INDONESIA', price: '', targetCount: '', description: '', imageUrl: '' }
+const emptyForm = {
+  title: '',
+  location: 'INDONESIA',
+  price: '',
+  targetCount: '',
+  description: '',
+  imageUrl: '',
+  animalType: 'domba',
+  programType: 'qurban',
+}
+
+const ANIMAL_OPTIONS = [
+  { value: 'domba', label: '🐑 Domba' },
+  { value: 'kambing', label: '🐐 Kambing' },
+  { value: 'sapi', label: '🐄 Sapi' },
+  { value: 'unta', label: '🐪 Unta' },
+  { value: 'mix', label: '🐑🐄 Mix (Domba & Sapi)' },
+]
+
+const PROGRAM_OPTIONS = [
+  { value: 'qurban', label: '🐑 Qurban', desc: 'Khusus ibadah qurban' },
+  { value: 'sedekah', label: '💝 Sedekah', desc: 'Sedekah / infaq umum' },
+  { value: 'keduanya', label: '🐑💝 Qurban & Sedekah', desc: 'Donatur bisa pilih salah satu' },
+]
+
+function getAnimalLabel(a: string) {
+  return ANIMAL_OPTIONS.find(o => o.value === a)?.label ?? `🐑 ${a}`
+}
+function getProgramBadge(p: string) {
+  if (p === 'sedekah') return { label: 'Sedekah', cls: 'bg-blue-100 text-blue-700' }
+  if (p === 'keduanya') return { label: 'Qurban & Sedekah', cls: 'bg-purple-100 text-purple-700' }
+  return { label: 'Qurban', cls: 'bg-brand-surface/10 text-brand-surface' }
+}
 
 export default function CampaignClient({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
   const [campaigns, setCampaigns] = useState(initialCampaigns)
@@ -26,7 +58,16 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
   function openAdd() { setEditingId(null); setForm(emptyForm); setModalOpen(true) }
   function openEdit(c: Campaign) {
     setEditingId(c.id)
-    setForm({ title: c.title, location: c.location, price: c.price.toString(), targetCount: c.targetCount.toString(), description: c.description, imageUrl: c.imageUrl })
+    setForm({
+      title: c.title,
+      location: c.location,
+      price: c.price.toString(),
+      targetCount: c.targetCount.toString(),
+      description: c.description,
+      imageUrl: c.imageUrl,
+      animalType: (c as any).animalType ?? 'domba',
+      programType: (c as any).programType ?? 'qurban',
+    })
     setModalOpen(true)
   }
 
@@ -36,7 +77,12 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
     startTransition(async () => {
       if (editingId) {
         await updateCampaign(editingId, fd)
-        setCampaigns(prev => prev.map(c => c.id === editingId ? { ...c, ...form, price: parseInt(form.price), targetCount: parseInt(form.targetCount), location: form.location as any } : c))
+        setCampaigns(prev => prev.map(c => c.id === editingId ? {
+          ...c, ...form,
+          price: parseInt(form.price),
+          targetCount: parseInt(form.targetCount),
+          location: form.location as any,
+        } : c))
         showToast('Campaign berhasil diperbarui!')
       } else {
         await createCampaign(fd)
@@ -114,7 +160,16 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
 
                 {/* Content */}
                 <div className="p-5">
-                  <h3 className="font-serif text-base font-bold text-brand-dark mb-1">{c.title}</h3>
+                  <h3 className="font-serif text-base font-bold text-brand-dark mb-2">{c.title}</h3>
+                  {/* Animal + Program badges */}
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-light border border-brand-muted/20 text-brand-dark">
+                      {getAnimalLabel((c as any).animalType ?? 'domba')}
+                    </span>
+                    {(() => { const b = getProgramBadge((c as any).programType ?? 'qurban'); return (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.cls}`}>{b.label}</span>
+                    )})()}
+                  </div>
                   <p className="text-xs text-brand-muted leading-relaxed mb-3" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {c.description}
                   </p>
@@ -198,6 +253,38 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
                   <option value="AFRICA">🌍 Afrika Sub-Sahara</option>
                   <option value="PALESTINE">🇵🇸 Palestina</option>
                 </select>
+              </div>
+
+              {/* Jenis Hewan */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Jenis Hewan yang Disalurkan</label>
+                <select value={form.animalType} onChange={e => setForm(f => ({ ...f, animalType: e.target.value }))} className="inp" style={{ height: 42 }}>
+                  {ANIMAL_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tipe Program */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Tipe Program</label>
+                <div className="flex flex-col gap-2">
+                  {PROGRAM_OPTIONS.map(o => (
+                    <label
+                      key={o.value}
+                      className={`flex items-center gap-3 border-2 rounded-[8px] p-3 cursor-pointer transition-all ${form.programType === o.value ? 'border-brand-accent bg-brand-accent/[0.03]' : 'border-brand-muted/20 hover:border-brand-accent/40'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${form.programType === o.value ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
+                        {form.programType === o.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <input type="radio" name="programType" value={o.value} checked={form.programType === o.value} onChange={() => setForm(f => ({ ...f, programType: o.value }))} className="sr-only" />
+                      <div>
+                        <div className="text-sm font-bold text-brand-dark">{o.label}</div>
+                        <div className="text-[11px] text-brand-muted">{o.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -10,6 +10,8 @@ export async function createCampaign(formData: FormData) {
   const targetCount = parseInt(formData.get('targetCount') as string)
   const description = formData.get('description') as string
   const imageUrl = formData.get('imageUrl') as string
+  const animalType = formData.get('animalType') as string
+  const programType = formData.get('programType') as string
 
   if (!title || !location || !price) throw new Error('Data tidak lengkap')
 
@@ -26,6 +28,8 @@ export async function createCampaign(formData: FormData) {
       targetCount: isNaN(targetCount) ? 0 : targetCount,
       description: description || '',
       imageUrl: imageUrl || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
+      animalType: animalType || 'domba',
+      programType: programType || 'qurban',
       isActive: true,
     },
   })
@@ -51,6 +55,10 @@ export async function updateCampaign(id: string, formData: FormData) {
   if (imageUrl) data.imageUrl = imageUrl
   if (isActiveRaw !== null) data.isActive = isActiveRaw === 'true'
   if (location) data.location = location as any
+  const animalType = formData.get('animalType') as string | null
+  const programType = formData.get('programType') as string | null
+  if (animalType) data.animalType = animalType
+  if (programType) data.programType = programType
 
   if (Object.keys(data).length === 0) return
 

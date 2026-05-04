@@ -194,11 +194,11 @@ export default function PenyaluranClient({ campaigns }: { campaigns: Campaign[] 
                         </div>
                       </div>
                       <Link
-                        href={`/penyaluran/checkout?campaign=${campaign.slug}&qty=1`}
+                        href={`/penyaluran/${campaign.slug}`}
                         className="w-full bg-cta-gradient text-brand-text-dark font-bold text-sm py-2.5 rounded-[10px] flex items-center justify-center gap-2 hover:scale-[1.02] hover:shadow-glow transition-all"
                       >
                         <FontAwesomeIcon icon={faHeart} className="text-xs" />
-                        Donasi Sekarang
+                        Lihat Campaign
                         <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
                       </Link>
                     </div>

@@ -99,6 +99,10 @@ model Campaign {
   price       Int
   imageUrl    String
   description String         @db.Text
+  // Jenis hewan: "domba" | "kambing" | "sapi" | "unta" | "mix"
+  animalType  String         @default("domba")
+  // Tipe program: "qurban" | "sedekah" | "keduanya"
+  programType String         @default("qurban")
   isActive    Boolean        @default(true)
   donations   Donation[]
   createdAt   DateTime       @default(now())
