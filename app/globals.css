@@ -99,3 +99,14 @@ textarea.inp { height: auto; padding: 10px 12px; resize: vertical; }
 
 /* Modal overlay */
 .modal-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+/* Settings tabs */
+.sec-tab { padding: 8px 16px; border-radius: 8px; font-size: .875rem; font-weight: 500; color: #6B7280; border: none; background: transparent; cursor: pointer; transition: all .2s; white-space: nowrap; display: inline-flex; align-items: center; }
+.sec-tab.active { background: white; color: #1B5E3B; font-weight: 700; box-shadow: 0 2px 8px rgba(13,51,32,0.08); }
+/* Setting card */
+.setting-card { background: white; border-radius: 14px; padding: 28px; box-shadow: 0 4px 20px rgba(13,51,32,.08); border: 1px solid rgba(107,114,128,.1); }
+/* Radio mode */
+.radio-mode { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 2px solid rgba(107,114,128,.2); border-radius: 8px; font-size: .875rem; font-weight: 500; color: #6B7280; cursor: pointer; transition: all .2s; }
+.radio-mode .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(107,114,128,.4); transition: all .2s; flex-shrink: 0; }
+.radio-mode.selected { border-color: #1B5E3B; color: #1B5E3B; }
+.radio-mode.selected .dot { border-color: #1B5E3B; background: #1B5E3B; }
