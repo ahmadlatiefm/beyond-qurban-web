@@ -13,6 +13,8 @@ import { formatCurrency } from '@/lib/utils'
 interface Props {
   orderNumber: string
   totalAmount: number
+  productPrice: number    // totalAmount - shippingCost
+  shippingCost: number    // separate so summary shows correct breakdown
   productName: string
   productImage: string
   productWeight: number
@@ -27,7 +29,8 @@ interface Props {
 }
 
 export default function PembayaranClient({
-  orderNumber, totalAmount, productName, productImage, productWeight, createdAt,
+  orderNumber, totalAmount, productPrice, shippingCost,
+  productName, productImage, productWeight, createdAt,
   paymentMethod, payCode, manualBank, tripayPaymentUrl,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null)
@@ -383,8 +386,17 @@ export default function PembayaranClient({
               </div>
             </div>
             <div className="border-t border-brand-muted/10 pt-4 flex flex-col gap-2 text-sm">
-              <div className="flex justify-between text-brand-muted"><span>Subtotal</span><span>{formatCurrency(totalAmount)}</span></div>
-              <div className="flex justify-between text-brand-muted"><span>Ongkir</span><span className="text-[#25D366] font-semibold">Gratis</span></div>
+              <div className="flex justify-between text-brand-muted">
+                <span>Subtotal Produk</span>
+                <span>{formatCurrency(productPrice)}</span>
+              </div>
+              <div className="flex justify-between text-brand-muted">
+                <span>Ongkos Kirim</span>
+                {shippingCost > 0
+                  ? <span className="font-semibold text-brand-dark">+{formatCurrency(shippingCost)}</span>
+                  : <span className="text-[#25D366] font-semibold">Gratis</span>
+                }
+              </div>
             </div>
             <div className="border-t border-brand-muted/10 pt-3 flex justify-between items-center">
               <span className="font-bold text-brand-dark">Total</span>

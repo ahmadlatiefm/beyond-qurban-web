@@ -84,6 +84,8 @@ export default async function PembayaranPage({
         <PembayaranClient
           orderNumber={order.orderNumber}
           totalAmount={order.totalAmount}
+          productPrice={order.totalAmount - order.shippingCost}
+          shippingCost={order.shippingCost}
           productName={order.product.name}
           productImage={order.product.imageUrl}
           productWeight={order.product.weight}

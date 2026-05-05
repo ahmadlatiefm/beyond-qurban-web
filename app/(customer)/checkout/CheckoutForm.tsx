@@ -8,6 +8,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import { createOrder } from '@/lib/actions/orders'
+import { calculateShipping } from '@/lib/shipping'
 import type { Product } from '@prisma/client'
 
 interface ActiveChannels {
@@ -108,10 +109,15 @@ export default function CheckoutForm({
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherApplied, setVoucherApplied] = useState(false)
   const [voucherError, setVoucherError] = useState<string | null>(null)
+  const [city, setCity] = useState('')
 
   // Effective display price (global discount already computed server-side)
   const baseDisplayPrice = discountedPrice ?? product.price
   const discountAmount = product.price - baseDisplayPrice
+
+  // Live shipping cost based on city input
+  const shippingCost = city.trim() ? calculateShipping(city) : 0
+  const totalDisplay = baseDisplayPrice + shippingCost
 
   // Simulate voucher client-side hint (actual validation is server-side in createOrder)
   function handleApplyVoucher() {
@@ -187,10 +193,15 @@ export default function CheckoutForm({
               <input
                 name="city"
                 type="text"
+                value={city}
+                onChange={e => setCity(e.target.value)}
                 placeholder="Contoh: Bandung, Jakarta Selatan, Sumedang"
                 className="w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]"
               />
-              <p className="text-xs text-brand-muted">Bandung Raya = gratis ongkir · Luar Bandung Raya = +Rp 150.000</p>
+              <p className="text-xs text-brand-muted">
+                Bandung Raya (Bandung, Cimahi, Sumedang) = <span className="text-emerald-600 font-semibold">gratis ongkir</span>
+                {' · '}Luar Bandung Raya = <span className="text-amber-600 font-semibold">+Rp 150.000</span>
+              </p>
             </div>
 
             {/* Tanggal */}
@@ -473,12 +484,18 @@ export default function CheckoutForm({
                   <span className="text-xs opacity-70">diterapkan</span>
                 </div>
               )}
-              <div className="flex justify-between text-brand-accent-light/80"><span>Biaya Pengiriman</span><span className="text-[#25D366] font-semibold">Gratis*</span></div>
+              <div className="flex justify-between text-brand-accent-light/80">
+                <span>Biaya Pengiriman</span>
+                {shippingCost > 0
+                  ? <span className="text-amber-400 font-semibold">+{formatCurrency(shippingCost)}</span>
+                  : <span className="text-[#25D366] font-semibold">{city.trim() ? 'Gratis ✓' : 'Gratis*'}</span>
+                }
+              </div>
               <div className="flex justify-between text-brand-accent-light/80"><span>Biaya Perawatan</span><span className="text-[#25D366] font-semibold">Gratis</span></div>
             </div>
             <div className="flex justify-between items-center border-t border-brand-surface-light/30 pt-4 mb-6">
               <span className="font-bold text-brand-light">Total Pembayaran</span>
-              <span className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(baseDisplayPrice)}</span>
+              <span className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(totalDisplay)}</span>
             </div>
             <button type="submit" form="order-form" disabled={isPending} className="hidden lg:flex w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity items-center justify-center gap-2 disabled:opacity-60">
               {isPending ? 'Memproses...' : 'Konfirmasi Pesanan'} <FontAwesomeIcon icon={faArrowRight} />
