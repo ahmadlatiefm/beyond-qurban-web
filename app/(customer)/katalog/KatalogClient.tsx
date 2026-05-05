@@ -7,6 +7,7 @@ import {
   faWeightScale, faChevronLeft, faChevronRight
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
+import { applyGlobalDiscount } from '@/lib/discount'
 import ProductCard from '@/components/ui/ProductCard'
 import type { Product } from '@prisma/client'
 
@@ -14,7 +15,11 @@ type FilterType = 'all' | 'domba' | 'kambing' | 'sapi' | 'tersedia' | 'premium'
 type SortType = 'default' | 'price-asc' | 'price-desc' | 'weight-desc'
 type ViewType = 'grid' | 'list'
 
-interface Props { products: Product[] }
+interface Props {
+  products: Product[]
+  settingsMap?: Record<string, string>
+  discountPct?: number
+}
 
 const FILTER_LABELS: { key: FilterType; label: string }[] = [
   { key: 'all', label: 'Semua' },
@@ -25,7 +30,7 @@ const FILTER_LABELS: { key: FilterType; label: string }[] = [
   { key: 'premium', label: 'Premium' },
 ]
 
-export default function KatalogClient({ products }: Props) {
+export default function KatalogClient({ products, settingsMap = {}, discountPct = 0 }: Props) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterType>('all')
   const [sort, setSort] = useState<SortType>('default')
@@ -125,8 +130,15 @@ export default function KatalogClient({ products }: Props) {
       <div className={`grid gap-5 mb-10 ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1'}`}>
         {filtered.map(product => {
           const avail = product.status === 'ACTIVE' && product.stock > 0
+          const disc = applyGlobalDiscount(product.price, settingsMap)
           return (
-            <ProductCard key={product.id} product={product} available={avail} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              available={avail}
+              discountPct={disc.discountAmount > 0 ? discountPct : undefined}
+              discountedPrice={disc.discountAmount > 0 ? disc.finalPrice : undefined}
+            />
           )
         })}
       </div>

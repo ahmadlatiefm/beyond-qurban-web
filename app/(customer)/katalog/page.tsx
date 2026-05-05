@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 import KatalogClient from './KatalogClient'
+import { applyGlobalDiscount } from '@/lib/discount'
 
 async function getAllProducts() {
   return prisma.product.findMany({
@@ -13,7 +14,22 @@ async function getAllProducts() {
 }
 
 export default async function KatalogPage() {
-  const products = await getAllProducts()
+  const [products, settingsRows] = await Promise.all([
+    getAllProducts(),
+    prisma.settings.findMany({
+      where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end'] } }
+    }),
+  ])
+  const settingsMap: Record<string, string> = {}
+  settingsRows.forEach(s => { settingsMap[s.key] = s.value })
+
+  // Compute discount for a sample price (just to get pct/label — actual per-product below)
+  const sampleDiscount = applyGlobalDiscount(1000000, settingsMap)
+  const discountActive = sampleDiscount.discountAmount > 0
+  // For percentage: derive pct from label or compute from value
+  const discountPct = settingsMap.diskon_type === 'nominal' ? 0
+    : (discountActive ? parseInt(settingsMap.diskon_value ?? '0') : 0)
+
   return (
     <main className="pt-20">
       {/* Hero section */}
@@ -39,7 +55,7 @@ export default async function KatalogPage() {
       </section>
 
       {/* Client interactive section */}
-      <KatalogClient products={products} />
+      <KatalogClient products={products} settingsMap={settingsMap} discountPct={discountPct} />
     </main>
   )
 }

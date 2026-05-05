@@ -7,6 +7,7 @@ import {
   faHandHoldingHeart, faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
+import { applyGlobalDiscount } from '@/lib/discount'
 import type { Campaign } from '@prisma/client'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -41,7 +42,15 @@ const FILTERS: { key: FilterType; label: string }[] = [
 ]
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function PenyaluranClient({ campaigns }: { campaigns: Campaign[] }) {
+export default function PenyaluranClient({
+  campaigns,
+  settingsMap = {},
+  discountPct = 0,
+}: {
+  campaigns: Campaign[]
+  settingsMap?: Record<string, string>
+  discountPct?: number
+}) {
   const [filter, setFilter] = useState<FilterType>('ALL')
 
   const filtered = useMemo(() =>
@@ -120,6 +129,19 @@ export default function PenyaluranClient({ campaigns }: { campaigns: Campaign[] 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((campaign) => {
               const badge = getLocationBadge(campaign.location)
+              // Per-campaign effective price from settings
+              const locationKey = campaign.location === 'INDONESIA' ? 'indonesia'
+                : campaign.location === 'AFRICA' ? 'africa' : 'palestine'
+              const settingsPrice = settingsMap[`penyaluran_harga_${locationKey}`]
+                ? parseInt(settingsMap[`penyaluran_harga_${locationKey}`]) : campaign.price
+              const settingsDisc = parseInt(settingsMap[`penyaluran_disc_${locationKey}`] ?? '0')
+              const penyaluranEffective = Math.round(settingsPrice * (1 - settingsDisc / 100))
+              // Also check global discount
+              const globalDisc = applyGlobalDiscount(penyaluranEffective, settingsMap)
+              const finalPrice = globalDisc.finalPrice
+              const hasDiscount = finalPrice < campaign.price
+              const shownPct = settingsDisc > 0 ? settingsDisc : discountPct
+
               return (
                 <div
                   key={campaign.id}
@@ -141,6 +163,14 @@ export default function PenyaluranClient({ campaigns }: { campaigns: Campaign[] 
                         {badge.label}
                       </span>
                     </div>
+                    {/* Discount badge */}
+                    {hasDiscount && shownPct > 0 && (
+                      <div className="absolute top-3 right-3">
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-[20px] shadow-sm">
+                          DISKON {shownPct}%
+                        </span>
+                      </div>
+                    )}
                     {/* Flag + location bottom */}
                     <div className="absolute bottom-3 left-4">
                       <div className="flex items-center gap-1.5">
@@ -184,9 +214,16 @@ export default function PenyaluranClient({ campaigns }: { campaigns: Campaign[] 
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-[11px] text-brand-muted uppercase tracking-wide">Harga / Ekor</div>
-                          <div className="font-bold text-lg text-brand-accent leading-tight">
-                            {formatCurrency(campaign.price)}
-                          </div>
+                          {hasDiscount ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className="text-brand-muted/50 line-through text-sm">{formatCurrency(campaign.price)}</div>
+                              <div className="font-bold text-lg text-red-500 leading-tight">{formatCurrency(finalPrice)}</div>
+                            </div>
+                          ) : (
+                            <div className="font-bold text-lg text-brand-accent leading-tight">
+                              {formatCurrency(campaign.price)}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 text-[11px] text-brand-muted">
                           <FontAwesomeIcon icon={faUsers} className="text-brand-surface text-[10px]" />

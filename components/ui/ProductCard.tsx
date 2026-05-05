@@ -7,9 +7,12 @@ import type { Product } from '@prisma/client'
 interface ProductCardProps {
   product: Product
   available?: boolean
+  discountPct?: number    // e.g. 10 = "DISKON 10%"
+  discountedPrice?: number
 }
 
-export default function ProductCard({ product, available = true }: ProductCardProps) {
+export default function ProductCard({ product, available = true, discountPct, discountedPrice }: ProductCardProps) {
+  const hasDiscount = !!discountPct && discountPct > 0 && !!discountedPrice
   return (
     <div className={`product-card bg-white rounded-[12px] overflow-hidden border border-brand-muted/10 flex flex-col shadow-premium${!available ? ' opacity-70' : ''}`}>
       {/* Image */}
@@ -25,6 +28,14 @@ export default function ProductCard({ product, available = true }: ProductCardPr
             </span>
           )}
         </div>
+        {/* Discount badge — top right */}
+        {hasDiscount && available && (
+          <div className="absolute top-3 right-3 z-10">
+            <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-[20px] shadow-sm">
+              DISKON {discountPct}%
+            </span>
+          </div>
+        )}
         {/* Unavailable overlay */}
         {!available && (
           <div className="absolute inset-0 bg-white/35 z-[3]" />
@@ -49,9 +60,16 @@ export default function ProductCard({ product, available = true }: ProductCardPr
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] text-brand-muted uppercase tracking-wide">Harga</div>
-              <div className={`font-bold text-lg leading-tight ${available ? 'text-brand-accent' : 'text-brand-muted'}`}>
-                {formatCurrency(product.price)}
-              </div>
+              {hasDiscount && available ? (
+                <div className="flex flex-col gap-0.5">
+                  <div className="text-brand-muted/50 line-through text-sm">{formatCurrency(product.price)}</div>
+                  <div className="font-bold text-lg leading-tight text-red-500">{formatCurrency(discountedPrice!)}</div>
+                </div>
+              ) : (
+                <div className={`font-bold text-lg leading-tight ${available ? 'text-brand-accent' : 'text-brand-muted'}`}>
+                  {formatCurrency(product.price)}
+                </div>
+              )}
             </div>
           </div>
 

@@ -262,9 +262,39 @@ export default function CheckoutForm({
             </div>
 
             {/* Catatan */}
-            <div className="flex flex-col gap-2 pb-6 border-b border-dashed border-brand-muted/20">
+            <div className="flex flex-col gap-2">
               <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest">CATATAN TAMBAHAN (OPSIONAL)</label>
               <input name="notes" type="text" placeholder="Misal: Patokan rumah, jam pengiriman yang diinginkan" className={inputCls} />
+            </div>
+
+            {/* Voucher input — di sini supaya mudah ditemukan */}
+            <div className="flex flex-col gap-2 pb-6 border-b border-dashed border-brand-muted/20">
+              <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1.5">
+                <FontAwesomeIcon icon={faTag} className="text-brand-accent" /> KODE VOUCHER (OPSIONAL)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={voucherCode}
+                  onChange={e => {
+                    setVoucherCode(e.target.value.toUpperCase())
+                    setVoucherApplied(false)
+                    setVoucherDiscount(0)
+                    setVoucherError(null)
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyVoucher() } }}
+                  placeholder="Masukkan kode voucher (opsional)"
+                  className={`${inputCls} flex-1 font-mono tracking-wider ${voucherApplied ? 'border-emerald-400' : ''}`}
+                />
+                <button type="button" onClick={handleApplyVoucher} disabled={voucherPending || !voucherCode.trim()}
+                  className="px-4 h-12 bg-brand-surface text-white text-sm font-bold rounded-[8px] hover:bg-brand-dark transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-60">
+                  {voucherPending ? '...' : voucherApplied ? <><FontAwesomeIcon icon={faCheck} /> Diterapkan</> : 'Terapkan'}
+                </button>
+              </div>
+              {voucherApplied && voucherDiscount > 0 && (
+                <p className="text-xs text-emerald-600 font-semibold">✓ Diskon {voucherPct}% ({formatCurrency(voucherDiscount)}) berhasil diterapkan</p>
+              )}
+              {voucherError && <p className="text-xs text-red-600 font-medium">✕ {voucherError}</p>}
             </div>
 
             {/* Payment methods — dynamic */}
@@ -443,38 +473,6 @@ export default function CheckoutForm({
                 </p>
               </div>
             </div>
-
-            {/* Voucher input */}
-            {hasVouchers && (
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1.5">
-                  <FontAwesomeIcon icon={faTag} className="text-brand-accent" /> KODE VOUCHER (OPSIONAL)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={voucherCode}
-                    onChange={e => {
-                      setVoucherCode(e.target.value.toUpperCase())
-                      setVoucherApplied(false)
-                      setVoucherDiscount(0)
-                      setVoucherError(null)
-                    }}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyVoucher() } }}
-                    placeholder="Masukkan kode voucher"
-                    className={`${inputCls} flex-1 font-mono tracking-wider`}
-                  />
-                  <button type="button" onClick={handleApplyVoucher} disabled={voucherPending || !voucherCode.trim()}
-                    className="px-4 h-12 bg-brand-surface text-white text-sm font-bold rounded-[8px] hover:bg-brand-dark transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-60">
-                    {voucherPending ? '...' : voucherApplied ? <><FontAwesomeIcon icon={faCheck} /> Diterapkan</> : 'Terapkan'}
-                  </button>
-                </div>
-                {voucherApplied && voucherDiscount > 0 && (
-                  <p className="text-xs text-emerald-600 font-semibold">✓ Diskon {voucherPct}% ({formatCurrency(voucherDiscount)}) berhasil diterapkan</p>
-                )}
-                {voucherError && <p className="text-xs text-red-600 font-medium">✕ {voucherError}</p>}
-              </div>
-            )}
 
             {/* Error */}
             {error && (
