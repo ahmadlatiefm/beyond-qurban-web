@@ -76,8 +76,8 @@ export default async function CheckoutPage({
   // Global discount
   const discount = applyGlobalDiscount(product.price, settingsMap)
 
-  // Parse vouchers for client hint (not the full list — just enabled flag)
-  const hasVouchers = !!settingsMap.vouchers && settingsMap.vouchers !== '[]'
+  // Always show voucher input — validation happens server-side
+  const hasVouchers = true
 
   // Shipping zones
   const shippingZones = parseShippingZones(settingsMap.shipping_zones)
