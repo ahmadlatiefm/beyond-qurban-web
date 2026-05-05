@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma'
 
 export default async function TentangKamiPage() {
   const rows = await prisma.settings.findMany({
-    where: { key: { in: ['about_badge','about_title_1','about_title_2','about_description','about_stats','about_vision','about_mission','footer_address','footer_phone','footer_email','footer_whatsapp','footer_instagram'] } }
+    where: { key: { in: ['about_badge','about_title_1','about_title_2','about_description','about_stats','about_vision','about_mission','about_why_title','about_why_desc','about_why_items','about_team_title','about_team_desc','about_team','footer_address','footer_phone','footer_email','footer_whatsapp','footer_instagram'] } }
   })
   const s: Record<string, string> = {}
   rows.forEach(r => { s[r.key] = r.value })
@@ -27,6 +27,28 @@ export default async function TentangKamiPage() {
   const email = s.footer_email || 'info@beyondqurban.com'
   const waLink = s.footer_whatsapp || 'https://wa.me/6281234567890'
   const igLink = s.footer_instagram || '#'
+
+  // "Kenapa Pilih Kami" section
+  const whyTitle = s.about_why_title || 'Kenapa Pilih Kami?'
+  const whyDesc = s.about_why_desc || 'Empat alasan utama mengapa ribuan keluarga mempercayakan ibadah kurban mereka kepada Beyond Qurban.'
+  let whyItems: { title: string; desc: string }[] = [
+    { title: 'Terpercaya', desc: 'Berpengalaman sejak 2019 dengan rekam jejak lebih dari 1.200 kurban terlaksana dan ribuan pelanggan puas.' },
+    { title: 'Transparan', desc: 'Update foto dan video kondisi hewan kurban dikirim rutin ke WhatsApp Anda. Lacak pesanan real-time kapan saja.' },
+    { title: 'Tersertifikasi MUI', desc: 'Proses penyembelihan dan perawatan hewan sesuai standar MUI. Setiap hewan melalui pemeriksaan dokter hewan bersertifikat.' },
+    { title: 'Pengiriman Seluruh Indonesia', desc: 'Layanan pengiriman gratis ke seluruh wilayah Indonesia dengan jadwal fleksibel dan armada terstandar.' },
+  ]
+  try { const p = JSON.parse(s.about_why_items ?? ''); if (Array.isArray(p) && p.length > 0) whyItems = p } catch {}
+
+  // "Tim Kami" section
+  const teamTitle = s.about_team_title || 'Tim Kami'
+  const teamDesc = s.about_team_desc || 'Orang-orang berdedikasi di balik layanan Beyond Qurban.'
+  let teamMembers: { name: string; role: string; desc: string }[] = [
+    { name: 'Ustaz Ahmad Faris', role: 'Direktur Utama', desc: 'Pengasuh pesantren & pakar syariat kurban dengan pengalaman 15 tahun.' },
+    { name: 'drh. Siti Nurhaliza', role: 'Kepala Veteriner', desc: 'Dokter hewan berlisensi, memastikan setiap hewan sehat dan memenuhi syarat.' },
+    { name: 'Bapak Ridwan Kamil', role: 'Kepala Operasional', desc: 'Mengawasi proses logistik dan pengiriman ke seluruh wilayah Indonesia.' },
+    { name: 'Nadia Rahmawati', role: 'Customer Relations', desc: 'Memastikan setiap pelanggan mendapat pengalaman terbaik dari awal hingga akhir.' },
+  ]
+  try { const p = JSON.parse(s.about_team ?? ''); if (Array.isArray(p) && p.length > 0) teamMembers = p } catch {}
 
   let aboutStats: { stat: string; label: string }[] = [
     { stat: '2019', label: 'Tahun Berdiri' },
@@ -106,24 +128,22 @@ export default async function TentangKamiPage() {
       <section className="py-20" style={{ background: 'linear-gradient(180deg,#FAFAF8,#E8F4EE)' }}>
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">Kenapa Pilih Kami?</h2>
-            <p className="text-brand-muted max-w-xl mx-auto">Empat alasan utama mengapa ribuan keluarga mempercayakan ibadah kurban mereka kepada Beyond Qurban.</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">{whyTitle}</h2>
+            <p className="text-brand-muted max-w-xl mx-auto">{whyDesc}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: faShieldHalved, title: 'Terpercaya', desc: 'Berpengalaman sejak 2019 dengan rekam jejak lebih dari 1.200 kurban terlaksana dan ribuan pelanggan puas.' },
-              { icon: faCamera, title: 'Transparan', desc: 'Update foto dan video kondisi hewan kurban dikirim rutin ke WhatsApp Anda. Lacak pesanan real-time kapan saja.' },
-              { icon: faStarAndCrescent, title: 'Tersertifikasi MUI', desc: 'Proses penyembelihan dan perawatan hewan sesuai standar MUI. Setiap hewan melalui pemeriksaan dokter hewan bersertifikat.' },
-              { icon: faTruckFast, title: 'Pengiriman Seluruh Indonesia', desc: 'Layanan pengiriman gratis ke seluruh wilayah Indonesia dengan jadwal fleksibel dan armada terstandar.' },
-            ].map(({ icon, title, desc }) => (
-              <div key={title} className="bg-white rounded-[14px] p-7 shadow-premium border border-brand-muted/10 flex flex-col items-start gap-4">
+            {whyItems.map(({ title, desc }, i) => {
+              const icons = [faShieldHalved, faCamera, faStarAndCrescent, faTruckFast]
+              const icon = icons[i % icons.length]
+              return (
+              <div key={i} className="bg-white rounded-[14px] p-7 shadow-premium border border-brand-muted/10 flex flex-col items-start gap-4">
                 <div className="w-14 h-14 rounded-[14px] bg-brand-dark flex items-center justify-center">
                   <FontAwesomeIcon icon={icon} className="text-brand-accent text-2xl" />
                 </div>
                 <h3 className="font-serif text-lg font-bold text-brand-dark">{title}</h3>
                 <p className="text-brand-muted text-sm leading-relaxed">{desc}</p>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>
@@ -132,18 +152,15 @@ export default async function TentangKamiPage() {
       <section className="py-20 bg-brand-light">
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">Tim Kami</h2>
-            <p className="text-brand-muted">Orang-orang berdedikasi di balik layanan Beyond Qurban.</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">{teamTitle}</h2>
+            <p className="text-brand-muted">{teamDesc}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { name: 'Ustaz Ahmad Faris', role: 'Direktur Utama', desc: 'Pengasuh pesantren & pakar syariat kurban dengan pengalaman 15 tahun.', gradient: 'from-brand-surface to-brand-dark' },
-              { name: 'drh. Siti Nurhaliza', role: 'Kepala Veteriner', desc: 'Dokter hewan berlisensi, memastikan setiap hewan sehat dan memenuhi syarat.', gradient: 'from-brand-surface-light to-brand-surface' },
-              { name: 'Bapak Ridwan Kamil', role: 'Kepala Operasional', desc: 'Mengawasi proses logistik dan pengiriman ke seluruh wilayah Indonesia.', gradient: 'from-brand-accent/60 to-brand-dark' },
-              { name: 'Nadia Rahmawati', role: 'Customer Relations', desc: 'Memastikan setiap pelanggan mendapat pengalaman terbaik dari awal hingga akhir.', gradient: 'from-brand-surface to-brand-surface-light' },
-            ].map(({ name, role, desc, gradient }) => (
-              <div key={name} className="bg-white rounded-[14px] overflow-hidden shadow-premium border border-brand-muted/10 text-center">
-                <div className={`h-52 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+            {teamMembers.map(({ name, role, desc }, i) => {
+              const gradients = ['from-brand-surface to-brand-dark','from-brand-surface-light to-brand-surface','from-brand-accent/60 to-brand-dark','from-brand-surface to-brand-surface-light']
+              return (
+              <div key={i} className="bg-white rounded-[14px] overflow-hidden shadow-premium border border-brand-muted/10 text-center">
+                <div className={`h-52 bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
                   <FontAwesomeIcon icon={faUser} className="text-5xl text-brand-accent/30" />
                 </div>
                 <div className="p-5">
@@ -152,7 +169,7 @@ export default async function TentangKamiPage() {
                   <p className="text-brand-muted text-xs leading-relaxed">{desc}</p>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>

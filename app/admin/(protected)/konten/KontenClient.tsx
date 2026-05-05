@@ -70,6 +70,21 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
     { name: 'Siti Rahayu', city: 'Surabaya', stars: 5, text: 'Sangat mudah, transparan, dan amanah. Bisa memantau kondisi hewan secara real-time. Sungguh tenang ibadah kurbannya bersama Beyond Qurban.' },
     { name: 'Budi Santoso', city: 'Bandung', stars: 4, text: 'Layanannya profesional dan responsif. Hewan kurban berkualitas baik dan proses pengiriman lancar. Sangat direkomendasikan.' },
   ]))
+  type TeamMember = { name: string; role: string; desc: string }
+  type WhyItem = { title: string; desc: string }
+
+  const [whyItems, setWhyItems] = useState<WhyItem[]>(() => parseJsonOr(initialSettings.about_why_items, [
+    { title: 'Terpercaya', desc: 'Berpengalaman sejak 2019 dengan rekam jejak lebih dari 1.200 kurban terlaksana dan ribuan pelanggan puas.' },
+    { title: 'Transparan', desc: 'Update foto dan video kondisi hewan kurban dikirim rutin ke WhatsApp Anda. Lacak pesanan real-time kapan saja.' },
+    { title: 'Tersertifikasi MUI', desc: 'Proses penyembelihan dan perawatan hewan sesuai standar MUI. Setiap hewan melalui pemeriksaan dokter hewan bersertifikat.' },
+    { title: 'Pengiriman Seluruh Indonesia', desc: 'Layanan pengiriman gratis ke seluruh wilayah Indonesia dengan jadwal fleksibel dan armada terstandar.' },
+  ]))
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => parseJsonOr(initialSettings.about_team, [
+    { name: 'Ustaz Ahmad Faris', role: 'Direktur Utama', desc: 'Pengasuh pesantren & pakar syariat kurban dengan pengalaman 15 tahun.' },
+    { name: 'drh. Siti Nurhaliza', role: 'Kepala Veteriner', desc: 'Dokter hewan berlisensi, memastikan setiap hewan sehat dan memenuhi syarat.' },
+    { name: 'Bapak Ridwan Kamil', role: 'Kepala Operasional', desc: 'Mengawasi proses logistik dan pengiriman ke seluruh wilayah Indonesia.' },
+    { name: 'Nadia Rahmawati', role: 'Customer Relations', desc: 'Memastikan setiap pelanggan mendapat pengalaman terbaik dari awal hingga akhir.' },
+  ]))
   const [impactStats, setImpactStats] = useState<ImpactStat[]>(() => parseJsonOr(initialSettings.penyaluran_impact_stats, [
     { stat: '1.247', label: 'Ekor Tersalurkan' },
     { stat: '48', label: 'Desa Terjangkau' },
@@ -524,9 +539,65 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
               </div>
             </div>
 
+            {/* Kenapa Pilih Kami */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-brand-muted/10 pb-3">
+                <div>
+                  <h2 className="font-bold text-brand-dark text-base">Section "Kenapa Pilih Kami"</h2>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div><label className={labelCls}>Judul</label><input type="text" value={s.about_why_title ?? 'Kenapa Pilih Kami?'} onChange={e => set('about_why_title', e.target.value)} className={inpCls} /></div>
+                    <div><label className={labelCls}>Subtitle</label><input type="text" value={s.about_why_desc ?? ''} onChange={e => set('about_why_desc', e.target.value)} className={inpCls} /></div>
+                  </div>
+                </div>
+                <button onClick={() => setWhyItems(p => [...p, { title: '', desc: '' }])}
+                  className="flex items-center gap-1.5 text-brand-surface font-semibold text-xs hover:text-brand-dark self-start mt-1">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {whyItems.map((item, i) => (
+                  <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5 relative">
+                    <button onClick={() => setWhyItems(p => p.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><FontAwesomeIcon icon={faTrash} className="text-xs" /></button>
+                    <input type="text" value={item.title} onChange={e => setWhyItems(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                    <textarea rows={2} value={item.desc} onChange={e => setWhyItems(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi" className={`${inpCls} resize-none`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tim Kami */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-brand-muted/10 pb-3">
+                <div>
+                  <h2 className="font-bold text-brand-dark text-base">Section "Tim Kami"</h2>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div><label className={labelCls}>Judul</label><input type="text" value={s.about_team_title ?? 'Tim Kami'} onChange={e => set('about_team_title', e.target.value)} className={inpCls} /></div>
+                    <div><label className={labelCls}>Subtitle</label><input type="text" value={s.about_team_desc ?? ''} onChange={e => set('about_team_desc', e.target.value)} className={inpCls} /></div>
+                  </div>
+                </div>
+                <button onClick={() => setTeamMembers(p => [...p, { name: '', role: '', desc: '' }])}
+                  className="flex items-center gap-1.5 text-brand-surface font-semibold text-xs hover:text-brand-dark self-start mt-1">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {teamMembers.map((member, i) => (
+                  <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5 relative">
+                    <button onClick={() => setTeamMembers(p => p.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><FontAwesomeIcon icon={faTrash} className="text-xs" /></button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" value={member.name} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} placeholder="Nama" className={inpCls} style={{ height: 34 }} />
+                      <input type="text" value={member.role} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, role: e.target.value } : x))} placeholder="Jabatan" className={inpCls} style={{ height: 34 }} />
+                    </div>
+                    <textarea rows={2} value={member.desc} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi singkat" className={`${inpCls} resize-none`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <button disabled={isPending} onClick={() => save(
-              ['about_badge','about_title_1','about_title_2','about_description','about_vision','about_mission'],
-              { about_stats: JSON.stringify(aboutStats) }
+              ['about_badge','about_title_1','about_title_2','about_description','about_vision','about_mission',
+               'about_why_title','about_why_desc','about_team_title','about_team_desc'],
+              { about_stats: JSON.stringify(aboutStats), about_why_items: JSON.stringify(whyItems), about_team: JSON.stringify(teamMembers) }
             )} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
               <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Tentang Kami
             </button>

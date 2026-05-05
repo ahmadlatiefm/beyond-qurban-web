@@ -25,6 +25,8 @@ const ALL_KEYS = [
   // Tentang Kami
   'about_badge','about_title_1','about_title_2','about_description',
   'about_stats','about_mission','about_vision',
+  'about_why_title','about_why_desc','about_why_items',
+  'about_team_title','about_team_desc','about_team',
 ]
 
 export default async function AdminKontenPage() {

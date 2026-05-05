@@ -36,9 +36,9 @@ export default async function Footer() {
   return (
     <footer className="bg-brand-dark border-t border-brand-surface-light/20 pt-16 pb-8">
       <div className="max-w-[1100px] mx-auto px-6 md:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-14">
           {/* Brand col */}
-          <div className="md:col-span-1">
+          <div>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30">
                 <Image src="/logo-gold.png" alt="" width={28} height={28} className="object-contain" />
@@ -73,15 +73,6 @@ export default async function Footer() {
                   </Link>
                 </li>
               ))}
-            </ul>
-          </div>
-
-          {/* Admin col */}
-          <div>
-            <h4 className="font-serif text-brand-light text-base font-bold mb-5">Admin</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link href="/admin/login" className="text-brand-accent-light/65 hover:text-brand-accent transition-colors">Login Admin</Link></li>
-              <li><Link href="/admin/dashboard" className="text-brand-accent-light/65 hover:text-brand-accent transition-colors">Dashboard</Link></li>
             </ul>
           </div>
 
