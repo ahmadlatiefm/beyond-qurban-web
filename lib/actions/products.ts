@@ -11,6 +11,9 @@ export async function createProduct(formData: FormData) {
   const description = formData.get('description') as string
   const imageUrl = formData.get('imageUrl') as string
   const status = formData.get('status') === 'true' ? 'ACTIVE' : 'INACTIVE'
+  const imagesRaw = formData.get('images') as string | null
+  let extraImages: string[] = []
+  try { if (imagesRaw) extraImages = JSON.parse(imagesRaw) } catch {}
 
   if (!name || !weight || !price) throw new Error('Data tidak lengkap')
 
@@ -27,7 +30,7 @@ export async function createProduct(formData: FormData) {
       stock: isNaN(stock) ? 0 : stock,
       description: description || '',
       imageUrl: imageUrl || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
-      images: [imageUrl || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png'],
+      images: extraImages,
       status: status as 'ACTIVE' | 'INACTIVE',
     },
   })
@@ -47,12 +50,15 @@ export async function updateProduct(id: string, formData: FormData) {
   const imageUrl = formData.get('imageUrl') as string | null
   const statusRaw = formData.get('status') as string | null
 
+  const imagesRaw = formData.get('images') as string | null
+
   if (name !== null && name !== '') data.name = name
   if (weightRaw !== null) { const v = parseFloat(weightRaw); if (!isNaN(v)) data.weight = v }
   if (priceRaw !== null) { const v = parseInt(priceRaw); if (!isNaN(v)) data.price = v }
   if (stockRaw !== null) { const v = parseInt(stockRaw); data.stock = isNaN(v) ? 0 : v }
   if (description !== null) data.description = description
-  if (imageUrl) { data.imageUrl = imageUrl; data.images = [imageUrl] }
+  if (imageUrl) data.imageUrl = imageUrl
+  if (imagesRaw !== null) { try { data.images = JSON.parse(imagesRaw) } catch {} }
   if (statusRaw !== null) data.status = statusRaw === 'true' ? 'ACTIVE' : 'INACTIVE'
 
   if (Object.keys(data).length === 0) return

@@ -32,14 +32,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ukuran file maksimal 2MB.' }, { status: 400 })
   }
 
+  const { searchParams } = new URL(req.url)
+  const rawFolder = searchParams.get('folder') ?? ''
+  const safeFolder = rawFolder.replace(/[^a-z0-9-]/gi, '').toLowerCase()
+
   const ext = extname(file.name) || '.jpg'
   const timestamp = Date.now()
   const filename = sanitizeFilename(`${timestamp}${ext}`)
-  const uploadDir = join(process.cwd(), 'public', 'uploads')
+  const uploadDir = safeFolder
+    ? join(process.cwd(), 'public', 'uploads', safeFolder)
+    : join(process.cwd(), 'public', 'uploads')
 
   await mkdir(uploadDir, { recursive: true })
   const bytes = await file.arrayBuffer()
   await writeFile(join(uploadDir, filename), Buffer.from(bytes))
 
-  return NextResponse.json({ url: `/uploads/${filename}` })
+  const url = safeFolder ? `/uploads/${safeFolder}/${filename}` : `/uploads/${filename}`
+  return NextResponse.json({ url })
 }

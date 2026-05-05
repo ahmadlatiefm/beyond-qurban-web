@@ -1,5 +1,5 @@
 'use client'
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faMagnifyingGlass, faPlus, faDownload, faPen, faTrash,
@@ -30,6 +30,61 @@ export default function ProdukClient({ initialProducts }: Props) {
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
 
   const [isPending, startTransition] = useTransition()
+  const [isUploading, setIsUploading] = useState(false)
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false)
+  const [galleryImages, setGalleryImages] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const galleryFileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/uploads?folder=produk', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setForm(f => ({ ...f, imageUrl: data.url }))
+        setPreviewImg(data.url)
+      } else {
+        showToast(data.error || 'Upload gagal.')
+      }
+    } catch {
+      showToast('Upload gagal, coba lagi.')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setIsUploadingGallery(true)
+    try {
+      const results = await Promise.all(files.map(async (file) => {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await fetch('/api/uploads?folder=produk', { method: 'POST', body: fd })
+        const data = await res.json()
+        return data.url as string | undefined
+      }))
+      const urls = results.filter(Boolean) as string[]
+      if (urls.length) setGalleryImages(prev => [...prev, ...urls])
+      else showToast('Beberapa foto gagal diupload.')
+    } catch {
+      showToast('Upload gagal, coba lagi.')
+    } finally {
+      setIsUploadingGallery(false)
+      if (galleryFileInputRef.current) galleryFileInputRef.current.value = ''
+    }
+  }
+
+  function removeGalleryImage(url: string) {
+    setGalleryImages(prev => prev.filter(u => u !== url))
+  }
 
   function showToast(msg: string) {
     setToast({ show: true, msg })
@@ -48,6 +103,7 @@ export default function ProdukClient({ initialProducts }: Props) {
     setEditingId(null)
     setForm(emptyForm)
     setPreviewImg(null)
+    setGalleryImages([])
     setModalOpen(true)
   }
 
@@ -64,6 +120,7 @@ export default function ProdukClient({ initialProducts }: Props) {
       status: p.status === 'ACTIVE',
     })
     setPreviewImg(p.imageUrl)
+    setGalleryImages(p.images.filter(img => img !== p.imageUrl))
     setModalOpen(true)
   }
 
@@ -77,6 +134,7 @@ export default function ProdukClient({ initialProducts }: Props) {
     fd.set('description', form.description)
     fd.set('imageUrl', form.imageUrl)
     fd.set('status', form.status ? 'true' : 'false')
+    fd.set('images', JSON.stringify(galleryImages))
 
     startTransition(async () => {
       if (editingId) {
@@ -311,14 +369,13 @@ export default function ProdukClient({ initialProducts }: Props) {
             <div className="p-7 flex flex-col gap-5 max-h-[70vh] overflow-y-auto">
               {/* Image preview/URL */}
               <div>
-                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">URL Foto Produk</label>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Foto Produk</label>
                 <div className="flex gap-2 mb-2">
-                  {previewImg && (
+                  {previewImg ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={previewImg} className="w-20 h-20 rounded-[8px] object-cover border border-brand-muted/20" alt="" />
-                  )}
-                  {!previewImg && (
-                    <div className="flex items-center justify-center w-20 h-20 rounded-[8px] bg-brand-light border border-dashed border-brand-muted/30">
+                    <img src={previewImg} className="w-20 h-20 rounded-[8px] object-cover border border-brand-muted/20 shrink-0" alt="" />
+                  ) : (
+                    <div className="flex items-center justify-center w-20 h-20 rounded-[8px] bg-brand-light border border-dashed border-brand-muted/30 shrink-0">
                       <FontAwesomeIcon icon={faCloudArrowUp} className="text-brand-muted text-2xl opacity-40" />
                     </div>
                   )}
@@ -329,6 +386,73 @@ export default function ProdukClient({ initialProducts }: Props) {
                     placeholder="https://... (URL gambar)"
                     className="inp flex-1"
                   />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-brand-muted">atau upload langsung:</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-brand-surface/40 text-brand-surface rounded-[8px] hover:bg-brand-surface hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    <FontAwesomeIcon icon={faCloudArrowUp} className="text-xs" />
+                    {isUploading ? 'Mengupload...' : 'Pilih File'}
+                  </button>
+                  <span className="text-xs text-brand-muted">JPG, PNG, WebP · maks. 2MB</span>
+                </div>
+              </div>
+
+              {/* Gallery images */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Foto Tambahan (Gallery)</label>
+                {galleryImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {galleryImages.map((url, idx) => (
+                      <div key={idx} className="relative w-16 h-16 shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} className="w-full h-full object-cover rounded-[8px] border border-brand-muted/20" alt="" />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(url)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] hover:bg-red-600 transition-colors"
+                        >
+                          <FontAwesomeIcon icon={faXmark} />
+                        </button>
+                      </div>
+                    ))}
+                    {isUploadingGallery && (
+                      <div className="w-16 h-16 rounded-[8px] border border-dashed border-brand-muted/30 bg-brand-light flex items-center justify-center shrink-0">
+                        <span className="text-[10px] text-brand-muted animate-pulse">...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={galleryFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={handleGalleryUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => galleryFileInputRef.current?.click()}
+                    disabled={isUploadingGallery}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-brand-surface/40 text-brand-surface rounded-[8px] hover:bg-brand-surface hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    <FontAwesomeIcon icon={faCloudArrowUp} className="text-xs" />
+                    {isUploadingGallery ? 'Mengupload...' : 'Tambah Foto'}
+                  </button>
+                  <span className="text-xs text-brand-muted">Bisa pilih beberapa sekaligus</span>
                 </div>
               </div>
 
