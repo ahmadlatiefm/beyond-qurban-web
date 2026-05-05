@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma'
 
 export default async function TentangKamiPage() {
   const rows = await prisma.settings.findMany({
-    where: { key: { in: ['about_badge','about_title_1','about_title_2','about_description','about_stats','about_vision','about_mission','about_why_title','about_why_desc','about_why_items','about_team_title','about_team_desc','about_team','footer_address','footer_phone','footer_email','footer_whatsapp','footer_instagram'] } }
+    where: { key: { in: ['about_badge','about_title_1','about_title_2','about_description','about_stats','about_vision','about_mission','about_why_title','about_why_desc','about_why_items','about_team_title','about_team_desc','about_team','about_contact_title','about_contact_desc','footer_address','footer_phone','footer_email','footer_whatsapp','footer_instagram'] } }
   })
   const s: Record<string, string> = {}
   rows.forEach(r => { s[r.key] = r.value })
@@ -27,6 +27,8 @@ export default async function TentangKamiPage() {
   const email = s.footer_email || 'info@beyondqurban.com'
   const waLink = s.footer_whatsapp || 'https://wa.me/6281234567890'
   const igLink = s.footer_instagram || '#'
+  const contactTitle = s.about_contact_title || 'Hubungi Kami'
+  const contactDesc = s.about_contact_desc || 'Ada pertanyaan? Tim kami siap membantu Anda.'
 
   // "Kenapa Pilih Kami" section
   const whyTitle = s.about_why_title || 'Kenapa Pilih Kami?'
@@ -183,8 +185,8 @@ export default async function TentangKamiPage() {
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(#C8962A 1px,transparent 1px)', backgroundSize: '28px 28px' }} />
         <div className="max-w-[1100px] mx-auto px-6 md:px-12 relative z-10">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-light mb-3">Hubungi Kami</h2>
-            <p className="text-brand-accent-light/70">Ada pertanyaan? Tim kami siap membantu Anda.</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-light mb-3">{contactTitle}</h2>
+            <p className="text-brand-accent-light/70">{contactDesc}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[

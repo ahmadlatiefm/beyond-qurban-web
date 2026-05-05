@@ -27,6 +27,7 @@ const ALL_KEYS = [
   'about_stats','about_mission','about_vision',
   'about_why_title','about_why_desc','about_why_items',
   'about_team_title','about_team_desc','about_team',
+  'about_contact_title','about_contact_desc',
 ]
 
 export default async function AdminKontenPage() {

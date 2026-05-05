@@ -643,9 +643,30 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
               </div>
             </div>
 
+            {/* Hubungi Kami */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Hubungi Kami"</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Judul Section</label><input type="text" value={s.about_contact_title ?? 'Hubungi Kami'} onChange={e => set('about_contact_title', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Subtitle</label><input type="text" value={s.about_contact_desc ?? 'Ada pertanyaan? Tim kami siap membantu Anda.'} onChange={e => set('about_contact_desc', e.target.value)} className={inpCls} /></div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div><label className={labelCls}>Alamat</label><textarea rows={2} value={s.footer_address ?? ''} onChange={e => set('footer_address', e.target.value)} className={`${inpCls} resize-none`} placeholder="Jl. Peternakan Raya No.12..." /></div>
+                <div><label className={labelCls}>Telepon / WhatsApp</label><input type="text" value={s.footer_phone ?? ''} onChange={e => set('footer_phone', e.target.value)} className={inpCls} placeholder="+62 812-3456-7890" /></div>
+                <div><label className={labelCls}>Email</label><input type="email" value={s.footer_email ?? ''} onChange={e => set('footer_email', e.target.value)} className={inpCls} placeholder="info@beyondqurban.com" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Link WhatsApp (tombol)</label><input type="text" value={s.footer_whatsapp ?? ''} onChange={e => set('footer_whatsapp', e.target.value)} className={inpCls} placeholder="https://wa.me/628..." /></div>
+                <div><label className={labelCls}>Link Instagram (tombol)</label><input type="text" value={s.footer_instagram ?? ''} onChange={e => set('footer_instagram', e.target.value)} className={inpCls} placeholder="https://instagram.com/..." /></div>
+              </div>
+              <p className="text-xs text-brand-muted">ℹ️ Data ini juga dipakai di Footer website.</p>
+            </div>
+
             <button disabled={isPending} onClick={() => save(
               ['about_badge','about_title_1','about_title_2','about_description','about_vision','about_mission',
-               'about_why_title','about_why_desc','about_team_title','about_team_desc'],
+               'about_why_title','about_why_desc','about_team_title','about_team_desc',
+               'about_contact_title','about_contact_desc',
+               'footer_address','footer_phone','footer_email','footer_whatsapp','footer_instagram'],
               { about_stats: JSON.stringify(aboutStats), about_why_items: JSON.stringify(whyItems), about_team: JSON.stringify(teamMembers) }
             )} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
               <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Tentang Kami
