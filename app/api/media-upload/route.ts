@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join, extname } from 'path'
 
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 3 * 1024 * 1024 // 3MB
 
 export async function POST(req: NextRequest) {
+  // Require admin session
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   const folder = (formData.get('folder') as string) || 'general'
@@ -14,12 +22,15 @@ export async function POST(req: NextRequest) {
   if (!ALLOWED_MIME.includes(file.type)) return NextResponse.json({ error: 'Format tidak didukung (JPG/PNG/WebP)' }, { status: 400 })
   if (file.size > MAX_SIZE) return NextResponse.json({ error: 'File terlalu besar (maks 3MB)' }, { status: 400 })
 
+  // Sanitize folder name — only allow alphanumeric and hyphens
+  const safeFolder = folder.replace(/[^a-z0-9-]/gi, '').substring(0, 32) || 'general'
+
   const ext = extname(file.name) || '.jpg'
-  const filename = `${folder}-${Date.now()}${ext}`
-  const uploadDir = join(process.cwd(), 'public', 'uploads', folder)
+  const filename = `${safeFolder}-${Date.now()}${ext}`
+  const uploadDir = join(process.cwd(), 'public', 'uploads', safeFolder)
   await mkdir(uploadDir, { recursive: true })
   const bytes = await file.arrayBuffer()
   await writeFile(join(uploadDir, filename), Buffer.from(bytes))
 
-  return NextResponse.json({ url: `/uploads/${folder}/${filename}` })
+  return NextResponse.json({ url: `/uploads/${safeFolder}/${filename}` })
 }

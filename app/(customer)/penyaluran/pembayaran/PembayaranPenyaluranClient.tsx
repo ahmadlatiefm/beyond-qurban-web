@@ -23,7 +23,8 @@ interface Props {
   createdAt: string
   paymentMethod: string
   payCode: string | null
-  manualBank?: { bankName: string; accountNumber: string; accountOwner: string } | null
+  tripayPaymentUrl?: string | null
+  manualBank?: { bankName: string; accountNumber: string; accountOwner: string; banks?: {id:string;code:string;name:string;number:string;owner:string}[] } | null
 }
 
 function getFlag(loc: string) {
@@ -41,6 +42,7 @@ export default function PembayaranPenyaluranClient({
   createdAt,
   paymentMethod,
   payCode,
+  tripayPaymentUrl,
   manualBank,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null)
@@ -202,7 +204,7 @@ export default function PembayaranPenyaluranClient({
                 {paymentMethod === 'SHOPEEPAY' ? 'SPAY' : paymentMethod}
               </div>
               <p className="text-sm text-brand-muted">Klik tombol di bawah untuk melanjutkan pembayaran melalui {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod}</p>
-              <a href="#" target="_blank" rel="noopener noreferrer"
+              <a href={tripayPaymentUrl ?? '#'} target="_blank" rel="noopener noreferrer"
                 className="w-full py-3.5 font-bold text-white rounded-[10px] flex items-center justify-center gap-2 text-sm"
                 style={{ background: paymentMethod === 'OVO' ? '#4C3494' : paymentMethod === 'DANA' ? '#108EE9' : '#EE4D2D' }}
               >

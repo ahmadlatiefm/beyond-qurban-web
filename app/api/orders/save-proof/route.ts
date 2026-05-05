@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
   }).catch(() => ({ count: 0 }))
 
   if ((updated as { count: number }).count === 0) {
-    // Fall back to Donation (store in tripayPaymentUrl as proof field)
+    // Fall back to Donation — use dedicated paymentProofUrl field (not tripayPaymentUrl)
     await prisma.donation.updateMany({
       where: { orderNumber },
-      data: { tripayPaymentUrl: proofUrl },
+      data: { paymentProofUrl: proofUrl },
     }).catch(() => {})
   }
 

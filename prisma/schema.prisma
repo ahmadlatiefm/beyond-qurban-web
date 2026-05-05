@@ -133,6 +133,7 @@ model Donation {
   paymentStatus    PaymentStatus @default(UNPAID)
   tripayReference  String?
   tripayPaymentUrl String?
+  paymentProofUrl  String?
   status           OrderStatus   @default(PENDING)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
