@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faHeart, faShieldHalved, faUsers, faArrowRight,
-  faHandHoldingHeart, faChevronRight,
+  faHandHoldingHeart, faChevronRight, faHandHoldingDollar,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import type { Campaign } from '@prisma/client'
@@ -258,6 +258,21 @@ export default function PenyaluranClient({
           </div>
         </div>
       </section>
+
+      {/* ── Floating sticky CTA button ─────────────────────────────────── */}
+      {filtered.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <Link
+            href={`/penyaluran/${filtered[0].slug}`}
+            className="pointer-events-auto flex items-center gap-3 bg-brand-surface text-white font-bold px-7 py-3.5 rounded-full shadow-2xl hover:bg-brand-dark transition-all hover:scale-[1.03] active:scale-[0.98] whitespace-nowrap"
+            style={{ boxShadow: '0 8px 32px rgba(27,94,59,0.45)' }}
+          >
+            <FontAwesomeIcon icon={faHandHoldingDollar} className="text-brand-accent text-base" />
+            Donasi Sekarang
+            <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

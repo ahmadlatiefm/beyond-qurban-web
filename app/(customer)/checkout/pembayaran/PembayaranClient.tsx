@@ -84,6 +84,7 @@ export default function PembayaranClient({
   }
 
   return (
+    <>
     <div className="flex flex-col lg:flex-row gap-7 items-start">
       {/* LEFT: Payment instructions */}
       <div className="flex-1 flex flex-col gap-6">
@@ -415,5 +416,24 @@ export default function PembayaranClient({
         </div>
       </div>
     </div>
+
+    {/* ── Sticky bottom bar — selalu terlihat saat scroll ── */}
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-brand-muted/15 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      <div className="max-w-[1100px] mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="flex flex-col min-w-0">
+          <span className="text-xs text-brand-muted leading-none">Total Pembayaran</span>
+          <span className="font-serif text-xl font-bold text-brand-accent leading-tight">{formatCurrency(totalAmount)}</span>
+        </div>
+        <Link
+          href={`/terimakasih?order=${orderNumber}&type=regular`}
+          className="ml-auto flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold px-6 py-3 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity text-sm whitespace-nowrap shrink-0"
+        >
+          Sudah Bayar <FontAwesomeIcon icon={faArrowRight} />
+        </Link>
+      </div>
+    </div>
+    {/* Spacer so content isn't hidden behind sticky bar */}
+    <div className="h-20" />
+    </>
   )
 }

@@ -98,6 +98,7 @@ export default function PembayaranPenyaluranClient({
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* LEFT: Payment instructions */}
       <div className="bg-white rounded-[14px] shadow-premium border border-brand-muted/10 overflow-hidden">
@@ -368,5 +369,23 @@ export default function PembayaranPenyaluranClient({
         </div>
       </div>
     </div>
+
+    {/* ── Sticky bottom bar ── */}
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-brand-muted/15 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      <div className="max-w-[1100px] mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="flex flex-col min-w-0">
+          <span className="text-xs text-brand-muted leading-none">Total Donasi</span>
+          <span className="font-serif text-xl font-bold text-brand-accent leading-tight">{formatCurrency(totalAmount)}</span>
+        </div>
+        <Link
+          href={`/terimakasih?order=${orderNumber}&type=penyaluran&dest=${campaignLocation.toLowerCase()}`}
+          className="ml-auto flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold px-6 py-3 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity text-sm whitespace-nowrap shrink-0"
+        >
+          Sudah Bayar <FontAwesomeIcon icon={faArrowRight} />
+        </Link>
+      </div>
+    </div>
+    <div className="h-20" />
+    </>
   )
 }
