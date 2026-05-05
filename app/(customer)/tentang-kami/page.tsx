@@ -42,7 +42,7 @@ export default async function TentangKamiPage() {
   // "Tim Kami" section
   const teamTitle = s.about_team_title || 'Tim Kami'
   const teamDesc = s.about_team_desc || 'Orang-orang berdedikasi di balik layanan Beyond Qurban.'
-  let teamMembers: { name: string; role: string; desc: string }[] = [
+  let teamMembers: { name: string; role: string; desc: string; imageUrl?: string }[] = [
     { name: 'Ustaz Ahmad Faris', role: 'Direktur Utama', desc: 'Pengasuh pesantren & pakar syariat kurban dengan pengalaman 15 tahun.' },
     { name: 'drh. Siti Nurhaliza', role: 'Kepala Veteriner', desc: 'Dokter hewan berlisensi, memastikan setiap hewan sehat dan memenuhi syarat.' },
     { name: 'Bapak Ridwan Kamil', role: 'Kepala Operasional', desc: 'Mengawasi proses logistik dan pengiriman ke seluruh wilayah Indonesia.' },
@@ -156,12 +156,16 @@ export default async function TentangKamiPage() {
             <p className="text-brand-muted">{teamDesc}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {teamMembers.map(({ name, role, desc }, i) => {
+            {teamMembers.map(({ name, role, desc, imageUrl }, i) => {
               const gradients = ['from-brand-surface to-brand-dark','from-brand-surface-light to-brand-surface','from-brand-accent/60 to-brand-dark','from-brand-surface to-brand-surface-light']
               return (
               <div key={i} className="bg-white rounded-[14px] overflow-hidden shadow-premium border border-brand-muted/10 text-center">
-                <div className={`h-52 bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
-                  <FontAwesomeIcon icon={faUser} className="text-5xl text-brand-accent/30" />
+                <div className={`h-52 bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center relative`}>
+                  {imageUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={imageUrl} alt={name} className="w-full h-full object-cover object-top" />
+                    : <FontAwesomeIcon icon={faUser} className="text-5xl text-brand-accent/30" />
+                  }
                 </div>
                 <div className="p-5">
                   <h3 className="font-serif text-lg font-bold text-brand-dark">{name}</h3>

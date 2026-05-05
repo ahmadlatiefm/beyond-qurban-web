@@ -1,10 +1,10 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faFloppyDisk, faHome, faLink, faBars,
   faInfoCircle, faPlus, faTrash, faGlobe,
-  faHandHoldingHeart, faTags, faStar,
+  faHandHoldingHeart, faTags, faStar, faUpload, faUser,
 } from '@fortawesome/free-solid-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
 
@@ -70,7 +70,7 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
     { name: 'Siti Rahayu', city: 'Surabaya', stars: 5, text: 'Sangat mudah, transparan, dan amanah. Bisa memantau kondisi hewan secara real-time. Sungguh tenang ibadah kurbannya bersama Beyond Qurban.' },
     { name: 'Budi Santoso', city: 'Bandung', stars: 4, text: 'Layanannya profesional dan responsif. Hewan kurban berkualitas baik dan proses pengiriman lancar. Sangat direkomendasikan.' },
   ]))
-  type TeamMember = { name: string; role: string; desc: string }
+  type TeamMember = { name: string; role: string; desc: string; imageUrl?: string }
   type WhyItem = { title: string; desc: string }
 
   const [whyItems, setWhyItems] = useState<WhyItem[]>(() => parseJsonOr(initialSettings.about_why_items, [
@@ -80,11 +80,28 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
     { title: 'Pengiriman Seluruh Indonesia', desc: 'Layanan pengiriman gratis ke seluruh wilayah Indonesia dengan jadwal fleksibel dan armada terstandar.' },
   ]))
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => parseJsonOr(initialSettings.about_team, [
-    { name: 'Ustaz Ahmad Faris', role: 'Direktur Utama', desc: 'Pengasuh pesantren & pakar syariat kurban dengan pengalaman 15 tahun.' },
-    { name: 'drh. Siti Nurhaliza', role: 'Kepala Veteriner', desc: 'Dokter hewan berlisensi, memastikan setiap hewan sehat dan memenuhi syarat.' },
-    { name: 'Bapak Ridwan Kamil', role: 'Kepala Operasional', desc: 'Mengawasi proses logistik dan pengiriman ke seluruh wilayah Indonesia.' },
-    { name: 'Nadia Rahmawati', role: 'Customer Relations', desc: 'Memastikan setiap pelanggan mendapat pengalaman terbaik dari awal hingga akhir.' },
+    { name: 'Ustaz Ahmad Faris', role: 'Direktur Utama', desc: 'Pengasuh pesantren & pakar syariat kurban dengan pengalaman 15 tahun.', imageUrl: '' },
+    { name: 'drh. Siti Nurhaliza', role: 'Kepala Veteriner', desc: 'Dokter hewan berlisensi, memastikan setiap hewan sehat dan memenuhi syarat.', imageUrl: '' },
+    { name: 'Bapak Ridwan Kamil', role: 'Kepala Operasional', desc: 'Mengawasi proses logistik dan pengiriman ke seluruh wilayah Indonesia.', imageUrl: '' },
+    { name: 'Nadia Rahmawati', role: 'Customer Relations', desc: 'Memastikan setiap pelanggan mendapat pengalaman terbaik dari awal hingga akhir.', imageUrl: '' },
   ]))
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null)
+
+  async function handleTeamPhotoUpload(i: number, file: File) {
+    setUploadingIdx(i)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('folder', 'team')
+    try {
+      const res = await fetch('/api/media-upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, imageUrl: data.url } : x))
+      }
+    } finally {
+      setUploadingIdx(null)
+    }
+  }
   const [impactStats, setImpactStats] = useState<ImpactStat[]>(() => parseJsonOr(initialSettings.penyaluran_impact_stats, [
     { stat: '1.247', label: 'Ekor Tersalurkan' },
     { stat: '48', label: 'Desa Terjangkau' },
@@ -580,15 +597,47 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
                   <FontAwesomeIcon icon={faPlus} /> Tambah
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <p className="text-xs text-brand-muted -mt-2">
+                📐 Ukuran foto yang direkomendasikan: <strong>400 × 480px</strong> (rasio 5:6, portrait) · Format JPG/PNG/WebP · Maks 3MB
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {teamMembers.map((member, i) => (
-                  <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5 relative">
-                    <button onClick={() => setTeamMembers(p => p.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><FontAwesomeIcon icon={faTrash} className="text-xs" /></button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input type="text" value={member.name} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} placeholder="Nama" className={inpCls} style={{ height: 34 }} />
-                      <input type="text" value={member.role} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, role: e.target.value } : x))} placeholder="Jabatan" className={inpCls} style={{ height: 34 }} />
+                  <div key={i} className="bg-brand-light rounded-[10px] p-3 flex gap-3 relative">
+                    {/* Foto */}
+                    <div className="shrink-0 flex flex-col items-center gap-1.5">
+                      <div className="w-20 h-24 rounded-[8px] overflow-hidden bg-brand-muted/10 border border-brand-muted/20 flex items-center justify-center relative">
+                        {member.imageUrl
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover" />
+                          : <FontAwesomeIcon icon={faUser} className="text-brand-muted/40 text-3xl" />
+                        }
+                        {uploadingIdx === i && (
+                          <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-brand-surface border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <label className="cursor-pointer flex items-center gap-1 text-[10px] font-semibold text-brand-surface hover:text-brand-dark">
+                        <FontAwesomeIcon icon={faUpload} className="text-[9px]" />
+                        Upload
+                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleTeamPhotoUpload(i, f) }} />
+                      </label>
+                      {member.imageUrl && (
+                        <button onClick={() => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, imageUrl: '' } : x))}
+                          className="text-[10px] text-red-400 hover:text-red-600">Hapus</button>
+                      )}
                     </div>
-                    <textarea rows={2} value={member.desc} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi singkat" className={`${inpCls} resize-none`} />
+                    {/* Fields */}
+                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                      <button onClick={() => setTeamMembers(p => p.filter((_, idx) => idx !== i))}
+                        className="absolute top-2 right-2 text-red-400 hover:text-red-600">
+                        <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                      </button>
+                      <input type="text" value={member.name} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} placeholder="Nama lengkap" className={inpCls} style={{ height: 32 }} />
+                      <input type="text" value={member.role} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, role: e.target.value } : x))} placeholder="Jabatan" className={inpCls} style={{ height: 32 }} />
+                      <textarea rows={2} value={member.desc} onChange={e => setTeamMembers(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi singkat" className={`${inpCls} resize-none text-xs`} />
+                    </div>
                   </div>
                 ))}
               </div>
