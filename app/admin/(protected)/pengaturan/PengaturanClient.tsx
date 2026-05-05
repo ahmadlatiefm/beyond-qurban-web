@@ -5,8 +5,10 @@ import {
   faFloppyDisk, faRotateLeft, faPaperPlane, faCreditCard,
   faTag, faCode, faSliders, faCircleInfo, faBell, faEye,
   faCopy, faPlugCircleCheck, faExternalLinkAlt,
-  faMinus, faPlus, faTrash,
+  faMinus, faPlus, faTrash, faTruck,
 } from '@fortawesome/free-solid-svg-icons'
+import { DEFAULT_SHIPPING_ZONES } from '@/lib/shipping'
+import type { ShippingZone } from '@/lib/shipping'
 import { faWhatsapp, faWhatsapp as faWhatsappPrev, faFacebookF, faTiktok } from '@fortawesome/free-brands-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
 
@@ -170,6 +172,13 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
     return []
   })
   const [newVoucher, setNewVoucher] = useState({ code: '', disc: 10, minBuy: 0, maxUse: 100 })
+  const [shippingZones, setShippingZones] = useState<ShippingZone[]>(() => {
+    try {
+      const parsed = JSON.parse(initialSettings.shipping_zones ?? '[]')
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    } catch {}
+    return DEFAULT_SHIPPING_ZONES
+  })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
 
@@ -668,27 +677,131 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
 
         {/* === UMUM === */}
         {activeSection === 'umum' && (
-          <div className="setting-card flex flex-col gap-5">
-            <h2 className="font-bold text-brand-dark text-base">Pengaturan Umum</h2>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Nama Toko</label>
-              <input type="text" value={settings.store_name ?? ''} onChange={e => set('store_name', e.target.value)} className="inp" placeholder="Beyond Qurban" />
+          <div className="flex flex-col gap-6">
+            {/* Info Toko */}
+            <div className="setting-card flex flex-col gap-5">
+              <h2 className="font-bold text-brand-dark text-base">Pengaturan Umum</h2>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Nama Toko</label>
+                <input type="text" value={settings.store_name ?? ''} onChange={e => set('store_name', e.target.value)} className="inp" placeholder="Beyond Qurban" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Nomor WhatsApp CS</label>
+                <input type="text" value={settings.store_whatsapp ?? ''} onChange={e => set('store_whatsapp', e.target.value)} className="inp" placeholder="6281234567890" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Email</label>
+                <input type="email" value={settings.store_email ?? ''} onChange={e => set('store_email', e.target.value)} className="inp" placeholder="info@beyondqurban.com" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Alamat</label>
+                <input type="text" value={settings.store_address ?? ''} onChange={e => set('store_address', e.target.value)} className="inp" placeholder="Jl. Contoh No. 1, Bandung" />
+              </div>
+              <button onClick={() => handleSave(['store_name', 'store_whatsapp', 'store_email', 'store_address'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
+                <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
+              </button>
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Nomor WhatsApp CS</label>
-              <input type="text" value={settings.store_whatsapp ?? ''} onChange={e => set('store_whatsapp', e.target.value)} className="inp" placeholder="6281234567890" />
+
+            {/* Zona Pengiriman */}
+            <div className="setting-card">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="font-bold text-brand-dark text-base flex items-center gap-2">
+                    <FontAwesomeIcon icon={faTruck} className="text-brand-surface text-sm" /> Zona Pengiriman
+                  </h2>
+                  <p className="text-sm text-brand-muted mt-1">Atur area pengiriman dan biaya ongkos kirim. Kota di luar zona ini tidak bisa checkout.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const newZone: ShippingZone = { id: Date.now().toString(), name: '', keywords: '', cost: 0 }
+                    setShippingZones(prev => [...prev, newZone])
+                  }}
+                  className="flex items-center gap-2 bg-brand-surface text-white text-sm font-bold px-4 py-2 rounded-[8px] hover:bg-brand-dark transition-colors shrink-0"
+                >
+                  <FontAwesomeIcon icon={faPlus} /> Tambah Zona
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      {['Nama Zona', 'Kata Kunci (pisah koma)', 'Ongkir (Rp)', ''].map(h => (
+                        <th key={h} className="text-left px-3 py-2.5 text-xs font-bold text-brand-muted uppercase tracking-wider bg-brand-light border-b border-brand-muted/10">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shippingZones.map((zone, i) => (
+                      <tr key={zone.id} className="border-b border-brand-muted/8">
+                        <td className="px-3 py-2.5">
+                          <input
+                            type="text"
+                            value={zone.name}
+                            onChange={e => setShippingZones(prev => prev.map((z, idx) => idx === i ? { ...z, name: e.target.value } : z))}
+                            placeholder="Bandung Raya"
+                            className="inp text-sm"
+                            style={{ height: 36 }}
+                          />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <input
+                            type="text"
+                            value={zone.keywords}
+                            onChange={e => setShippingZones(prev => prev.map((z, idx) => idx === i ? { ...z, keywords: e.target.value } : z))}
+                            placeholder="bandung,cimahi,sumedang"
+                            className="inp text-sm font-mono"
+                            style={{ height: 36, minWidth: 220 }}
+                          />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="relative" style={{ width: 140 }}>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted text-xs">Rp</span>
+                            <input
+                              type="number"
+                              value={zone.cost}
+                              min={0}
+                              step={10000}
+                              onChange={e => setShippingZones(prev => prev.map((z, idx) => idx === i ? { ...z, cost: parseInt(e.target.value) || 0 } : z))}
+                              className="inp pl-8 text-sm"
+                              style={{ height: 36 }}
+                            />
+                          </div>
+                          {zone.cost === 0 && <span className="text-[10px] text-emerald-600 font-bold">GRATIS</span>}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <button
+                            onClick={() => setShippingZones(prev => prev.filter((_, idx) => idx !== i))}
+                            className="w-8 h-8 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 rounded-[7px] flex items-center justify-center border border-red-100 transition-colors"
+                          >
+                            <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {shippingZones.length === 0 && (
+                      <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-brand-muted">Belum ada zona. Klik "Tambah Zona" untuk mulai.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  disabled={isPending}
+                  onClick={() => {
+                    startTransition(async () => {
+                      await saveSettings({ shipping_zones: JSON.stringify(shippingZones) })
+                      showToast('Zona pengiriman berhasil disimpan!')
+                    })
+                  }}
+                  className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                >
+                  <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Zona
+                </button>
+                <p className="text-xs text-brand-muted">Perubahan langsung berlaku di halaman checkout pelanggan.</p>
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Email</label>
-              <input type="email" value={settings.store_email ?? ''} onChange={e => set('store_email', e.target.value)} className="inp" placeholder="info@beyondqurban.com" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Alamat</label>
-              <input type="text" value={settings.store_address ?? ''} onChange={e => set('store_address', e.target.value)} className="inp" placeholder="Jl. Contoh No. 1, Bandung" />
-            </div>
-            <button onClick={() => handleSave(['store_name', 'store_whatsapp', 'store_email', 'store_address'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
-              <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
-            </button>
           </div>
         )}
 

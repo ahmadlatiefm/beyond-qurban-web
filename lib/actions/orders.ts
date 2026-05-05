@@ -2,7 +2,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { calculateShipping } from '@/lib/shipping'
+import { calculateShipping, parseShippingZones } from '@/lib/shipping'
 import { generateOrderNumber } from '@/lib/utils'
 import { applyGlobalDiscount, applyVoucher } from '@/lib/discount'
 
@@ -24,14 +24,15 @@ export async function createOrder(formData: FormData) {
   const product = await prisma.product.findUnique({ where: { slug } })
   if (!product) throw new Error('Produk tidak ditemukan')
 
-  // Read discount settings from DB
+  // Read discount + shipping settings from DB
   const discSettings = await prisma.settings.findMany({
-    where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end','vouchers'] } }
+    where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end','vouchers','shipping_zones'] } }
   })
   const discMap: Record<string, string> = {}
   discSettings.forEach(s => { discMap[s.key] = s.value })
 
-  const shippingCost = city ? calculateShipping(city) : 0
+  const zones = parseShippingZones(discMap.shipping_zones)
+  const shippingCost = city ? calculateShipping(city, zones) : 0
   const basePrice = product.price
   const { finalPrice: discountedPrice } = applyGlobalDiscount(basePrice, discMap)
   const subtotal = discountedPrice + shippingCost

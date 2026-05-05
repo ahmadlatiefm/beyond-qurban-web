@@ -8,7 +8,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import { createOrder } from '@/lib/actions/orders'
-import { calculateShipping } from '@/lib/shipping'
+import { getShippingInfo, DEFAULT_SHIPPING_ZONES } from '@/lib/shipping'
+import type { ShippingZone } from '@/lib/shipping'
 import type { Product } from '@prisma/client'
 
 interface ActiveChannels {
@@ -79,14 +80,15 @@ function BankBadge({ code, size = 'md' }: { code: string; size?: 'sm' | 'md' }) 
 const inputCls = 'w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
 
 export default function CheckoutForm({
-  product, activeChannels, manualBank, discountedPrice, discountLabel, hasVouchers
+  product, activeChannels, manualBank, discountedPrice, discountLabel, hasVouchers, shippingZones
 }: {
   product: Product
   activeChannels?: ActiveChannels
   manualBank?: ManualBank
-  discountedPrice?: number | null   // final price after global discount (null = no discount)
-  discountLabel?: string | null     // e.g. "Diskon 10%"
-  hasVouchers?: boolean             // whether voucher input should show
+  discountedPrice?: number | null
+  discountLabel?: string | null
+  hasVouchers?: boolean
+  shippingZones?: ShippingZone[]
 }) {
   const [paymentMethod, setPaymentMethod] = useState(() => {
     if (!activeChannels) return 'BCAVA'
@@ -115,9 +117,12 @@ export default function CheckoutForm({
   const baseDisplayPrice = discountedPrice ?? product.price
   const discountAmount = product.price - baseDisplayPrice
 
-  // Live shipping cost based on city input
-  const shippingCost = city.trim() ? calculateShipping(city) : 0
+  // Live shipping from zones (use server-passed zones, fallback to defaults)
+  const zones = shippingZones ?? DEFAULT_SHIPPING_ZONES
+  const shippingInfo = city.trim() ? getShippingInfo(city, zones) : { available: true, cost: 0, zoneName: '' }
+  const shippingCost = shippingInfo.available ? shippingInfo.cost : 0
   const totalDisplay = baseDisplayPrice + shippingCost
+  const cityNotServed = city.trim().length > 2 && !shippingInfo.available
 
   // Simulate voucher client-side hint (actual validation is server-side in createOrder)
   function handleApplyVoucher() {
@@ -195,13 +200,32 @@ export default function CheckoutForm({
                 type="text"
                 value={city}
                 onChange={e => setCity(e.target.value)}
-                placeholder="Contoh: Bandung, Jakarta Selatan, Sumedang"
-                className="w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]"
+                placeholder="Contoh: Bandung, Garut, Purwakarta..."
+                className={`w-full h-12 px-4 rounded-[8px] border bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none ${
+                  cityNotServed
+                    ? 'border-red-400 focus:border-red-400 focus:shadow-[0_0_0_1px_#f87171]'
+                    : shippingInfo.available && city.trim()
+                    ? 'border-emerald-400 focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
+                    : 'border-brand-muted/20 focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
+                }`}
               />
-              <p className="text-xs text-brand-muted">
-                Bandung Raya (Bandung, Cimahi, Sumedang) = <span className="text-emerald-600 font-semibold">gratis ongkir</span>
-                {' · '}Luar Bandung Raya = <span className="text-amber-600 font-semibold">+Rp 150.000</span>
-              </p>
+              {/* Hint area */}
+              {!city.trim() && (
+                <p className="text-xs text-brand-muted">
+                  Area terlayani: <span className="font-medium">Bandung Raya, Garut, Subang, Purwakarta, Tasikmalaya</span>
+                </p>
+              )}
+              {city.trim() && shippingInfo.available && (
+                <p className="text-xs text-emerald-600 font-medium">
+                  ✓ {shippingInfo.zoneName}{' '}
+                  {shippingInfo.cost === 0 ? '— Gratis ongkir' : `— Ongkir +${formatCurrency(shippingInfo.cost)}`}
+                </p>
+              )}
+              {cityNotServed && (
+                <p className="text-xs text-red-600 font-medium">
+                  ✕ Maaf, pengiriman belum tersedia ke kota ini. Area terlayani: Bandung Raya, Garut, Subang, Purwakarta, Tasikmalaya.
+                </p>
+              )}
             </div>
 
             {/* Tanggal */}
@@ -436,8 +460,8 @@ export default function CheckoutForm({
             )}
 
             {/* Mobile submit */}
-            <button type="submit" disabled={isPending} className="lg:hidden w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-60">
-              {isPending ? 'Memproses...' : 'Konfirmasi Pesanan'} <FontAwesomeIcon icon={faArrowRight} />
+            <button type="submit" disabled={isPending || cityNotServed} className="lg:hidden w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+              {isPending ? 'Memproses...' : cityNotServed ? 'Area Tidak Terlayani' : 'Konfirmasi Pesanan'} {!cityNotServed && <FontAwesomeIcon icon={faArrowRight} />}
             </button>
           </form>
         </div>
@@ -486,7 +510,9 @@ export default function CheckoutForm({
               )}
               <div className="flex justify-between text-brand-accent-light/80">
                 <span>Biaya Pengiriman</span>
-                {shippingCost > 0
+                {cityNotServed
+                  ? <span className="text-red-400 text-xs font-semibold">Tidak Terlayani</span>
+                  : shippingCost > 0
                   ? <span className="text-amber-400 font-semibold">+{formatCurrency(shippingCost)}</span>
                   : <span className="text-[#25D366] font-semibold">{city.trim() ? 'Gratis ✓' : 'Gratis*'}</span>
                 }
@@ -497,8 +523,8 @@ export default function CheckoutForm({
               <span className="font-bold text-brand-light">Total Pembayaran</span>
               <span className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(totalDisplay)}</span>
             </div>
-            <button type="submit" form="order-form" disabled={isPending} className="hidden lg:flex w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity items-center justify-center gap-2 disabled:opacity-60">
-              {isPending ? 'Memproses...' : 'Konfirmasi Pesanan'} <FontAwesomeIcon icon={faArrowRight} />
+            <button type="submit" form="order-form" disabled={isPending || cityNotServed} className="hidden lg:flex w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+              {isPending ? 'Memproses...' : cityNotServed ? 'Area Tidak Terlayani' : 'Konfirmasi Pesanan'} {!cityNotServed && <FontAwesomeIcon icon={faArrowRight} />}
             </button>
             <div className="mt-4 flex items-center justify-center gap-2 text-brand-accent-light/50 text-xs">
               <FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent/60" /> Transaksi aman &amp; terenkripsi
