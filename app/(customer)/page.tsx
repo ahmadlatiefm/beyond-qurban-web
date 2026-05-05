@@ -32,13 +32,35 @@ export default async function HomePage() {
   const [products, settingsRows] = await Promise.all([
     getFeaturedProducts(),
     prisma.settings.findMany({
-      where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end'] } }
+      where: { key: { in: [
+        'diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end',
+        'home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc',
+        'home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
+        'home_stats',
+      ] } }
     }),
   ])
   const settingsMap: Record<string, string> = {}
   settingsRows.forEach(s => { settingsMap[s.key] = s.value })
   const discountPct = settingsMap.diskon_global_enabled === 'true' && settingsMap.diskon_type !== 'nominal'
     ? parseInt(settingsMap.diskon_value ?? '0') : 0
+
+  // Hero content from settings
+  const homeBadge = settingsMap.home_badge || 'Pemesanan Kurban 2025 Dibuka'
+  const heroTitle1 = settingsMap.home_hero_title_1 || 'Qurban Mudah,'
+  const heroTitle2 = settingsMap.home_hero_title_2 || 'Amanah & Transparan'
+  const heroDesc = settingsMap.home_hero_desc || 'Pilih hewan kurban terbaik, pantau prosesnya secara real-time, dan terima laporan foto/video langsung ke WhatsApp Anda.'
+  const ctaPrimary = settingsMap.home_cta_primary || 'Lihat Katalog'
+  const ctaPrimaryHref = settingsMap.home_cta_primary_href || '/katalog'
+  const ctaSecondary = settingsMap.home_cta_secondary || 'Lacak Pesanan'
+  const ctaSecondaryHref = settingsMap.home_cta_secondary_href || '/lacak-pesanan'
+  let homeStats: { value: string; label: string }[] = [
+    { value: '450+', label: 'Hewan Tersedia' },
+    { value: '1.2K+', label: 'Kurban Terlaksana' },
+    { value: '850+', label: 'Pelanggan Puas' },
+    { value: '98%', label: 'Kepuasan Pelanggan' },
+  ]
+  try { const p = JSON.parse(settingsMap.home_stats ?? ''); if (Array.isArray(p) && p.length > 0) homeStats = p } catch {}
 
   return (
     <>
@@ -51,33 +73,22 @@ export default async function HomePage() {
         ></div>
         <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-12 py-24 flex flex-col items-center text-center fade-up">
           <div className="inline-flex items-center gap-2 bg-brand-surface/40 backdrop-blur-md border border-brand-surface-light/30 px-4 py-1.5 rounded-[20px] mb-8">
-            <span
-              className="w-2 h-2 rounded-full bg-brand-accent inline-block"
-              style={{ animation: 'pulse-dot 2s infinite' }}
-            ></span>
-            <span className="text-brand-accent-light text-xs font-medium tracking-wider uppercase">
-              Pemesanan Kurban 2025 Dibuka
-            </span>
+            <span className="w-2 h-2 rounded-full bg-brand-accent inline-block" style={{ animation: 'pulse-dot 2s infinite' }}></span>
+            <span className="text-brand-accent-light text-xs font-medium tracking-wider uppercase">{homeBadge}</span>
           </div>
           <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-brand-light leading-[1.08] mb-6 max-w-4xl">
-            Qurban Mudah,<br />
-            <span className="text-brand-accent">Amanah &amp; Transparan</span>
+            {heroTitle1}<br />
+            <span className="text-brand-accent">{heroTitle2}</span>
           </h1>
-          <p className="text-brand-accent-light text-lg md:text-xl font-light max-w-2xl mb-10 leading-relaxed">
-            Pilih hewan kurban terbaik, pantau prosesnya secara real-time, dan terima laporan foto/video langsung ke WhatsApp Anda.
-          </p>
+          <p className="text-brand-accent-light text-lg md:text-xl font-light max-w-2xl mb-10 leading-relaxed">{heroDesc}</p>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Link
-              href="/katalog"
-              className="w-full sm:w-auto bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 px-8 rounded-[20px] shadow-premium hover:scale-105 transition-transform flex items-center justify-center gap-2"
-            >
-              Lihat Katalog <FontAwesomeIcon icon={faArrowRight} />
+            <Link href={ctaPrimaryHref}
+              className="w-full sm:w-auto bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 px-8 rounded-[20px] shadow-premium hover:scale-105 transition-transform flex items-center justify-center gap-2">
+              {ctaPrimary} <FontAwesomeIcon icon={faArrowRight} />
             </Link>
-            <Link
-              href="/lacak-pesanan"
-              className="w-full sm:w-auto bg-brand-surface/30 backdrop-blur-md border border-brand-surface-light text-brand-light hover:text-brand-accent hover:border-brand-accent font-medium text-lg py-4 px-8 rounded-[20px] transition-all flex items-center justify-center gap-2"
-            >
-              <FontAwesomeIcon icon={faMagnifyingGlass} /> Lacak Pesanan
+            <Link href={ctaSecondaryHref}
+              className="w-full sm:w-auto bg-brand-surface/30 backdrop-blur-md border border-brand-surface-light text-brand-light hover:text-brand-accent hover:border-brand-accent font-medium text-lg py-4 px-8 rounded-[20px] transition-all flex items-center justify-center gap-2">
+              <FontAwesomeIcon icon={faMagnifyingGlass} /> {ctaSecondary}
             </Link>
           </div>
         </div>
@@ -96,30 +107,13 @@ export default async function HomePage() {
       {/* Section 2: Stats */}
       <section className="relative -mt-6 z-20 max-w-[1100px] mx-auto px-6 md:px-12 mb-16">
         <div className="bg-brand-accent-light rounded-[20px] shadow-premium p-8 grid grid-cols-2 lg:grid-cols-4 gap-8 border border-white/50 relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{ backgroundImage: 'radial-gradient(#0D3320 1px,transparent 1px)', backgroundSize: '20px 20px' }}
-          ></div>
-          {/* Stat 1 */}
-          <div className="text-center relative z-10">
-            <div className="font-serif text-4xl font-bold text-brand-dark">450+</div>
-            <div className="text-brand-muted text-xs font-semibold uppercase tracking-wider mt-1">Hewan Tersedia</div>
-          </div>
-          {/* Stat 2 */}
-          <div className="text-center relative z-10">
-            <div className="font-serif text-4xl font-bold text-brand-dark">1.2K+</div>
-            <div className="text-brand-muted text-xs font-semibold uppercase tracking-wider mt-1">Pesanan Selesai</div>
-          </div>
-          {/* Stat 3 */}
-          <div className="text-center relative z-10">
-            <div className="font-serif text-4xl font-bold text-brand-dark">98%</div>
-            <div className="text-brand-muted text-xs font-semibold uppercase tracking-wider mt-1">Terkirim Tepat Waktu</div>
-          </div>
-          {/* Stat 4 */}
-          <div className="text-center relative z-10">
-            <div className="font-serif text-4xl font-bold text-brand-dark">850+</div>
-            <div className="text-brand-muted text-xs font-semibold uppercase tracking-wider mt-1">Pelanggan Puas</div>
-          </div>
+          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(#0D3320 1px,transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          {homeStats.map((stat, i) => (
+            <div key={i} className="text-center relative z-10">
+              <div className="font-serif text-4xl font-bold text-brand-dark">{stat.value}</div>
+              <div className="text-brand-muted text-xs font-semibold uppercase tracking-wider mt-1">{stat.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 

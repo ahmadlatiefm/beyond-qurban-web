@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -6,8 +7,38 @@ import {
   faLocationDot, faPhone, faEnvelope,
 } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp, faInstagram } from '@fortawesome/free-brands-svg-icons'
+import { prisma } from '@/lib/prisma'
 
-export default function TentangKamiPage() {
+export default async function TentangKamiPage() {
+  const rows = await prisma.settings.findMany({
+    where: { key: { in: ['about_badge','about_title_1','about_title_2','about_description','about_stats','about_vision','about_mission','footer_address','footer_phone','footer_email','footer_whatsapp','footer_instagram'] } }
+  })
+  const s: Record<string, string> = {}
+  rows.forEach(r => { s[r.key] = r.value })
+
+  const badge = s.about_badge || 'Yayasan One Ummah'
+  const title1 = s.about_title_1 || 'Menjaga Amanah,'
+  const title2 = s.about_title_2 || 'Menyempurnakan Ibadah'
+  const description = s.about_description || 'Beyond Qurban adalah program Yayasan One Ummah yang hadir untuk memudahkan umat Islam menunaikan ibadah kurban secara benar, transparan, dan penuh amanah sejak 2019.'
+  const vision = s.about_vision || 'Menjadi platform kurban digital terpercaya yang menghubungkan donatur dengan penerima manfaat secara transparan.'
+  const mission = s.about_mission || 'Menyediakan hewan kurban berkualitas, memastikan penyembelihan sesuai syariat, mendistribusikan ke masyarakat yang membutuhkan, dan memberikan laporan transparan kepada donatur.'
+  const address = s.footer_address || 'Jl. Peternakan Raya No. 12, Lembang, Bandung Barat'
+  const phone = s.footer_phone || '+62 812-3456-7890'
+  const email = s.footer_email || 'info@beyondqurban.com'
+  const waLink = s.footer_whatsapp || 'https://wa.me/6281234567890'
+  const igLink = s.footer_instagram || '#'
+
+  let aboutStats: { stat: string; label: string }[] = [
+    { stat: '2019', label: 'Tahun Berdiri' },
+    { stat: '1.2K+', label: 'Kurban Terlaksana' },
+    { stat: '850+', label: 'Pelanggan Puas' },
+    { stat: '98%', label: 'Kepuasan Pelanggan' },
+  ]
+  try {
+    const p = JSON.parse(s.about_stats ?? '')
+    if (Array.isArray(p) && p.length > 0) aboutStats = p.map((x: any) => ({ stat: x.value || x.stat, label: x.label }))
+  } catch {}
+
   return (
     <main className="pt-20">
       {/* HERO */}
@@ -17,11 +48,11 @@ export default function TentangKamiPage() {
         <div className="absolute bottom-0 left-0 w-1/4 h-1/2 bg-brand-accent/8 blur-[80px] rounded-full pointer-events-none" />
         <div className="relative z-10 max-w-[1100px] mx-auto px-6 md:px-12 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <span className="text-brand-accent font-bold text-xs uppercase tracking-widest border border-brand-accent/40 px-4 py-1.5 rounded-full inline-block mb-6">Yayasan One Ummah</span>
+            <span className="text-brand-accent font-bold text-xs uppercase tracking-widest border border-brand-accent/40 px-4 py-1.5 rounded-full inline-block mb-6">{badge}</span>
             <h1 className="font-serif text-4xl md:text-5xl font-bold text-brand-light leading-tight mb-5">
-              Menjaga Amanah,<br /><span className="text-brand-accent">Menyempurnakan Ibadah</span>
+              {title1}<br /><span className="text-brand-accent">{title2}</span>
             </h1>
-            <p className="text-brand-accent-light/75 text-lg font-light leading-relaxed mb-8">Beyond Qurban adalah program Yayasan One Ummah yang hadir untuk memudahkan umat Islam menunaikan ibadah kurban secara benar, transparan, dan penuh amanah sejak 2019.</p>
+            <p className="text-brand-accent-light/75 text-lg font-light leading-relaxed mb-8">{description}</p>
             <div className="flex gap-4 flex-wrap">
               <Link href="/katalog" className="bg-cta-gradient text-brand-text-dark font-bold py-3 px-7 rounded-[20px] shadow-premium hover:scale-105 transition-transform text-sm flex items-center gap-2">
                 Lihat Katalog
@@ -32,12 +63,7 @@ export default function TentangKamiPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { stat: '2019', label: 'Tahun Berdiri' },
-              { stat: '1.2K+', label: 'Kurban Terlaksana' },
-              { stat: '850+', label: 'Pelanggan Puas' },
-              { stat: '98%', label: 'Kepuasan Pelanggan' },
-            ].map(({ stat, label }) => (
+            {aboutStats.map(({ stat, label }) => (
               <div key={label} className="bg-brand-surface/40 border border-brand-surface-light/30 rounded-[14px] p-6 backdrop-blur-sm">
                 <div className="font-serif text-4xl font-bold text-brand-accent mb-1">{stat}</div>
                 <div className="text-brand-accent-light/70 text-sm">{label}</div>
@@ -62,7 +88,7 @@ export default function TentangKamiPage() {
                 <FontAwesomeIcon icon={faEye} className="text-brand-accent text-xl" />
               </div>
               <h2 className="font-serif text-2xl font-bold text-brand-light mb-4 relative z-10">Visi</h2>
-              <p className="text-brand-accent-light/80 leading-relaxed relative z-10">Menjadi platform kurban digital terpercaya di Indonesia yang menghubungkan umat Islam dengan peternakan terbaik, memastikan setiap ibadah kurban terlaksana sesuai syariat Islam dengan penuh transparansi dan amanah.</p>
+              <p className="text-brand-accent-light/80 leading-relaxed relative z-10">{vision}</p>
             </div>
             <div className="bg-brand-surface rounded-[16px] p-8 md:p-10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-40 h-40 bg-brand-surface-light/20 rounded-bl-full" />
@@ -70,14 +96,7 @@ export default function TentangKamiPage() {
                 <FontAwesomeIcon icon={faBullseye} className="text-brand-accent text-xl" />
               </div>
               <h2 className="font-serif text-2xl font-bold text-brand-light mb-4 relative z-10">Misi</h2>
-              <ul className="text-brand-accent-light/80 leading-relaxed relative z-10 flex flex-col gap-3">
-                {['Menyediakan hewan kurban berkualitas yang memenuhi standar syariat dan kesehatan','Memberikan transparansi penuh melalui dokumentasi foto dan video real-time','Memudahkan proses pemesanan dan pengiriman kurban ke seluruh Indonesia','Memperluas program penyaluran kurban ke daerah terpencil dan negara membutuhkan'].map((m) => (
-                  <li key={m} className="flex items-start gap-2">
-                    <FontAwesomeIcon icon={faCheck} className="text-brand-accent mt-0.5 text-sm shrink-0" />
-                    {m}
-                  </li>
-                ))}
-              </ul>
+              <p className="text-brand-accent-light/80 leading-relaxed relative z-10 whitespace-pre-line">{mission}</p>
             </div>
           </div>
         </div>
@@ -148,9 +167,9 @@ export default function TentangKamiPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: faLocationDot, label: 'Alamat', value: 'Jl. Peternakan Raya No. 12\nLembang, Bandung Barat' },
-              { icon: faPhone, label: 'Telepon / WhatsApp', value: '+62 812-3456-7890' },
-              { icon: faEnvelope, label: 'Email', value: 'info@beyondqurban.com' },
+              { icon: faLocationDot, label: 'Alamat', value: address },
+              { icon: faPhone, label: 'Telepon / WhatsApp', value: phone },
+              { icon: faEnvelope, label: 'Email', value: email },
             ].map(({ icon, label, value }) => (
               <div key={label} className="bg-brand-surface/30 border border-brand-surface-light/20 rounded-[14px] p-6 text-center">
                 <div className="w-12 h-12 bg-brand-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -162,10 +181,10 @@ export default function TentangKamiPage() {
             ))}
           </div>
           <div className="flex justify-center gap-4 mt-10">
-            <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#25D366] text-white font-bold py-3 px-6 rounded-[20px] hover:bg-[#1ea855] transition-colors">
+            <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#25D366] text-white font-bold py-3 px-6 rounded-[20px] hover:bg-[#1ea855] transition-colors">
               <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
             </a>
-            <a href="https://instagram.com/beyondqurban" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-brand-surface border border-brand-surface-light text-brand-light font-bold py-3 px-6 rounded-[20px] hover:border-brand-accent transition-colors">
+            <a href={igLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-brand-surface border border-brand-surface-light text-brand-light font-bold py-3 px-6 rounded-[20px] hover:border-brand-accent transition-colors">
               <FontAwesomeIcon icon={faInstagram} /> Instagram
             </a>
           </div>
