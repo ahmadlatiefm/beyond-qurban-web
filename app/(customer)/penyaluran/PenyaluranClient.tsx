@@ -7,7 +7,6 @@ import {
   faHandHoldingHeart, faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
-import { applyGlobalDiscount } from '@/lib/discount'
 import type { Campaign } from '@prisma/client'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,11 +44,9 @@ const FILTERS: { key: FilterType; label: string }[] = [
 export default function PenyaluranClient({
   campaigns,
   settingsMap = {},
-  discountPct = 0,
 }: {
   campaigns: Campaign[]
   settingsMap?: Record<string, string>
-  discountPct?: number
 }) {
   const [filter, setFilter] = useState<FilterType>('ALL')
 
@@ -129,18 +126,14 @@ export default function PenyaluranClient({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((campaign) => {
               const badge = getLocationBadge(campaign.location)
-              // Per-campaign effective price from settings
+              // Effective price from per-destination settings only
               const locationKey = campaign.location === 'INDONESIA' ? 'indonesia'
                 : campaign.location === 'AFRICA' ? 'africa' : 'palestine'
               const settingsPrice = settingsMap[`penyaluran_harga_${locationKey}`]
                 ? parseInt(settingsMap[`penyaluran_harga_${locationKey}`]) : campaign.price
               const settingsDisc = parseInt(settingsMap[`penyaluran_disc_${locationKey}`] ?? '0')
-              const penyaluranEffective = Math.round(settingsPrice * (1 - settingsDisc / 100))
-              // Also check global discount
-              const globalDisc = applyGlobalDiscount(penyaluranEffective, settingsMap)
-              const finalPrice = globalDisc.finalPrice
-              const hasDiscount = finalPrice < campaign.price
-              const shownPct = settingsDisc > 0 ? settingsDisc : discountPct
+              const finalPrice = Math.round(settingsPrice * (1 - settingsDisc / 100))
+              const hasDiscount = settingsDisc > 0 && finalPrice < campaign.price
 
               return (
                 <div
@@ -163,11 +156,11 @@ export default function PenyaluranClient({
                         {badge.label}
                       </span>
                     </div>
-                    {/* Discount badge */}
-                    {hasDiscount && shownPct > 0 && (
+                    {/* Discount badge — hanya dari setting per destinasi */}
+                    {hasDiscount && (
                       <div className="absolute top-3 right-3">
                         <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-[20px] shadow-sm">
-                          DISKON {shownPct}%
+                          DISKON {settingsDisc}%
                         </span>
                       </div>
                     )}
