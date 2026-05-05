@@ -19,7 +19,7 @@ export default async function CheckoutPage({
 
   const [settings] = await Promise.all([
     prisma.settings.findMany({
-      where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','ch_shopeepay','manual_transfer_enabled','manual_bank_name','manual_bank_number','manual_bank_owner'] } }
+      where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','ch_shopeepay','manual_transfer_enabled','manual_banks'] } }
     })
   ])
   const settingsMap: Record<string, string> = {}
@@ -34,11 +34,18 @@ export default async function CheckoutPage({
     MANUAL:    settingsMap.manual_transfer_enabled === 'true',
   }
 
+  // Parse multi-bank JSON
+  const manualBanksRaw = settingsMap.manual_banks ?? '[]'
+  let manualBanksList: {id:string;code:string;name:string;number:string;owner:string}[] = []
+  try { manualBanksList = JSON.parse(manualBanksRaw) } catch {}
+
   const manualBank = {
-    enabled: settingsMap.manual_transfer_enabled === 'true',
-    bankName: settingsMap.manual_bank_name ?? 'Bank BCA',
-    accountNumber: settingsMap.manual_bank_number ?? '',
-    accountOwner: settingsMap.manual_bank_owner ?? 'Yayasan One Ummah',
+    enabled: settingsMap.manual_transfer_enabled === 'true' && manualBanksList.length > 0,
+    banks: manualBanksList,
+    // backward compat: primary bank = first in list
+    bankName: manualBanksList[0]?.name ?? 'Bank BCA',
+    accountNumber: manualBanksList[0]?.number ?? '',
+    accountOwner: manualBanksList[0]?.owner ?? 'Yayasan One Ummah',
   }
 
   return (

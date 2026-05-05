@@ -12,6 +12,150 @@ import { saveSettings } from '@/lib/actions/settings'
 
 type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'info'
 
+// ─── Major Indonesian Banks ────────────────────────────────────────────────
+const ID_BANKS = [
+  { code: 'BCA',    name: 'Bank BCA',          abbr: 'BCA',  bg: '#003D86', text: '#FFFFFF' },
+  { code: 'MNR',    name: 'Bank Mandiri',       abbr: 'MNR',  bg: '#003087', text: '#FFD700' },
+  { code: 'BNI',    name: 'Bank BNI',           abbr: 'BNI',  bg: '#FF6600', text: '#FFFFFF' },
+  { code: 'BRI',    name: 'Bank BRI',           abbr: 'BRI',  bg: '#00529B', text: '#FFFFFF' },
+  { code: 'BSI',    name: 'Bank BSI',           abbr: 'BSI',  bg: '#007A52', text: '#FFFFFF' },
+  { code: 'CIMB',   name: 'CIMB Niaga',         abbr: 'CIMB', bg: '#BE1E2D', text: '#FFFFFF' },
+  { code: 'DNN',    name: 'Bank Danamon',        abbr: 'DNN',  bg: '#E40522', text: '#FFFFFF' },
+  { code: 'PMT',    name: 'Bank Permata',        abbr: 'PMT',  bg: '#00A651', text: '#FFFFFF' },
+  { code: 'BTN',    name: 'Bank BTN',            abbr: 'BTN',  bg: '#009A44', text: '#FFFFFF' },
+  { code: 'MEGA',   name: 'Bank Mega',           abbr: 'MEGA', bg: '#1B1464', text: '#FFFFFF' },
+  { code: 'OCBC',   name: 'Bank OCBC Indonesia', abbr: 'OCBC', bg: '#EE3124', text: '#FFFFFF' },
+  { code: 'PANIN',  name: 'Bank Panin',          abbr: 'PANIN',bg: '#003399', text: '#FFFFFF' },
+  { code: 'OTHER',  name: 'Bank Lainnya',        abbr: '🏦',   bg: '#6B7280', text: '#FFFFFF' },
+]
+
+interface ManualBankItem { id: string; code: string; name: string; number: string; owner: string }
+
+function BankBadge({ code, size = 'md' }: { code: string; size?: 'sm' | 'md' | 'lg' }) {
+  const bank = ID_BANKS.find(b => b.code === code) ?? ID_BANKS[ID_BANKS.length - 1]
+  const dim = size === 'sm' ? 'w-8 h-7 text-[9px]' : size === 'lg' ? 'w-14 h-12 text-xs' : 'w-11 h-9 text-[10px]'
+  return (
+    <div
+      className={`${dim} rounded-[6px] flex items-center justify-center font-bold shrink-0 leading-none`}
+      style={{ background: bank.bg, color: bank.text }}
+    >
+      {bank.abbr}
+    </div>
+  )
+}
+
+function ManualBanksEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [banks, setBanks] = useState<ManualBankItem[]>(() => {
+    try { return JSON.parse(value) } catch { return [] }
+  })
+  const [showPresets, setShowPresets] = useState<number | null>(null)
+
+  function update(newBanks: ManualBankItem[]) {
+    setBanks(newBanks)
+    onChange(JSON.stringify(newBanks))
+  }
+
+  function addBank() {
+    const newId = Date.now().toString()
+    update([...banks, { id: newId, code: 'BCA', name: 'Bank BCA', number: '', owner: 'Yayasan One Ummah' }])
+  }
+
+  function removeBank(idx: number) { update(banks.filter((_, i) => i !== idx)) }
+
+  function updateBank(idx: number, partial: Partial<ManualBankItem>) {
+    update(banks.map((b, i) => i === idx ? { ...b, ...partial } : b))
+  }
+
+  function pickPreset(idx: number, bankCode: string) {
+    const preset = ID_BANKS.find(b => b.code === bankCode)
+    if (preset) updateBank(idx, { code: preset.code, name: preset.name })
+    setShowPresets(null)
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {banks.map((bank, idx) => (
+        <div key={bank.id} className="border border-brand-muted/20 rounded-[12px] overflow-hidden">
+          {/* Bank header */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-brand-light border-b border-brand-muted/15">
+            <BankBadge code={bank.code} />
+            <div className="flex-1">
+              <div className="font-bold text-sm text-brand-dark">{bank.name}</div>
+              <div className="text-xs text-brand-muted">{bank.number || 'Nomor rekening belum diisi'}</div>
+            </div>
+            {/* Preset picker toggle */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowPresets(showPresets === idx ? null : idx)}
+                className="text-xs text-brand-surface font-bold border border-brand-surface/30 px-2.5 py-1 rounded-[6px] hover:bg-brand-surface hover:text-white transition-colors"
+              >
+                Ganti Bank
+              </button>
+              {showPresets === idx && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-brand-muted/20 rounded-[10px] shadow-premium z-20 w-64 overflow-hidden">
+                  <div className="p-2 grid grid-cols-2 gap-1 max-h-56 overflow-y-auto">
+                    {ID_BANKS.map(preset => (
+                      <button
+                        key={preset.code}
+                        type="button"
+                        onClick={() => pickPreset(idx, preset.code)}
+                        className={`flex items-center gap-2 px-2 py-2 rounded-[6px] text-left hover:bg-brand-light transition-colors ${bank.code === preset.code ? 'bg-brand-accent/10' : ''}`}
+                      >
+                        <BankBadge code={preset.code} size="sm" />
+                        <span className="text-xs font-medium text-brand-dark truncate">{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button type="button" onClick={() => removeBank(idx)} className="text-red-400 hover:text-red-600 font-bold text-sm w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center">✕</button>
+          </div>
+
+          {/* Fields */}
+          <div className="p-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Nomor Rekening *</label>
+              <input
+                type="text"
+                value={bank.number}
+                onChange={e => updateBank(idx, { number: e.target.value })}
+                className="inp text-sm"
+                placeholder="1234567890"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Atas Nama *</label>
+              <input
+                type="text"
+                value={bank.owner}
+                onChange={e => updateBank(idx, { owner: e.target.value })}
+                className="inp text-sm"
+                placeholder="Yayasan One Ummah"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={addBank}
+        className="py-3 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[10px] text-sm font-medium transition-colors flex items-center justify-center gap-2"
+      >
+        <FontAwesomeIcon icon={faPlus} /> Tambah Bank Lainnya
+      </button>
+
+      {banks.length > 0 && (
+        <p className="text-xs text-brand-muted">
+          💡 Semua rekening di atas akan ditampilkan di halaman instruksi pembayaran
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function PengaturanClient({ initialSettings }: { initialSettings: Record<string, string> }) {
   const [activeSection, setActiveSection] = useState<SectionKey>('onesender')
   const [settings, setSettings] = useState(initialSettings)
@@ -482,46 +626,29 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
               </div>
             </div>
 
-            {/* Manual Transfer Config */}
+            {/* Manual Transfer Config — multi-bank */}
             <div className="setting-card">
-              <h2 className="font-bold text-brand-dark text-base mb-1">Transfer Manual</h2>
-              <p className="text-sm text-brand-muted mb-5">Tambahkan opsi transfer langsung ke rekening bank tanpa melalui Tripay.</p>
-
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                  <div>
-                    <div className="font-semibold text-sm text-brand-dark">Aktifkan Transfer Manual</div>
-                    <div className="text-xs text-brand-muted mt-0.5">Tampilkan opsi ini di form checkout</div>
-                  </div>
-                  <label className="toggle">
-                    <input type="checkbox" checked={settings.manual_transfer_enabled === 'true'} onChange={e => set('manual_transfer_enabled', e.target.checked ? 'true' : 'false')} />
-                    <span className="toggle-slider" />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Nama Bank</label>
-                    <input type="text" value={settings.manual_bank_name ?? ''} onChange={e => set('manual_bank_name', e.target.value)} className="inp" placeholder="Bank BCA" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Nomor Rekening</label>
-                    <input type="text" value={settings.manual_bank_number ?? ''} onChange={e => set('manual_bank_number', e.target.value)} className="inp" placeholder="1234567890" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-2">Atas Nama</label>
-                    <input type="text" value={settings.manual_bank_owner ?? ''} onChange={e => set('manual_bank_owner', e.target.value)} className="inp" placeholder="Yayasan One Ummah" />
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleSave(['manual_transfer_enabled', 'manual_bank_name', 'manual_bank_number', 'manual_bank_owner'])}
-                  disabled={isPending}
-                  className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60"
-                >
-                  <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
-                </button>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-bold text-brand-dark text-base">Transfer Manual</h2>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.manual_transfer_enabled === 'true'} onChange={e => set('manual_transfer_enabled', e.target.checked ? 'true' : 'false')} />
+                  <span className="toggle-slider" />
+                </label>
               </div>
+              <p className="text-sm text-brand-muted mb-5">Tambahkan satu atau lebih rekening bank untuk transfer langsung tanpa Tripay.</p>
+
+              <ManualBanksEditor
+                value={settings.manual_banks ?? '[]'}
+                onChange={v => set('manual_banks', v)}
+              />
+
+              <button
+                onClick={() => handleSave(['manual_transfer_enabled', 'manual_banks'])}
+                disabled={isPending}
+                className="mt-5 flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60"
+              >
+                <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Semua
+              </button>
             </div>
           </div>
         )}

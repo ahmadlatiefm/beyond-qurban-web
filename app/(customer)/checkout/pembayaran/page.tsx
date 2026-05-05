@@ -22,14 +22,17 @@ export default async function PembayaranPage({
   if (!order) notFound()
 
   const manualBankSettings = await prisma.settings.findMany({
-    where: { key: { in: ['manual_bank_name','manual_bank_number','manual_bank_owner','manual_transfer_enabled'] } }
+    where: { key: { in: ['manual_banks','manual_transfer_enabled'] } }
   })
   const mbMap: Record<string, string> = {}
   manualBankSettings.forEach(s => { mbMap[s.key] = s.value })
-  const manualBank = mbMap.manual_transfer_enabled === 'true' ? {
-    bankName: mbMap.manual_bank_name ?? 'Bank BCA',
-    accountNumber: mbMap.manual_bank_number ?? '',
-    accountOwner: mbMap.manual_bank_owner ?? 'Yayasan One Ummah',
+  let banksList: {id:string;code:string;name:string;number:string;owner:string}[] = []
+  try { banksList = JSON.parse(mbMap.manual_banks ?? '[]') } catch {}
+  const manualBank = mbMap.manual_transfer_enabled === 'true' && banksList.length > 0 ? {
+    bankName: banksList[0]?.name ?? '',
+    accountNumber: banksList[0]?.number ?? '',
+    accountOwner: banksList[0]?.owner ?? '',
+    banks: banksList,
   } : null
 
   return (

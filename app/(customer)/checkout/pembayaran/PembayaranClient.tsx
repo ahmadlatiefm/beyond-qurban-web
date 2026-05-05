@@ -19,7 +19,10 @@ interface Props {
   createdAt: string
   paymentMethod: string
   payCode: string | null
-  manualBank?: { bankName: string; accountNumber: string; accountOwner: string } | null
+  manualBank?: {
+    bankName: string; accountNumber: string; accountOwner: string
+    banks?: {id:string;code:string;name:string;number:string;owner:string}[]
+  } | null
 }
 
 export default function PembayaranClient({
@@ -164,38 +167,59 @@ export default function PembayaranClient({
               </div>
             )}
 
-            {/* Manual Transfer */}
+            {/* Manual Transfer — all configured bank accounts with logos */}
             {paymentMethod === 'MANUAL_TRANSFER' && manualBank && (
-              <div className="flex flex-col gap-4">
-                <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm text-brand-surface shadow-sm">
-                      {manualBank.bankName.split(' ')[0].substring(0,3).toUpperCase()}
+              <div className="flex flex-col gap-3">
+                {(manualBank.banks && manualBank.banks.length > 0
+                  ? manualBank.banks
+                  : [{ id:'1', code:'', name: manualBank.bankName, number: manualBank.accountNumber, owner: manualBank.accountOwner }]
+                ).map((b, idx) => {
+                  const BANK_COLORS: Record<string, {bg:string;text:string}> = {
+                    BCA:   {bg:'#003D86',text:'#fff'}, MNR:  {bg:'#003087',text:'#FFD700'},
+                    BNI:   {bg:'#FF6600',text:'#fff'}, BRI:  {bg:'#00529B',text:'#fff'},
+                    BSI:   {bg:'#007A52',text:'#fff'}, CIMB: {bg:'#BE1E2D',text:'#fff'},
+                    DNN:   {bg:'#E40522',text:'#fff'}, PMT:  {bg:'#00A651',text:'#fff'},
+                    BTN:   {bg:'#009A44',text:'#fff'}, MEGA: {bg:'#1B1464',text:'#fff'},
+                    OCBC:  {bg:'#EE3124',text:'#fff'}, PANIN:{bg:'#003399',text:'#fff'},
+                  }
+                  const colors = BANK_COLORS[b.code] ?? {bg:'#1B5E3B', text:'#fff'}
+                  const abbr = b.code || b.name.split(' ').pop()?.substring(0,4).toUpperCase() || 'BANK'
+                  const copyKey = `manual-${idx}`
+                  return (
+                    <div key={b.id ?? idx} className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div
+                          className="w-14 h-10 rounded-[8px] flex items-center justify-center font-bold text-[11px] shrink-0 shadow-sm leading-none"
+                          style={{ background: colors.bg, color: colors.text }}
+                        >
+                          {abbr}
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-brand-dark">{b.name}</div>
+                          <div className="text-xs text-brand-muted">Transfer Manual</div>
+                        </div>
+                      </div>
+                      <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Rekening</label>
+                      <div className="inp-copy">
+                        <input type="text" value={b.number} readOnly />
+                        <button className={`copy-btn${copied === copyKey ? ' copied' : ''}`} onClick={() => copyText(b.number, copyKey)}>
+                          <FontAwesomeIcon icon={faCopy} className="mr-1" />
+                          {copied === copyKey ? 'Disalin!' : 'Salin'}
+                        </button>
+                      </div>
+                      <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">{b.owner}</strong></div>
                     </div>
-                    <div>
-                      <div className="font-bold text-sm text-brand-dark">{manualBank.bankName}</div>
-                      <div className="text-xs text-brand-muted">Transfer Manual</div>
-                    </div>
-                  </div>
-                  <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Rekening</label>
-                  <div className="inp-copy">
-                    <input type="text" value={manualBank.accountNumber} readOnly />
-                    <button className={`copy-btn${copied === 'manual' ? ' copied' : ''}`} onClick={() => copyText(manualBank.accountNumber, 'manual')}>
-                      <FontAwesomeIcon icon={faCopy} className="mr-1" />
-                      {copied === 'manual' ? 'Disalin!' : 'Salin'}
-                    </button>
-                  </div>
-                  <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">{manualBank.accountOwner}</strong></div>
-                </div>
+                  )
+                })}
                 <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
                   <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
                     <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
                   </h3>
                   <ol className="flex flex-col gap-2.5">
-                    {['Buka aplikasi mobile banking atau ATM Anda',
-                      `Transfer ke rekening ${manualBank.bankName} nomor ${manualBank.accountNumber}`,
-                      `Pastikan nama penerima ${manualBank.accountOwner} dan nominal sesuai`,
-                      'Upload bukti transfer di bawah setelah selesai',
+                    {['Pilih salah satu rekening bank di atas',
+                      'Buka mobile banking atau ATM Anda, pilih Transfer Antar Bank',
+                      'Masukkan nomor rekening, pastikan nama penerima sesuai dan nominal tepat',
+                      'Simpan bukti transfer lalu upload di bawah',
                     ].map((step, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
                         <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i+1}</span>
@@ -206,7 +230,7 @@ export default function PembayaranClient({
                 </div>
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
                   <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
-                  <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan atau dikurangi.</p>
+                  <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan.</p>
                 </div>
               </div>
             )}
