@@ -124,6 +124,7 @@ export default function DonationForm({
   }
 
   return (
+    <>
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* LEFT: Form */}
       <div className="flex-1 flex flex-col gap-5">
@@ -537,5 +538,24 @@ export default function DonationForm({
         </div>
       </div>
     </div>
+
+    {/* ── Sticky bottom bar ── */}
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-brand-muted/15 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+      <div className="max-w-[1100px] mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="flex flex-col min-w-0">
+          <span className="text-xs text-brand-muted leading-none">Total Donasi</span>
+          <span className="font-serif text-xl font-bold text-brand-accent leading-tight">{formatCurrency(total)}</span>
+        </div>
+        <button
+          type="submit" form="donation-form"
+          disabled={isPending}
+          className="ml-auto flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold px-6 py-3 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity text-sm whitespace-nowrap shrink-0 disabled:opacity-50"
+        >
+          {isPending ? 'Memproses...' : <><span>Qurban Sekarang</span><FontAwesomeIcon icon={faArrowRight} /></>}
+        </button>
+      </div>
+    </div>
+    <div className="h-20" />
+    </>
   )
 }

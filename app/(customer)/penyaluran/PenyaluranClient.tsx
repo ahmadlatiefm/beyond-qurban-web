@@ -259,20 +259,26 @@ export default function PenyaluranClient({
         </div>
       </section>
 
-      {/* ── Floating sticky CTA button ─────────────────────────────────── */}
+      {/* ── Sticky bottom bar (konsisten dengan payment pages) ─────────── */}
       {filtered.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-          <Link
-            href={`/penyaluran/${filtered[0].slug}`}
-            className="pointer-events-auto flex items-center gap-3 bg-brand-surface text-white font-bold px-7 py-3.5 rounded-full shadow-2xl hover:bg-brand-dark transition-all hover:scale-[1.03] active:scale-[0.98] whitespace-nowrap"
-            style={{ boxShadow: '0 8px 32px rgba(27,94,59,0.45)' }}
-          >
-            <FontAwesomeIcon icon={faHandHoldingDollar} className="text-brand-accent text-base" />
-            Donasi Sekarang
-            <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
-          </Link>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-brand-muted/15 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+          <div className="max-w-[1100px] mx-auto px-4 py-3 flex items-center gap-4">
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs text-brand-muted leading-none">Program Qurban</span>
+              <span className="font-serif text-base font-bold text-brand-dark leading-tight">{filtered.length} Campaign Aktif</span>
+            </div>
+            <Link
+              href={`/penyaluran/${filtered[0].slug}`}
+              className="ml-auto flex items-center gap-2 bg-brand-surface text-white font-bold px-6 py-3 rounded-[12px] shadow-premium hover:bg-brand-dark transition-colors text-sm whitespace-nowrap shrink-0"
+            >
+              <FontAwesomeIcon icon={faHandHoldingDollar} className="text-brand-accent" />
+              Qurban Sekarang
+              <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
+            </Link>
+          </div>
         </div>
       )}
+      <div className="h-20" />
     </div>
   )
 }
