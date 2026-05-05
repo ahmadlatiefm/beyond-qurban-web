@@ -17,6 +17,7 @@ import {
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons'
 import { prisma } from '@/lib/prisma'
 import { formatCurrency } from '@/lib/utils'
+import { applyGlobalDiscount } from '@/lib/discount'
 import ProductCard from '@/components/ui/ProductCard'
 
 async function getFeaturedProducts() {
@@ -28,7 +29,16 @@ async function getFeaturedProducts() {
 }
 
 export default async function HomePage() {
-  const products = await getFeaturedProducts()
+  const [products, settingsRows] = await Promise.all([
+    getFeaturedProducts(),
+    prisma.settings.findMany({
+      where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end'] } }
+    }),
+  ])
+  const settingsMap: Record<string, string> = {}
+  settingsRows.forEach(s => { settingsMap[s.key] = s.value })
+  const discountPct = settingsMap.diskon_global_enabled === 'true' && settingsMap.diskon_type !== 'nominal'
+    ? parseInt(settingsMap.diskon_value ?? '0') : 0
 
   return (
     <>
@@ -174,9 +184,18 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} available />
-            ))}
+            {products.map((product) => {
+              const disc = applyGlobalDiscount(product.price, settingsMap)
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  available
+                  discountPct={disc.discountAmount > 0 ? discountPct : undefined}
+                  discountedPrice={disc.discountAmount > 0 ? disc.finalPrice : undefined}
+                />
+              )
+            })}
           </div>
         </div>
       </section>
