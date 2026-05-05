@@ -17,7 +17,7 @@ export default async function KatalogPage() {
   const [products, settingsRows] = await Promise.all([
     getAllProducts(),
     prisma.settings.findMany({
-      where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end'] } }
+      where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end','katalog_hero_title','katalog_hero_desc'] } }
     }),
   ])
   const settingsMap: Record<string, string> = {}
@@ -43,8 +43,12 @@ export default async function KatalogPage() {
             <FontAwesomeIcon icon={faChevronRight} className="text-[10px]" />
             <span className="text-brand-accent font-medium">Katalog Hewan</span>
           </nav>
-          <h1 className="font-serif text-4xl md:text-5xl font-bold text-brand-light mb-3">Katalog Hewan Kurban</h1>
-          <p className="text-brand-accent-light/80 max-w-xl mx-auto">Pilih hewan kurban terbaik — sehat, memenuhi syarat syariat, dan siap diantar ke lokasi Anda.</p>
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-brand-light mb-3">
+            {settingsMap.katalog_hero_title || 'Katalog Hewan Kurban'}
+          </h1>
+          <p className="text-brand-accent-light/80 max-w-xl mx-auto">
+            {settingsMap.katalog_hero_desc || 'Pilih hewan kurban terbaik — sehat, memenuhi syarat syariat, dan siap diantar ke lokasi Anda.'}
+          </p>
         </div>
         {/* Wave divider */}
         <div className="absolute bottom-0 left-0 w-full overflow-hidden">

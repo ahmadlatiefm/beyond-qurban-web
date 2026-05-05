@@ -6,7 +6,17 @@ const ALL_KEYS = [
   // Homepage
   'home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc',
   'home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
-  'home_stats',
+  'home_stats','home_features','home_features_title','home_features_desc',
+  'home_featured_title','home_featured_desc',
+  'home_steps','home_steps_title','home_steps_desc',
+  'home_testimonials','home_testimonials_title','home_testimonials_desc',
+  'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href',
+  // Penyaluran
+  'penyaluran_badge','penyaluran_hero_title_1','penyaluran_hero_title_2','penyaluran_hero_desc',
+  'penyaluran_trust_1','penyaluran_trust_2','penyaluran_trust_3',
+  'penyaluran_impact_stats','penyaluran_impact_title',
+  // Katalog
+  'katalog_hero_title','katalog_hero_desc',
   // Header
   'store_name','nav_items','header_cta_text','header_cta_href',
   // Footer

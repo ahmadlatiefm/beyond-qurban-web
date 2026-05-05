@@ -48,6 +48,25 @@ export default function PenyaluranClient({
   campaigns: Campaign[]
   settingsMap?: Record<string, string>
 }) {
+  // Hero content from settings
+  const heroBadge = settingsMap.penyaluran_badge || 'Qurban Penyaluran 1447H'
+  const heroTitle1 = settingsMap.penyaluran_hero_title_1 || 'Salurkan Qurban ke'
+  const heroTitle2 = settingsMap.penyaluran_hero_title_2 || 'Mereka yang Membutuhkan'
+  const heroDesc = settingsMap.penyaluran_hero_desc || 'Pilih program penyaluran sesuai destinasi pilihan Anda. Hewan disembelih sesuai syariat dan laporan dikirim langsung via WhatsApp.'
+  const trust1 = settingsMap.penyaluran_trust_1 || 'Terverifikasi MUI'
+  const trust2 = settingsMap.penyaluran_trust_2 || '635+ Donatur'
+  const trust3 = settingsMap.penyaluran_trust_3 || 'Amanah sejak 2019'
+
+  let impactStats: { stat: string; label: string }[] = [
+    { stat: '1.247', label: 'Ekor Tersalurkan' },
+    { stat: '48', label: 'Desa Terjangkau' },
+    { stat: '8.500+', label: 'Penerima Manfaat' },
+    { stat: '3 Negara', label: 'Destinasi Aktif' },
+  ]
+  try {
+    const p = JSON.parse(settingsMap.penyaluran_impact_stats ?? '')
+    if (Array.isArray(p) && p.length > 0) impactStats = p
+  } catch {}
   const [filter, setFilter] = useState<FilterType>('ALL')
 
   const filtered = useMemo(() =>
@@ -71,22 +90,22 @@ export default function PenyaluranClient({
           </nav>
           <div className="inline-flex items-center gap-2 bg-brand-surface/50 border border-brand-surface-light/30 px-4 py-1.5 rounded-[20px] mb-5">
             <FontAwesomeIcon icon={faHandHoldingHeart} className="text-brand-accent text-xs" />
-            <span className="text-brand-accent-light text-xs font-medium tracking-wide uppercase">Qurban Penyaluran 1447H</span>
+            <span className="text-brand-accent-light text-xs font-medium tracking-wide uppercase">{heroBadge}</span>
           </div>
           <h1 className="font-serif text-3xl md:text-5xl font-bold text-brand-light mb-4 leading-tight">
-            Salurkan Qurban ke<br />
-            <span className="text-brand-accent">Mereka yang Membutuhkan</span>
+            {heroTitle1}<br />
+            <span className="text-brand-accent">{heroTitle2}</span>
           </h1>
           <p className="text-brand-accent-light/75 text-base md:text-lg max-w-2xl mx-auto mb-8 font-light leading-relaxed">
-            Pilih program penyaluran sesuai destinasi pilihan Anda. Hewan disembelih sesuai syariat dan laporan dikirim langsung via WhatsApp.
+            {heroDesc}
           </p>
           {/* trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-brand-accent-light/60">
-            <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent" /> Terverifikasi MUI</span>
+            <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent" /> {trust1}</span>
             <span className="text-brand-surface-light/40">·</span>
-            <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faUsers} className="text-brand-accent" /> 635+ Donatur</span>
+            <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faUsers} className="text-brand-accent" /> {trust2}</span>
             <span className="text-brand-surface-light/40">·</span>
-            <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faHeart} className="text-brand-accent" /> Amanah sejak 2019</span>
+            <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faHeart} className="text-brand-accent" /> {trust3}</span>
           </div>
         </div>
         {/* wave divider */}
@@ -242,14 +261,11 @@ export default function PenyaluranClient({
         {/* Impact stats strip */}
         <div className="mt-14 bg-brand-dark rounded-[16px] p-7 relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(#C8962A 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
-          <h3 className="font-serif text-lg font-bold text-brand-light mb-5 relative z-10">Dampak Program Sejak 2019</h3>
+          <h3 className="font-serif text-lg font-bold text-brand-light mb-5 relative z-10">
+            {settingsMap.penyaluran_impact_title || 'Dampak Program Sejak 2019'}
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-            {[
-              { stat: '1.247', label: 'Ekor Tersalurkan' },
-              { stat: '48', label: 'Desa Terjangkau' },
-              { stat: '8.500+', label: 'Penerima Manfaat' },
-              { stat: '3 Negara', label: 'Destinasi Aktif' },
-            ].map(({ stat, label }) => (
+            {impactStats.map(({ stat, label }) => (
               <div key={label} className="text-center">
                 <div className="font-serif text-2xl md:text-3xl font-bold text-brand-accent">{stat}</div>
                 <div className="text-brand-accent-light/65 text-xs mt-1">{label}</div>

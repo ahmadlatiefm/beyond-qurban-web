@@ -37,6 +37,11 @@ export default async function HomePage() {
         'home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc',
         'home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
         'home_stats',
+        'home_features_title','home_features_desc','home_features',
+        'home_featured_title','home_featured_desc',
+        'home_steps_title','home_steps_desc','home_steps',
+        'home_testimonials_title','home_testimonials_desc','home_testimonials',
+        'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href',
       ] } }
     }),
   ])
@@ -61,6 +66,46 @@ export default async function HomePage() {
     { value: '98%', label: 'Kepuasan Pelanggan' },
   ]
   try { const p = JSON.parse(settingsMap.home_stats ?? ''); if (Array.isArray(p) && p.length > 0) homeStats = p } catch {}
+
+  // Features (Mengapa Memilih Kami)
+  let homeFeatures: { title: string; desc: string }[] = [
+    { title: 'Hewan Terseleksi', desc: 'Setiap hewan kurban telah memenuhi standar kesehatan dan memenuhi syarat syariat Islam.' },
+    { title: 'Pengiriman Amanah', desc: 'Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.' },
+    { title: 'Laporan Foto & Video', desc: 'Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.' },
+  ]
+  try { const p = JSON.parse(settingsMap.home_features ?? ''); if (Array.isArray(p) && p.length > 0) homeFeatures = p } catch {}
+
+  // Steps (Cara Pesan)
+  let homeSteps: { title: string; desc: string }[] = [
+    { title: 'Pilih Hewan', desc: 'Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.' },
+    { title: 'Isi Data & Transfer', desc: 'Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.' },
+    { title: 'Terima & Selesai', desc: 'Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.' },
+  ]
+  try { const p = JSON.parse(settingsMap.home_steps ?? ''); if (Array.isArray(p) && p.length > 0) homeSteps = p } catch {}
+
+  // Testimonials
+  let homeTestimonials: { name: string; city: string; stars: number; text: string }[] = [
+    { name: 'Ahmad Fauzi', city: 'Jakarta', stars: 5, text: 'Pengalaman kurban terbaik! Hewan sehat, pengiriman tepat waktu, dan laporan video sangat memuaskan. Tahun depan pasti pesan lagi.' },
+    { name: 'Siti Rahayu', city: 'Surabaya', stars: 5, text: 'Sangat mudah, transparan, dan amanah. Bisa memantau kondisi hewan secara real-time. Sungguh tenang ibadah kurbannya bersama Beyond Qurban.' },
+    { name: 'Budi Santoso', city: 'Bandung', stars: 4, text: 'Layanannya profesional dan responsif. Hewan kurban berkualitas baik dan proses pengiriman lancar. Sangat direkomendasikan untuk keluarga Muslim.' },
+  ]
+  try { const p = JSON.parse(settingsMap.home_testimonials ?? ''); if (Array.isArray(p) && p.length > 0) homeTestimonials = p } catch {}
+
+  // Section titles
+  const featuresTitle = settingsMap.home_features_title || 'Mengapa Memilih Kami?'
+  const featuresDesc = settingsMap.home_features_desc || 'Kami hadir dengan komitmen penuh untuk ibadah kurban yang tenang dan terpercaya.'
+  const featuredTitle = settingsMap.home_featured_title || 'Produk Unggulan'
+  const featuredDesc = settingsMap.home_featured_desc || 'Pilihan hewan kurban terbaik yang paling diminati.'
+  const stepsTitle = settingsMap.home_steps_title || 'Cara Pesan Kurban'
+  const stepsDesc = settingsMap.home_steps_desc || 'Proses mudah, transparan, dan aman dari awal hingga selesai.'
+  const testimonialsTitle = settingsMap.home_testimonials_title || 'Kata Pelanggan Kami'
+  const testimonialsDesc = settingsMap.home_testimonials_desc || 'Ribuan keluarga telah mempercayakan ibadah kurbannya kepada kami.'
+  const ctaBadge = settingsMap.home_cta_badge || 'Yayasan One Ummah'
+  const ctaTitle1 = settingsMap.home_cta_title_1 || 'Menjaga Amanah,'
+  const ctaTitle2 = settingsMap.home_cta_title_2 || 'Menyempurnakan Ibadah'
+  const ctaDesc = settingsMap.home_cta_desc || 'Beyond Qurban adalah program Yayasan One Ummah untuk memudahkan umat Islam menunaikan ibadah kurban secara benar, transparan, dan penuh amanah sejak 2019.'
+  const ctaBtn = settingsMap.home_cta_btn || 'Mulai Pesan Kurban'
+  const ctaBtnHref = settingsMap.home_cta_btn_href || '/katalog'
 
   return (
     <>
@@ -121,43 +166,20 @@ export default async function HomePage() {
       <section className="py-20 bg-brand-light">
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">Mengapa Memilih Kami?</h2>
-            <p className="text-brand-muted">Kami hadir dengan komitmen penuh untuk ibadah kurban yang tenang dan terpercaya.</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">{featuresTitle}</h2>
+            <p className="text-brand-muted">{featuresDesc}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1 */}
-            <div className="bg-brand-surface rounded-[12px] p-8 text-center border border-brand-surface-light/20 relative overflow-hidden group shadow-premium">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-surface-light/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="w-16 h-16 mx-auto bg-brand-dark rounded-full flex items-center justify-center mb-5 border border-brand-accent/30 relative z-10">
-                <FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent text-2xl" />
+            {[faShieldHalved, faTruckFast, faCamera].map((icon, i) => (
+              <div key={i} className="bg-brand-surface rounded-[12px] p-8 text-center border border-brand-surface-light/20 relative overflow-hidden group shadow-premium">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-surface-light/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="w-16 h-16 mx-auto bg-brand-dark rounded-full flex items-center justify-center mb-5 border border-brand-accent/30 relative z-10">
+                  <FontAwesomeIcon icon={icon} className="text-brand-accent text-2xl" />
+                </div>
+                <h3 className="font-serif text-xl font-bold text-brand-light mb-3 relative z-10">{homeFeatures[i]?.title}</h3>
+                <p className="text-brand-accent-light/85 text-sm leading-relaxed relative z-10">{homeFeatures[i]?.desc}</p>
               </div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-3 relative z-10">Hewan Terseleksi</h3>
-              <p className="text-brand-accent-light/85 text-sm leading-relaxed relative z-10">
-                Setiap hewan kurban lolos pemeriksaan kesehatan ketat dan memenuhi syarat syariat Islam.
-              </p>
-            </div>
-            {/* Card 2 */}
-            <div className="bg-brand-surface rounded-[12px] p-8 text-center border border-brand-surface-light/20 relative overflow-hidden group shadow-premium">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-surface-light/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="w-16 h-16 mx-auto bg-brand-dark rounded-full flex items-center justify-center mb-5 border border-brand-accent/30 relative z-10">
-                <FontAwesomeIcon icon={faTruckFast} className="text-brand-accent text-2xl" />
-              </div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-3 relative z-10">Pengiriman Amanah</h3>
-              <p className="text-brand-accent-light/85 text-sm leading-relaxed relative z-10">
-                Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.
-              </p>
-            </div>
-            {/* Card 3 */}
-            <div className="bg-brand-surface rounded-[12px] p-8 text-center border border-brand-surface-light/20 relative overflow-hidden group shadow-premium">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-surface-light/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
-              <div className="w-16 h-16 mx-auto bg-brand-dark rounded-full flex items-center justify-center mb-5 border border-brand-accent/30 relative z-10">
-                <FontAwesomeIcon icon={faCamera} className="text-brand-accent text-2xl" />
-              </div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-3 relative z-10">Laporan Foto &amp; Video</h3>
-              <p className="text-brand-accent-light/85 text-sm leading-relaxed relative z-10">
-                Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -167,8 +189,8 @@ export default async function HomePage() {
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
             <div>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-2">Produk Unggulan</h2>
-              <p className="text-brand-muted">Pilihan hewan kurban terbaik yang paling diminati.</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-2">{featuredTitle}</h2>
+              <p className="text-brand-muted">{featuredDesc}</p>
             </div>
             <Link
               href="/katalog"
@@ -199,8 +221,8 @@ export default async function HomePage() {
         <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-surface opacity-10 blur-[100px] rounded-full pointer-events-none"></div>
         <div className="max-w-[1100px] mx-auto px-6 md:px-12 relative z-10">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-light mb-3">Cara Pesan Kurban</h2>
-            <p className="text-brand-accent-light/80">Proses mudah, transparan, dan aman dari awal hingga selesai.</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-light mb-3">{stepsTitle}</h2>
+            <p className="text-brand-accent-light/80">{stepsDesc}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             <div className="hidden md:block absolute top-14 left-[18%] right-[18%] h-0.5 bg-brand-surface-light/30"></div>
@@ -210,8 +232,8 @@ export default async function HomePage() {
                 <FontAwesomeIcon icon={faCow} />
               </div>
               <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah 1</div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">Pilih Hewan</h3>
-              <p className="text-brand-accent-light/75 text-sm">Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.</p>
+              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{homeSteps[0]?.title || 'Pilih Hewan'}</h3>
+              <p className="text-brand-accent-light/75 text-sm">{homeSteps[0]?.desc}</p>
               <Link href="/katalog" className="mt-4 text-brand-accent text-sm font-bold hover:underline">
                 Buka Katalog →
               </Link>
@@ -222,8 +244,8 @@ export default async function HomePage() {
                 <FontAwesomeIcon icon={faFileInvoiceDollar} />
               </div>
               <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah 2</div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">Isi Data &amp; Transfer</h3>
-              <p className="text-brand-accent-light/75 text-sm">Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.</p>
+              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{homeSteps[1]?.title || 'Isi Data & Transfer'}</h3>
+              <p className="text-brand-accent-light/75 text-sm">{homeSteps[1]?.desc}</p>
             </div>
             {/* Step 3 */}
             <div className="flex flex-col items-center text-center relative z-10">
@@ -231,8 +253,8 @@ export default async function HomePage() {
                 <FontAwesomeIcon icon={faHouseCircleCheck} />
               </div>
               <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah 3</div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">Terima &amp; Selesai</h3>
-              <p className="text-brand-accent-light/75 text-sm">Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.</p>
+              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{homeSteps[2]?.title || 'Terima & Selesai'}</h3>
+              <p className="text-brand-accent-light/75 text-sm">{homeSteps[2]?.desc}</p>
               <Link href="/lacak-pesanan" className="mt-4 text-brand-accent text-sm font-bold hover:underline">
                 Lacak Pesanan →
               </Link>
@@ -245,71 +267,29 @@ export default async function HomePage() {
       <section className="py-20 bg-brand-light">
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
           <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">Kata Pelanggan Kami</h2>
-            <p className="text-brand-muted">Ribuan keluarga telah mempercayakan ibadah kurbannya kepada kami.</p>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">{testimonialsTitle}</h2>
+            <p className="text-brand-muted">{testimonialsDesc}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Testimonial 1: Ahmad Fauzi */}
-            <div className="bg-white rounded-[12px] p-6 shadow-premium border border-brand-muted/10">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <FontAwesomeIcon key={i} icon={faStarSolid} className="text-brand-accent text-sm" />
-                ))}
-              </div>
-              <p className="text-brand-muted text-sm leading-relaxed mb-5">
-                &ldquo;Pengalaman kurban terbaik! Hewan sehat, pengiriman tepat waktu, dan laporan video sangat memuaskan. Tahun depan pasti pesan lagi.&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-surface/20 text-brand-surface flex items-center justify-center font-bold">
-                  AF
+            {homeTestimonials.map((t, i) => (
+              <div key={i} className="bg-white rounded-[12px] p-6 shadow-premium border border-brand-muted/10">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, s) => (
+                    <FontAwesomeIcon key={s} icon={s < t.stars ? faStarSolid : faStarRegular} className="text-brand-accent text-sm" />
+                  ))}
                 </div>
-                <div>
-                  <div className="text-brand-dark font-semibold text-sm">Ahmad Fauzi</div>
-                  <div className="text-brand-muted text-xs">Jakarta</div>
-                </div>
-              </div>
-            </div>
-            {/* Testimonial 2: Siti Rahayu */}
-            <div className="bg-white rounded-[12px] p-6 shadow-premium border border-brand-muted/10">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <FontAwesomeIcon key={i} icon={faStarSolid} className="text-brand-accent text-sm" />
-                ))}
-              </div>
-              <p className="text-brand-muted text-sm leading-relaxed mb-5">
-                &ldquo;Sangat mudah, transparan, dan amanah. Bisa memantau kondisi hewan secara real-time. Sungguh tenang ibadah kurbannya bersama Beyond Qurban.&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-accent/20 text-brand-accent flex items-center justify-center font-bold">
-                  SR
-                </div>
-                <div>
-                  <div className="text-brand-dark font-semibold text-sm">Siti Rahayu</div>
-                  <div className="text-brand-muted text-xs">Surabaya</div>
+                <p className="text-brand-muted text-sm leading-relaxed mb-5">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-surface/20 text-brand-surface flex items-center justify-center font-bold text-sm">
+                    {t.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
+                  </div>
+                  <div>
+                    <div className="text-brand-dark font-semibold text-sm">{t.name}</div>
+                    <div className="text-brand-muted text-xs">{t.city}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-            {/* Testimonial 3: Budi Santoso (4 stars) */}
-            <div className="bg-white rounded-[12px] p-6 shadow-premium border border-brand-muted/10">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(4)].map((_, i) => (
-                  <FontAwesomeIcon key={i} icon={faStarSolid} className="text-brand-accent text-sm" />
-                ))}
-                <FontAwesomeIcon icon={faStarRegular} className="text-brand-accent text-sm" />
-              </div>
-              <p className="text-brand-muted text-sm leading-relaxed mb-5">
-                &ldquo;Layanannya profesional dan responsif. Hewan kurban berkualitas baik dan proses pengiriman lancar. Sangat direkomendasikan untuk keluarga Muslim.&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-surface-light/20 text-brand-surface flex items-center justify-center font-bold">
-                  BS
-                </div>
-                <div>
-                  <div className="text-brand-dark font-semibold text-sm">Budi Santoso</div>
-                  <div className="text-brand-muted text-xs">Bandung</div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -319,20 +299,18 @@ export default async function HomePage() {
         <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-brand-accent opacity-5 blur-[80px] rounded-full pointer-events-none"></div>
         <div className="max-w-[900px] mx-auto px-6 md:px-12 text-center relative z-10">
           <span className="text-brand-accent font-bold text-xs uppercase tracking-widest border border-brand-accent/40 px-4 py-1.5 rounded-full inline-block mb-6">
-            Yayasan One Ummah
+            {ctaBadge}
           </span>
           <h2 className="font-serif text-3xl md:text-5xl font-bold text-brand-light mb-6 leading-tight">
-            Menjaga Amanah,<br />
-            <span className="text-brand-accent">Menyempurnakan Ibadah</span>
+            {ctaTitle1}<br />
+            <span className="text-brand-accent">{ctaTitle2}</span>
           </h2>
-          <p className="text-brand-accent-light/75 text-lg mb-10 font-light leading-relaxed max-w-2xl mx-auto">
-            Beyond Qurban adalah program Yayasan One Ummah untuk memudahkan umat Islam menunaikan ibadah kurban secara benar, transparan, dan penuh amanah sejak 2019.
-          </p>
+          <p className="text-brand-accent-light/75 text-lg mb-10 font-light leading-relaxed max-w-2xl mx-auto">{ctaDesc}</p>
           <Link
-            href="/katalog"
+            href={ctaBtnHref}
             className="inline-flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 px-10 rounded-[20px] shadow-premium hover:scale-105 transition-transform"
           >
-            Mulai Pesan Kurban <FontAwesomeIcon icon={faArrowRight} />
+            {ctaBtn} <FontAwesomeIcon icon={faArrowRight} />
           </Link>
         </div>
       </section>

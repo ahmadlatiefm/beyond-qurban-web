@@ -19,6 +19,9 @@ export default async function PenyaluranPage() {
             'penyaluran_harga_indonesia', 'penyaluran_disc_indonesia',
             'penyaluran_harga_africa',    'penyaluran_disc_africa',
             'penyaluran_harga_palestine', 'penyaluran_disc_palestine',
+            'penyaluran_badge', 'penyaluran_hero_title_1', 'penyaluran_hero_title_2',
+            'penyaluran_hero_desc', 'penyaluran_trust_1', 'penyaluran_trust_2', 'penyaluran_trust_3',
+            'penyaluran_impact_stats', 'penyaluran_impact_title',
           ]
         }
       }

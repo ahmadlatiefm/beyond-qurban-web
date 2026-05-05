@@ -4,10 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faFloppyDisk, faHome, faLink, faBars,
   faInfoCircle, faPlus, faTrash, faGlobe,
+  faHandHoldingHeart, faTags, faStar,
 } from '@fortawesome/free-solid-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
 
-type Tab = 'homepage' | 'header' | 'footer' | 'tentang'
+type Tab = 'homepage' | 'penyaluran' | 'katalog' | 'header' | 'footer' | 'tentang'
 
 interface StatItem { value: string; label: string }
 interface NavItem { label: string; href: string }
@@ -48,6 +49,33 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
 
   // Parsed arrays
   const [homeStats, setHomeStats] = useState<StatItem[]>(() => parseJsonOr(initialSettings.home_stats, DEFAULT_STATS_HOME))
+
+  type Feature = { title: string; desc: string }
+  type Step = { title: string; desc: string }
+  type Testimonial = { name: string; city: string; stars: number; text: string }
+  type ImpactStat = { stat: string; label: string }
+
+  const [homeFeatures, setHomeFeatures] = useState<Feature[]>(() => parseJsonOr(initialSettings.home_features, [
+    { title: 'Hewan Terseleksi', desc: 'Setiap hewan kurban lolos pemeriksaan kesehatan ketat dan memenuhi syarat syariat Islam.' },
+    { title: 'Pengiriman Amanah', desc: 'Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.' },
+    { title: 'Laporan Foto & Video', desc: 'Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.' },
+  ]))
+  const [homeSteps, setHomeSteps] = useState<Step[]>(() => parseJsonOr(initialSettings.home_steps, [
+    { title: 'Pilih Hewan', desc: 'Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.' },
+    { title: 'Isi Data & Transfer', desc: 'Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.' },
+    { title: 'Terima & Selesai', desc: 'Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.' },
+  ]))
+  const [homeTestimonials, setHomeTestimonials] = useState<Testimonial[]>(() => parseJsonOr(initialSettings.home_testimonials, [
+    { name: 'Ahmad Fauzi', city: 'Jakarta', stars: 5, text: 'Pengalaman kurban terbaik! Hewan sehat, pengiriman tepat waktu, dan laporan video sangat memuaskan. Tahun depan pasti pesan lagi.' },
+    { name: 'Siti Rahayu', city: 'Surabaya', stars: 5, text: 'Sangat mudah, transparan, dan amanah. Bisa memantau kondisi hewan secara real-time. Sungguh tenang ibadah kurbannya bersama Beyond Qurban.' },
+    { name: 'Budi Santoso', city: 'Bandung', stars: 4, text: 'Layanannya profesional dan responsif. Hewan kurban berkualitas baik dan proses pengiriman lancar. Sangat direkomendasikan.' },
+  ]))
+  const [impactStats, setImpactStats] = useState<ImpactStat[]>(() => parseJsonOr(initialSettings.penyaluran_impact_stats, [
+    { stat: '1.247', label: 'Ekor Tersalurkan' },
+    { stat: '48', label: 'Desa Terjangkau' },
+    { stat: '8.500+', label: 'Penerima Manfaat' },
+    { stat: '3 Negara', label: 'Destinasi Aktif' },
+  ]))
   const [navItems, setNavItems] = useState<NavItem[]>(() => parseJsonOr(initialSettings.nav_items, DEFAULT_NAV))
   const [aboutStats, setAboutStats] = useState<StatItem[]>(() => parseJsonOr(initialSettings.about_stats, DEFAULT_ABOUT_STATS))
 
@@ -65,10 +93,12 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
   }
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'homepage', label: 'Halaman Depan', icon: faHome },
-    { key: 'header',   label: 'Header & Menu',  icon: faBars },
-    { key: 'footer',   label: 'Footer',          icon: faGlobe },
-    { key: 'tentang',  label: 'Tentang Kami',    icon: faInfoCircle },
+    { key: 'homepage',   label: 'Halaman Depan', icon: faHome },
+    { key: 'penyaluran', label: 'Penyaluran',    icon: faHandHoldingHeart },
+    { key: 'katalog',    label: 'Katalog',        icon: faTags },
+    { key: 'header',     label: 'Header & Menu',  icon: faBars },
+    { key: 'footer',     label: 'Footer',          icon: faGlobe },
+    { key: 'tentang',    label: 'Tentang Kami',   icon: faInfoCircle },
   ]
 
   return (
@@ -159,11 +189,167 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
               </div>
             </div>
 
+            {/* Features */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Mengapa Memilih Kami"</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Judul Section</label><input type="text" value={s.home_features_title ?? 'Mengapa Memilih Kami?'} onChange={e => set('home_features_title', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_features_desc ?? ''} onChange={e => set('home_features_desc', e.target.value)} className={inpCls} /></div>
+              </div>
+              {homeFeatures.map((f, i) => (
+                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5">
+                  <p className="text-xs font-bold text-brand-muted">Card {i + 1}</p>
+                  <input type="text" value={f.title} onChange={e => setHomeFeatures(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                  <textarea rows={2} value={f.desc} onChange={e => setHomeFeatures(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi" className={`${inpCls} resize-none`} />
+                </div>
+              ))}
+            </div>
+
+            {/* Featured products */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Produk Unggulan"</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Judul</label><input type="text" value={s.home_featured_title ?? 'Produk Unggulan'} onChange={e => set('home_featured_title', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_featured_desc ?? ''} onChange={e => set('home_featured_desc', e.target.value)} className={inpCls} /></div>
+              </div>
+            </div>
+
+            {/* Steps */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Cara Pesan Kurban"</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Judul</label><input type="text" value={s.home_steps_title ?? 'Cara Pesan Kurban'} onChange={e => set('home_steps_title', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_steps_desc ?? ''} onChange={e => set('home_steps_desc', e.target.value)} className={inpCls} /></div>
+              </div>
+              {homeSteps.map((step, i) => (
+                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5">
+                  <p className="text-xs font-bold text-brand-muted">Langkah {i + 1}</p>
+                  <input type="text" value={step.title} onChange={e => setHomeSteps(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                  <input type="text" value={step.desc} onChange={e => setHomeSteps(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi" className={inpCls} style={{ height: 34 }} />
+                </div>
+              ))}
+            </div>
+
+            {/* Testimonials */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-brand-muted/10 pb-3">
+                <h2 className="font-bold text-brand-dark text-base">Testimoni Pelanggan</h2>
+                <button onClick={() => setHomeTestimonials(p => [...p, { name: '', city: '', stars: 5, text: '' }])}
+                  className="flex items-center gap-1.5 text-brand-surface font-semibold text-xs hover:text-brand-dark">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Judul Section</label><input type="text" value={s.home_testimonials_title ?? 'Kata Pelanggan Kami'} onChange={e => set('home_testimonials_title', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_testimonials_desc ?? ''} onChange={e => set('home_testimonials_desc', e.target.value)} className={inpCls} /></div>
+              </div>
+              {homeTestimonials.map((t, i) => (
+                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5 relative">
+                  <button onClick={() => setHomeTestimonials(p => p.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><FontAwesomeIcon icon={faTrash} className="text-xs" /></button>
+                  <div className="grid grid-cols-3 gap-2">
+                    <input type="text" value={t.name} onChange={e => setHomeTestimonials(p => p.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} placeholder="Nama" className={inpCls} style={{ height: 34 }} />
+                    <input type="text" value={t.city} onChange={e => setHomeTestimonials(p => p.map((x, idx) => idx === i ? { ...x, city: e.target.value } : x))} placeholder="Kota" className={inpCls} style={{ height: 34 }} />
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-brand-muted">Bintang:</span>
+                      <input type="number" min={1} max={5} value={t.stars} onChange={e => setHomeTestimonials(p => p.map((x, idx) => idx === i ? { ...x, stars: parseInt(e.target.value) || 5 } : x))} className={inpCls} style={{ height: 34 }} />
+                    </div>
+                  </div>
+                  <textarea rows={2} value={t.text} onChange={e => setHomeTestimonials(p => p.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x))} placeholder="Isi testimoni" className={`${inpCls} resize-none`} />
+                </div>
+              ))}
+            </div>
+
+            {/* CTA Bottom */}
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section CTA Bawah (Tentang Yayasan)</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className={labelCls}>Badge</label><input type="text" value={s.home_cta_badge ?? 'Yayasan One Ummah'} onChange={e => set('home_cta_badge', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Judul Baris 1</label><input type="text" value={s.home_cta_title_1 ?? 'Menjaga Amanah,'} onChange={e => set('home_cta_title_1', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Judul Baris 2 (emas)</label><input type="text" value={s.home_cta_title_2 ?? 'Menyempurnakan Ibadah'} onChange={e => set('home_cta_title_2', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Teks Tombol</label><input type="text" value={s.home_cta_btn ?? 'Mulai Pesan Kurban'} onChange={e => set('home_cta_btn', e.target.value)} className={inpCls} /></div>
+                <div className="md:col-span-2"><label className={labelCls}>Deskripsi</label><textarea rows={2} value={s.home_cta_desc ?? ''} onChange={e => set('home_cta_desc', e.target.value)} className={`${inpCls} resize-none`} /></div>
+                <div><label className={labelCls}>Link Tombol</label><input type="text" value={s.home_cta_btn_href ?? '/katalog'} onChange={e => set('home_cta_btn_href', e.target.value)} className={inpCls} /></div>
+              </div>
+            </div>
+
             <button disabled={isPending} onClick={() => save(
-              ['home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc','home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href'],
-              { home_stats: JSON.stringify(homeStats) }
+              ['home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc','home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
+               'home_features_title','home_features_desc','home_featured_title','home_featured_desc',
+               'home_steps_title','home_steps_desc','home_testimonials_title','home_testimonials_desc',
+               'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href'],
+              { home_stats: JSON.stringify(homeStats), home_features: JSON.stringify(homeFeatures),
+                home_steps: JSON.stringify(homeSteps), home_testimonials: JSON.stringify(homeTestimonials) }
             )} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
               <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Halaman Depan
+            </button>
+          </div>
+        )}
+
+        {/* ═══ PENYALURAN ═══ */}
+        {tab === 'penyaluran' && (
+          <div className="flex flex-col gap-5">
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Hero Section Penyaluran</h2>
+              <div><label className={labelCls}>Badge</label><input type="text" value={s.penyaluran_badge ?? 'Qurban Penyaluran 1447H'} onChange={e => set('penyaluran_badge', e.target.value)} className={inpCls} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={labelCls}>Judul Baris 1</label><input type="text" value={s.penyaluran_hero_title_1 ?? 'Salurkan Qurban ke'} onChange={e => set('penyaluran_hero_title_1', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Judul Baris 2 (emas)</label><input type="text" value={s.penyaluran_hero_title_2 ?? 'Mereka yang Membutuhkan'} onChange={e => set('penyaluran_hero_title_2', e.target.value)} className={inpCls} /></div>
+              </div>
+              <div><label className={labelCls}>Deskripsi</label><textarea rows={2} value={s.penyaluran_hero_desc ?? ''} onChange={e => set('penyaluran_hero_desc', e.target.value)} className={`${inpCls} resize-none`} /></div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className={labelCls}>Trust Badge 1</label><input type="text" value={s.penyaluran_trust_1 ?? 'Terverifikasi MUI'} onChange={e => set('penyaluran_trust_1', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Trust Badge 2</label><input type="text" value={s.penyaluran_trust_2 ?? '635+ Donatur'} onChange={e => set('penyaluran_trust_2', e.target.value)} className={inpCls} /></div>
+                <div><label className={labelCls}>Trust Badge 3</label><input type="text" value={s.penyaluran_trust_3 ?? 'Amanah sejak 2019'} onChange={e => set('penyaluran_trust_3', e.target.value)} className={inpCls} /></div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-brand-muted/10 pb-3">
+                <div>
+                  <h2 className="font-bold text-brand-dark text-base">Dampak Program (Statistik Bawah)</h2>
+                  <div><label className={labelCls + ' mt-2'}>Judul Section</label><input type="text" value={s.penyaluran_impact_title ?? 'Dampak Program Sejak 2019'} onChange={e => set('penyaluran_impact_title', e.target.value)} className={inpCls} /></div>
+                </div>
+                <button onClick={() => setImpactStats(p => [...p, { stat: '', label: '' }])}
+                  className="flex items-center gap-1.5 text-brand-surface font-semibold text-xs hover:text-brand-dark self-start mt-1">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {impactStats.map((stat, i) => (
+                  <div key={i} className="flex gap-2 items-center bg-brand-light rounded-[8px] p-3">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <input type="text" value={stat.stat} onChange={e => setImpactStats(p => p.map((x, idx) => idx === i ? { ...x, stat: e.target.value } : x))} placeholder="1.247" className={inpCls} style={{ height: 34 }} />
+                      <input type="text" value={stat.label} onChange={e => setImpactStats(p => p.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} placeholder="Ekor Tersalurkan" className={inpCls} style={{ height: 34 }} />
+                    </div>
+                    <button onClick={() => setImpactStats(p => p.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600">
+                      <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button disabled={isPending} onClick={() => save(
+              ['penyaluran_badge','penyaluran_hero_title_1','penyaluran_hero_title_2','penyaluran_hero_desc',
+               'penyaluran_trust_1','penyaluran_trust_2','penyaluran_trust_3','penyaluran_impact_title'],
+              { penyaluran_impact_stats: JSON.stringify(impactStats) }
+            )} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
+              <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Halaman Penyaluran
+            </button>
+          </div>
+        )}
+
+        {/* ═══ KATALOG ═══ */}
+        {tab === 'katalog' && (
+          <div className="flex flex-col gap-5">
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Hero Section Katalog</h2>
+              <div><label className={labelCls}>Judul Halaman</label><input type="text" value={s.katalog_hero_title ?? 'Katalog Hewan Kurban'} onChange={e => set('katalog_hero_title', e.target.value)} className={inpCls} /></div>
+              <div><label className={labelCls}>Subtitle / Deskripsi</label><textarea rows={2} value={s.katalog_hero_desc ?? 'Pilih hewan kurban terbaik — sehat, memenuhi syarat syariat, dan siap diantar ke lokasi Anda.'} onChange={e => set('katalog_hero_desc', e.target.value)} className={`${inpCls} resize-none`} /></div>
+            </div>
+            <button disabled={isPending} onClick={() => save(['katalog_hero_title','katalog_hero_desc'])}
+              className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
+              <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Halaman Katalog
             </button>
           </div>
         )}
