@@ -66,7 +66,7 @@ export default async function LacakPesananPage({
                       { key: 'PENDING',   label: 'Pesanan Masuk',        desc: 'Pesanan diterima dan menunggu pembayaran.' },
                       { key: 'CONFIRMED', label: 'Verifikasi Pembayaran', desc: 'Pembayaran berhasil diverifikasi.' },
                       { key: 'PREPARING', label: 'Hewan Disiapkan',       desc: 'Hewan kurban Anda sedang dalam perawatan intensif.' },
-                      { key: 'SHIPPED',   label: 'Disembelih',            desc: 'Hewan kurban telah disembelih pada hari Idul Adha.' },
+                      { key: 'SHIPPED',   label: 'Dikirim',               desc: 'Laporan penyembelihan & daging kurban sedang dikirim.' },
                       { key: 'DELIVERED', label: 'Selesai',               desc: 'Laporan foto & sertifikat kurban dikirim via WhatsApp.' },
                     ]
                     return steps.map((step, i) => {

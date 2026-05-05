@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import CheckoutForm from './CheckoutForm'
+import { applyGlobalDiscount } from '@/lib/discount'
 
 export default async function CheckoutPage({
   searchParams,
@@ -26,6 +27,9 @@ export default async function CheckoutPage({
             'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
             'ch_alfamart','ch_indomaret','ch_alfamidi',
             'manual_transfer_enabled','manual_banks',
+            // Discount settings
+            'diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end',
+            'vouchers',
           ]
         }
       }
@@ -68,6 +72,12 @@ export default async function CheckoutPage({
     accountOwner: manualBanksList[0]?.owner ?? 'Yayasan One Ummah',
   }
 
+  // Global discount
+  const discount = applyGlobalDiscount(product.price, settingsMap)
+
+  // Parse vouchers for client hint (not the full list — just enabled flag)
+  const hasVouchers = !!settingsMap.vouchers && settingsMap.vouchers !== '[]'
+
   return (
     <main className="pt-32 pb-24 min-h-screen bg-soft-gradient max-w-[1440px] mx-auto px-6 md:px-12">
       <nav className="flex items-center gap-2 text-sm text-brand-muted mb-8">
@@ -90,7 +100,14 @@ export default async function CheckoutPage({
         </div>
       </div>
 
-      <CheckoutForm product={product} activeChannels={activeChannels} manualBank={manualBank} />
+      <CheckoutForm
+        product={product}
+        activeChannels={activeChannels}
+        manualBank={manualBank}
+        discountedPrice={discount.discountAmount > 0 ? discount.finalPrice : null}
+        discountLabel={discount.discountLabel}
+        hasVouchers={hasVouchers}
+      />
     </main>
   )
 }

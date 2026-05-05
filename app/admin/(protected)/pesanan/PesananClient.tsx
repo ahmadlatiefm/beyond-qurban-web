@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition, useMemo } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faUser, faMagnifyingGlass, faFilter, faSort, faDownload, faCircleCheck, faChevronDown, faBell, faPrint, faTrashCan } from '@fortawesome/free-solid-svg-icons'
+import { faUser, faMagnifyingGlass, faFilter, faSort, faDownload, faCircleCheck, faChevronDown, faBell, faPrint, faTrashCan, faXmark, faLocationDot, faBoxOpen, faCreditCard, faReceipt } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { faCalendar as faCalendarRegular } from '@fortawesome/free-regular-svg-icons'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -16,7 +16,7 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING:   'Menunggu Bayar',
   CONFIRMED: 'Dikonfirmasi',
   PREPARING: 'Hewan Disiapkan',
-  SHIPPED:   'Disembelih',
+  SHIPPED:   'Dikirim',
   DELIVERED: 'Selesai',
   CANCELLED: 'Dibatalkan',
 }
@@ -52,6 +52,7 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
   const [search, setSearch] = useState('')
   const [isPending, startTransition] = useTransition()
   const [updateMenuId, setUpdateMenuId] = useState<string | null>(null)
+  const [detailOrder, setDetailOrder] = useState<OrderWithProduct | null>(null)
 
   const counts = useMemo(() => ({
     semua: orders.length,
@@ -303,7 +304,10 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
                           </button>
                         )}
                       </div>
-                      <button className="px-4 py-1.5 bg-brand-surface text-brand-light rounded-[8px] text-sm font-bold hover:bg-brand-dark transition-colors">
+                      <button
+                        onClick={() => setDetailOrder(order)}
+                        className="px-4 py-1.5 bg-brand-surface text-brand-light rounded-[8px] text-sm font-bold hover:bg-brand-dark transition-colors"
+                      >
                         Lihat Detail
                       </button>
                     </div>
@@ -320,6 +324,130 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
           )}
         </div>
       </div>
+
+      {/* ===== MODAL DETAIL PESANAN ===== */}
+      {detailOrder && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) setDetailOrder(null) }}
+        >
+          <div className="bg-white rounded-[16px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-brand-muted/15 sticky top-0 bg-white z-10">
+              <div>
+                <h2 className="font-serif text-lg font-bold text-brand-dark">Detail Pesanan</h2>
+                <p className="text-xs text-brand-muted mt-0.5">Order #{detailOrder.orderNumber}</p>
+              </div>
+              <button onClick={() => setDetailOrder(null)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-brand-light text-brand-muted hover:text-brand-dark transition-colors">
+                <FontAwesomeIcon icon={faXmark} className="text-lg" />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-5">
+              {/* Status badges */}
+              <div className="flex gap-2 flex-wrap">
+                <span className={`px-3 py-1.5 rounded-[20px] text-xs font-bold ${PAYMENT_BADGES[detailOrder.paymentStatus]?.cls ?? 'bg-gray-100 text-gray-600'}`}>
+                  {PAYMENT_BADGES[detailOrder.paymentStatus]?.label ?? detailOrder.paymentStatus}
+                </span>
+                <span className={`px-3 py-1.5 rounded-[20px] text-xs font-bold ${ORDER_BADGES[detailOrder.status]?.cls ?? 'bg-gray-100 text-gray-600'}`}>
+                  {ORDER_BADGES[detailOrder.status]?.label ?? detailOrder.status}
+                </span>
+                <span className="ml-auto font-serif text-xl font-bold text-brand-dark">{formatCurrency(detailOrder.totalAmount)}</span>
+              </div>
+
+              {/* Info Pemesan */}
+              <div className="bg-brand-light rounded-[10px] p-4">
+                <h3 className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <FontAwesomeIcon icon={faUser} /> Info Pemesan
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-brand-muted text-xs">Nama</span><p className="font-semibold text-brand-dark mt-0.5">{detailOrder.customerName}</p></div>
+                  <div><span className="text-brand-muted text-xs">WhatsApp</span><p className="font-semibold text-brand-dark mt-0.5">+62 {detailOrder.whatsapp}</p></div>
+                  <div><span className="text-brand-muted text-xs">Tanggal Pesan</span><p className="font-semibold text-brand-dark mt-0.5">{formatDate(detailOrder.createdAt)}</p></div>
+                  {detailOrder.deliveryDate && (
+                    <div><span className="text-brand-muted text-xs">Jadwal Kirim</span><p className="font-semibold text-brand-dark mt-0.5">{formatDate(detailOrder.deliveryDate)}</p></div>
+                  )}
+                </div>
+              </div>
+
+              {/* Alamat Pengiriman */}
+              {detailOrder.address && (
+                <div className="bg-brand-light rounded-[10px] p-4">
+                  <h3 className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <FontAwesomeIcon icon={faLocationDot} /> Alamat Pengiriman
+                  </h3>
+                  <p className="text-sm text-brand-dark">{detailOrder.address}</p>
+                  {detailOrder.city && <p className="text-sm text-brand-muted mt-1">{detailOrder.city}</p>}
+                </div>
+              )}
+
+              {/* Produk */}
+              <div className="bg-brand-light rounded-[10px] p-4">
+                <h3 className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <FontAwesomeIcon icon={faBoxOpen} /> Hewan Kurban
+                </h3>
+                <div className="flex gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={detailOrder.product.imageUrl} className="w-16 h-16 rounded-[8px] object-cover border border-brand-muted/10" alt={detailOrder.product.name} />
+                  <div>
+                    <div className="font-bold text-brand-dark text-sm">{detailOrder.product.name}</div>
+                    <div className="text-xs text-brand-muted mt-0.5">{detailOrder.product.weight} kg · Qty: {detailOrder.quantity}</div>
+                    <div className="font-bold text-brand-accent mt-2">{formatCurrency(detailOrder.product.price)}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pembayaran */}
+              <div className="bg-brand-light rounded-[10px] p-4">
+                <h3 className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <FontAwesomeIcon icon={faCreditCard} /> Pembayaran
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-brand-muted text-xs">Metode</span><p className="font-semibold text-brand-dark mt-0.5">{detailOrder.paymentMethod ?? '-'}</p></div>
+                  <div><span className="text-brand-muted text-xs">Status</span><p className="font-semibold text-brand-dark mt-0.5">{PAYMENT_BADGES[detailOrder.paymentStatus]?.label ?? detailOrder.paymentStatus}</p></div>
+                  {detailOrder.tripayReference && (
+                    <div><span className="text-brand-muted text-xs">Kode Bayar</span><p className="font-mono font-bold text-brand-dark mt-0.5">{detailOrder.tripayReference}</p></div>
+                  )}
+                  <div><span className="text-brand-muted text-xs">Total</span><p className="font-serif font-bold text-brand-accent mt-0.5">{formatCurrency(detailOrder.totalAmount)}</p></div>
+                </div>
+                {/* Bukti Pembayaran */}
+                {detailOrder.paymentProofUrl && (
+                  <div className="mt-3 pt-3 border-t border-brand-muted/15">
+                    <span className="text-brand-muted text-xs block mb-2">Bukti Pembayaran</span>
+                    <a href={detailOrder.paymentProofUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-brand-surface font-semibold hover:underline">
+                      <FontAwesomeIcon icon={faReceipt} /> Lihat Bukti
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Catatan */}
+              {detailOrder.notes && (
+                <div className="bg-amber-50 border border-amber-200 rounded-[10px] p-4">
+                  <h3 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">Catatan</h3>
+                  <p className="text-sm text-amber-900">{detailOrder.notes}</p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-2">
+                <a
+                  href={`https://wa.me/${detailOrder.whatsapp}?text=${encodeURIComponent(`Halo ${detailOrder.customerName}, ini konfirmasi pesanan ${detailOrder.orderNumber} dari Beyond Qurban.`)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="wa-btn flex-1 justify-center"
+                >
+                  <FontAwesomeIcon icon={faWhatsapp} className="text-base" /> Hubungi via WA
+                </a>
+                <button onClick={() => setDetailOrder(null)}
+                  className="px-6 py-2 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

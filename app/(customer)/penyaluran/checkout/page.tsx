@@ -25,6 +25,10 @@ export default async function CheckoutPenyaluranPage({
           'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
           'ch_alfamart','ch_indomaret','ch_alfamidi',
           'manual_transfer_enabled','manual_banks',
+          // Penyaluran pricing
+          'penyaluran_harga_indonesia','penyaluran_disc_indonesia',
+          'penyaluran_harga_africa','penyaluran_disc_africa',
+          'penyaluran_harga_palestine','penyaluran_disc_palestine',
         ]
       }
     }
@@ -67,7 +71,21 @@ export default async function CheckoutPenyaluranPage({
   const shareType = (searchParams.share === '1/7' ? '1/7' : '1/1') as '1/1' | '1/7'
   // Override price if specific animal was selected from sidebar
   const animalName = searchParams.animalName ? decodeURIComponent(searchParams.animalName) : null
-  const animalPrice = searchParams.animalPrice ? parseInt(searchParams.animalPrice) || null : null
+
+  // Compute effective base price from settings (per location), fallback to campaign.price
+  const locationKey = campaign.location === 'INDONESIA' ? 'indonesia'
+    : campaign.location === 'AFRICA' ? 'africa'
+    : 'palestine'
+  const settingsBasePrice = settingsMap[`penyaluran_harga_${locationKey}`]
+    ? parseInt(settingsMap[`penyaluran_harga_${locationKey}`]) : null
+  const settingsDisc = parseInt(settingsMap[`penyaluran_disc_${locationKey}`] ?? '0')
+  const effectiveBasePrice = settingsBasePrice
+    ? Math.round(settingsBasePrice * (1 - settingsDisc / 100)) : null
+
+  // URL animalPrice takes priority (specific animal from sidebar), then settings price
+  const animalPrice = searchParams.animalPrice
+    ? parseInt(searchParams.animalPrice) || null
+    : effectiveBasePrice
 
   return (
     <main className="pt-28 pb-24 min-h-screen" style={{ background: 'linear-gradient(180deg,#FAFAF8,#E8F4EE,#F5E6C3)' }}>

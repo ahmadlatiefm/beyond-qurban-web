@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { calculateShipping } from '@/lib/shipping'
 import { generateOrderNumber } from '@/lib/utils'
+import { applyGlobalDiscount, applyVoucher } from '@/lib/discount'
 
 export async function createOrder(formData: FormData) {
   const slug = formData.get('slug') as string
@@ -14,6 +15,7 @@ export async function createOrder(formData: FormData) {
   const deliveryDateStr = formData.get('deliveryDate') as string
   const notes = formData.get('notes') as string
   const paymentMethod = formData.get('paymentMethod') as string
+  const voucherCode = (formData.get('voucherCode') as string | null) ?? ''
 
   if (!slug || !customerName || !whatsapp || !paymentMethod) {
     throw new Error('Data tidak lengkap — pastikan semua field wajib terisi')
@@ -22,8 +24,19 @@ export async function createOrder(formData: FormData) {
   const product = await prisma.product.findUnique({ where: { slug } })
   if (!product) throw new Error('Produk tidak ditemukan')
 
+  // Read discount settings from DB
+  const discSettings = await prisma.settings.findMany({
+    where: { key: { in: ['diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end','vouchers'] } }
+  })
+  const discMap: Record<string, string> = {}
+  discSettings.forEach(s => { discMap[s.key] = s.value })
+
   const shippingCost = city ? calculateShipping(city) : 0
-  const totalAmount = product.price + shippingCost
+  const basePrice = product.price
+  const { finalPrice: discountedPrice } = applyGlobalDiscount(basePrice, discMap)
+  const subtotal = discountedPrice + shippingCost
+  const { discountAmount: voucherDiscount } = applyVoucher(discMap.vouchers, voucherCode, subtotal)
+  const totalAmount = subtotal - voucherDiscount
   const orderNumber = generateOrderNumber()
 
   const order = await prisma.order.create({

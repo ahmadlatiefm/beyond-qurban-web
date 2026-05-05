@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faPenToSquare, faBuildingColumns, faQrcode,
   faCircleInfo, faWallet, faStore,
-  faShieldHalved, faArrowRight, faWeightScale,
+  faShieldHalved, faArrowRight, faWeightScale, faTag, faCheck,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import { createOrder } from '@/lib/actions/orders'
@@ -78,11 +78,14 @@ function BankBadge({ code, size = 'md' }: { code: string; size?: 'sm' | 'md' }) 
 const inputCls = 'w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
 
 export default function CheckoutForm({
-  product, activeChannels, manualBank
+  product, activeChannels, manualBank, discountedPrice, discountLabel, hasVouchers
 }: {
   product: Product
   activeChannels?: ActiveChannels
   manualBank?: ManualBank
+  discountedPrice?: number | null   // final price after global discount (null = no discount)
+  discountLabel?: string | null     // e.g. "Diskon 10%"
+  hasVouchers?: boolean             // whether voucher input should show
 }) {
   const [paymentMethod, setPaymentMethod] = useState(() => {
     if (!activeChannels) return 'BCAVA'
@@ -102,6 +105,20 @@ export default function CheckoutForm({
   })
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [voucherCode, setVoucherCode] = useState('')
+  const [voucherApplied, setVoucherApplied] = useState(false)
+  const [voucherError, setVoucherError] = useState<string | null>(null)
+
+  // Effective display price (global discount already computed server-side)
+  const baseDisplayPrice = discountedPrice ?? product.price
+  const discountAmount = product.price - baseDisplayPrice
+
+  // Simulate voucher client-side hint (actual validation is server-side in createOrder)
+  function handleApplyVoucher() {
+    if (!voucherCode.trim()) return
+    setVoucherApplied(true)
+    setVoucherError(null)
+  }
 
   const activeVA = ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey])
   const activeEWallet = ALL_EWALLET_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey])
@@ -114,6 +131,7 @@ export default function CheckoutForm({
     setError(null)
     const fd = new FormData(e.currentTarget)
     fd.set('paymentMethod', paymentMethod)
+    fd.set('voucherCode', voucherCode.trim().toUpperCase())
     startTransition(async () => {
       try {
         await createOrder(fd)
@@ -372,6 +390,32 @@ export default function CheckoutForm({
               </div>
             </div>
 
+            {/* Voucher input */}
+            {hasVouchers && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-widest flex items-center gap-1.5">
+                  <FontAwesomeIcon icon={faTag} className="text-brand-accent" /> KODE VOUCHER (OPSIONAL)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={voucherCode}
+                    onChange={e => { setVoucherCode(e.target.value.toUpperCase()); setVoucherApplied(false) }}
+                    placeholder="Masukkan kode voucher"
+                    className={`${inputCls} flex-1 font-mono tracking-wider`}
+                  />
+                  <button type="button" onClick={handleApplyVoucher}
+                    className="px-4 h-12 bg-brand-surface text-white text-sm font-bold rounded-[8px] hover:bg-brand-dark transition-colors flex items-center gap-1.5 shrink-0">
+                    {voucherApplied ? <><FontAwesomeIcon icon={faCheck} /> Diterapkan</> : 'Terapkan'}
+                  </button>
+                </div>
+                {voucherApplied && !voucherError && (
+                  <p className="text-xs text-emerald-600 font-medium">✓ Voucher akan diterapkan saat checkout</p>
+                )}
+                {voucherError && <p className="text-xs text-red-600">{voucherError}</p>}
+              </div>
+            )}
+
             {/* Error */}
             {error && (
               <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-[8px] p-3 text-sm text-red-700">
@@ -406,17 +450,35 @@ export default function CheckoutForm({
                 <span className="bg-brand-surface-light/50 text-brand-accent-light text-xs px-2 py-0.5 rounded-[4px] w-fit mb-2">
                   <FontAwesomeIcon icon={faWeightScale} className="mr-1" />{product.weight} kg
                 </span>
-                <span className="font-bold text-brand-accent text-base">{formatCurrency(product.price)}</span>
+                {discountAmount > 0
+                  ? <div className="flex flex-col gap-0.5">
+                      <span className="text-brand-accent-light/50 line-through text-sm">{formatCurrency(product.price)}</span>
+                      <span className="font-bold text-brand-accent text-base">{formatCurrency(baseDisplayPrice)}</span>
+                    </div>
+                  : <span className="font-bold text-brand-accent text-base">{formatCurrency(product.price)}</span>
+                }
               </div>
             </div>
             <div className="flex flex-col gap-3 text-sm border-t border-brand-surface-light/30 pt-4 mb-4">
-              <div className="flex justify-between text-brand-accent-light/80"><span>Subtotal Produk</span><span>{formatCurrency(product.price)}</span></div>
+              <div className="flex justify-between text-brand-accent-light/80"><span>Harga Produk</span><span>{formatCurrency(product.price)}</span></div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-400 font-semibold">
+                  <span><FontAwesomeIcon icon={faTag} className="mr-1 text-xs" />{discountLabel}</span>
+                  <span>-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+              {voucherApplied && voucherCode && (
+                <div className="flex justify-between text-emerald-400 font-semibold">
+                  <span><FontAwesomeIcon icon={faTag} className="mr-1 text-xs" />Voucher {voucherCode}</span>
+                  <span className="text-xs opacity-70">diterapkan</span>
+                </div>
+              )}
               <div className="flex justify-between text-brand-accent-light/80"><span>Biaya Pengiriman</span><span className="text-[#25D366] font-semibold">Gratis*</span></div>
               <div className="flex justify-between text-brand-accent-light/80"><span>Biaya Perawatan</span><span className="text-[#25D366] font-semibold">Gratis</span></div>
             </div>
             <div className="flex justify-between items-center border-t border-brand-surface-light/30 pt-4 mb-6">
               <span className="font-bold text-brand-light">Total Pembayaran</span>
-              <span className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(product.price)}</span>
+              <span className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(baseDisplayPrice)}</span>
             </div>
             <button type="submit" form="order-form" disabled={isPending} className="hidden lg:flex w-full bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity items-center justify-center gap-2 disabled:opacity-60">
               {isPending ? 'Memproses...' : 'Konfirmasi Pesanan'} <FontAwesomeIcon icon={faArrowRight} />

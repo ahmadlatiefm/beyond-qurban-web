@@ -161,11 +161,14 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
   const [settings, setSettings] = useState(initialSettings)
   const [showKeys, setShowKeys] = useState({ apiKey: false, privKey: false, fbToken: false })
   const [voucherModal, setVoucherModal] = useState(false)
-  const [vouchers, setVouchers] = useState([
-    { code: 'IDULADHA25', disc: 10, minBuy: 2000000, maxUse: 100, used: 34 },
-    { code: 'NEWUSER', disc: 5, minBuy: 1500000, maxUse: 50, used: 12 },
-    { code: 'RAMADAN24', disc: 15, minBuy: 3000000, maxUse: 200, used: 200 },
-  ])
+  // Load vouchers from DB (initialSettings.vouchers is JSON), fall back to demo data on first run
+  const [vouchers, setVouchers] = useState<{ code: string; disc: number; minBuy: number; maxUse: number; used: number }[]>(() => {
+    try {
+      const parsed = JSON.parse(initialSettings.vouchers ?? '[]')
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    } catch {}
+    return []
+  })
   const [newVoucher, setNewVoucher] = useState({ code: '', disc: 10, minBuy: 0, maxUse: 100 })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
@@ -1106,14 +1109,22 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <button onClick={() => setVouchers(prev => prev.filter((_, idx) => idx !== i))} className="w-8 h-8 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 rounded-[7px] flex items-center justify-center border border-red-100 transition-colors">
+                          <button onClick={() => {
+                            const updated = vouchers.filter((_, idx) => idx !== i)
+                            setVouchers(updated)
+                            // Auto-save to DB when deleting
+                            startTransition(async () => {
+                              await saveSettings({ vouchers: JSON.stringify(updated) })
+                              showToast('Voucher dihapus!')
+                            })
+                          }} className="w-8 h-8 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 rounded-[7px] flex items-center justify-center border border-red-100 transition-colors">
                             <FontAwesomeIcon icon={faTrash} className="text-xs" />
                           </button>
                         </td>
                       </tr>
                     ))}
                     {vouchers.length === 0 && (
-                      <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-brand-muted">Belum ada voucher</td></tr>
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-brand-muted">Belum ada voucher. Tambahkan voucher baru.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1164,14 +1175,20 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
               <div className="px-6 pb-6 flex gap-3">
                 <button onClick={() => setVoucherModal(false)} className="flex-1 py-2.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light">Batal</button>
                 <button
+                  disabled={isPending}
                   onClick={() => {
-                    if (newVoucher.code) {
-                      setVouchers(prev => [...prev, { ...newVoucher, used: 0 }])
-                      setNewVoucher({ code: '', disc: 10, minBuy: 0, maxUse: 100 })
-                      setVoucherModal(false)
-                    }
+                    if (!newVoucher.code) return
+                    const updated = [...vouchers, { ...newVoucher, used: 0 }]
+                    setVouchers(updated)
+                    setNewVoucher({ code: '', disc: 10, minBuy: 0, maxUse: 100 })
+                    setVoucherModal(false)
+                    // Save to DB
+                    startTransition(async () => {
+                      await saveSettings({ vouchers: JSON.stringify(updated) })
+                      showToast('Voucher berhasil disimpan!')
+                    })
                   }}
-                  className="flex-1 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[8px] flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[8px] flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   <FontAwesomeIcon icon={faPlus} /> Tambah Voucher
                 </button>
