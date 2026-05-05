@@ -14,7 +14,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 interface ActiveChannels {
-  BVAI: boolean; MANDIRIVA: boolean; BNIVA: boolean; BRIVA: boolean; QRIS: boolean; MANUAL: boolean
+  BCAVA: boolean; MANDIRIVA: boolean; BNIVA: boolean; BRIVA: boolean
+  PERMATAVA: boolean; MUAMALATVA: boolean; CIMBVA: boolean; BSIVA: boolean
+  QRIS: boolean; QRIS2: boolean
+  OVO: boolean; DANA: boolean; SHOPEEPAY: boolean
+  ALFAMART: boolean; INDOMARET: boolean; ALFAMIDI: boolean
+  MANUAL: boolean
 }
 interface ManualBankItemD { id: string; code: string; name: string; number: string; owner: string }
 interface ManualBank { enabled: boolean; bankName: string; accountNumber: string; accountOwner: string; banks?: ManualBankItemD[] }
@@ -35,17 +40,37 @@ const BANK_STYLE_D: Record<string, { bg: string; text: string; abbr: string }> =
 }
 
 const VA_STYLE_D: Record<string, { bg: string; text: string; abbr: string }> = {
-  BVAI:      { ...BANK_STYLE_D['BCA']! },
-  MANDIRIVA: { ...BANK_STYLE_D['MNR']! },
-  BNIVA:     { ...BANK_STYLE_D['BNI']! },
-  BRIVA:     { ...BANK_STYLE_D['BRI']! },
+  BCAVA:      { ...BANK_STYLE_D['BCA']! },
+  MANDIRIVA:  { ...BANK_STYLE_D['MNR']! },
+  BNIVA:      { ...BANK_STYLE_D['BNI']! },
+  BRIVA:      { ...BANK_STYLE_D['BRI']! },
+  PERMATAVA:  { ...BANK_STYLE_D['PMT']! },
+  MUAMALATVA: { bg: '#007A52', text: '#fff', abbr: 'MMT' },
+  CIMBVA:     { ...BANK_STYLE_D['CIMB']! },
+  BSIVA:      { ...BANK_STYLE_D['BSI']! },
 }
 
 const ALL_VA_METHODS = [
-  { value: 'BVAI',      bank: 'BCA',  label: 'BCA Virtual Account',    color: 'text-blue-700',   bgColor: 'bg-blue-50',    channelKey: 'BVAI' as const },
-  { value: 'MANDIRIVA', bank: 'MNR',  label: 'Mandiri Virtual Account', color: 'text-yellow-700', bgColor: 'bg-yellow-50',  channelKey: 'MANDIRIVA' as const },
-  { value: 'BNIVA',     bank: 'BNI',  label: 'BNI Virtual Account',     color: 'text-orange-600', bgColor: 'bg-orange-50',  channelKey: 'BNIVA' as const },
-  { value: 'BRIVA',     bank: 'BRI',  label: 'BRI Virtual Account',     color: 'text-blue-500',   bgColor: 'bg-blue-50',    channelKey: 'BRIVA' as const },
+  { value: 'BCAVA',      bank: 'BCA',  label: 'BCA Virtual Account',        channelKey: 'BCAVA' as const },
+  { value: 'MANDIRIVA',  bank: 'MNR',  label: 'Mandiri Virtual Account',    channelKey: 'MANDIRIVA' as const },
+  { value: 'BNIVA',      bank: 'BNI',  label: 'BNI Virtual Account',        channelKey: 'BNIVA' as const },
+  { value: 'BRIVA',      bank: 'BRI',  label: 'BRI Virtual Account',        channelKey: 'BRIVA' as const },
+  { value: 'PERMATAVA',  bank: 'PMT',  label: 'Permata Virtual Account',    channelKey: 'PERMATAVA' as const },
+  { value: 'MUAMALATVA', bank: 'MMT',  label: 'Muamalat Virtual Account',   channelKey: 'MUAMALATVA' as const },
+  { value: 'CIMBVA',     bank: 'CIMB', label: 'CIMB Niaga Virtual Account', channelKey: 'CIMBVA' as const },
+  { value: 'BSIVA',      bank: 'BSI',  label: 'BSI Virtual Account',        channelKey: 'BSIVA' as const },
+]
+
+const ALL_EWALLET_METHODS_D = [
+  { value: 'OVO',       code: 'OVO',  label: 'OVO',       channelKey: 'OVO' as const,       bg: '#4C3494', text: '#fff' },
+  { value: 'DANA',      code: 'DANA', label: 'DANA',      channelKey: 'DANA' as const,      bg: '#108EE9', text: '#fff' },
+  { value: 'SHOPEEPAY', code: 'SPAY', label: 'ShopeePay', channelKey: 'SHOPEEPAY' as const, bg: '#EE4D2D', text: '#fff' },
+]
+
+const ALL_KASIR_METHODS_D = [
+  { value: 'ALFAMART',  code: 'ALFA', label: 'Alfamart',  channelKey: 'ALFAMART' as const,  bg: '#E8192C', text: '#fff' },
+  { value: 'INDOMARET', code: 'INDO', label: 'Indomaret', channelKey: 'INDOMARET' as const, bg: '#CC0000', text: '#fff' },
+  { value: 'ALFAMIDI',  code: 'MIDI', label: 'Alfamidi',  channelKey: 'ALFAMIDI' as const,  bg: '#0063A7', text: '#fff' },
 ]
 import { formatCurrency } from '@/lib/utils'
 import { createDonation } from '@/lib/actions/donations'
@@ -64,14 +89,20 @@ export default function DonationForm({
 }) {
   const [isPending, startTransition] = useTransition()
   const [paymentMethod, setPaymentMethod] = useState(() => {
-    if (!activeChannels) return 'BVAI'
-    if (activeChannels.BVAI) return 'BVAI'
+    if (!activeChannels) return 'BCAVA'
+    if (activeChannels.BCAVA) return 'BCAVA'
     if (activeChannels.MANDIRIVA) return 'MANDIRIVA'
     if (activeChannels.BNIVA) return 'BNIVA'
     if (activeChannels.BRIVA) return 'BRIVA'
+    if (activeChannels.PERMATAVA) return 'PERMATAVA'
+    if (activeChannels.BSIVA) return 'BSIVA'
     if (activeChannels.QRIS) return 'QRIS'
+    if (activeChannels.OVO) return 'OVO'
+    if (activeChannels.DANA) return 'DANA'
+    if (activeChannels.SHOPEEPAY) return 'SHOPEEPAY'
+    if (activeChannels.ALFAMART) return 'ALFAMART'
     if (activeChannels.MANUAL) return 'MANUAL_TRANSFER'
-    return 'BVAI'
+    return 'BCAVA'
   })
   // Use specific animal price if provided (from sidebar animal picker)
   const unitPrice = animalPrice ?? (shareType === '1/7' ? Math.round(campaign.price / 7) : campaign.price)
@@ -284,14 +315,14 @@ export default function DonationForm({
 
             <div className="flex flex-col gap-4">
               {/* Virtual Account group */}
-              {ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey] !== false).length > 0 && (
+              {ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey]).length > 0 && (
                 <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
                     <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
                     <span className="text-xs font-bold text-brand-dark">Transfer Bank (Virtual Account)</span>
                   </div>
                   <div className="divide-y divide-brand-muted/10">
-                    {ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey] !== false).map((method) => (
+                    {ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey]).map((method) => (
                       <button
                         key={method.value}
                         type="button"
@@ -343,6 +374,58 @@ export default function DonationForm({
                       <div className="w-10 h-7 rounded-[6px] bg-brand-light flex items-center justify-center font-bold text-[10px] text-brand-dark shrink-0">QRIS</div>
                       <span className="text-sm font-medium text-brand-dark">QRIS — Semua E-Wallet &amp; M-Banking</span>
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* E-Wallet (Redirect) */}
+              {ALL_EWALLET_METHODS_D.filter(m => !activeChannels || activeChannels[m.channelKey]).length > 0 && (
+                <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
+                    <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">E-Wallet</span>
+                    <span className="text-[10px] text-brand-muted ml-1">— akan diarahkan ke app e-wallet</span>
+                  </div>
+                  <div className="divide-y divide-brand-muted/10">
+                    {ALL_EWALLET_METHODS_D.filter(m => !activeChannels || activeChannels[m.channelKey]).map((method) => (
+                      <button key={method.value} type="button" onClick={() => setPaymentMethod(method.value)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${paymentMethod === method.value ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod === method.value ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
+                          {paymentMethod === method.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="w-11 h-8 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
+                          style={{ background: method.bg, color: method.text }}>{method.code}</div>
+                        <div>
+                          <span className="text-sm font-medium text-brand-dark">{method.label}</span>
+                          <div className="text-xs text-brand-muted">Akan diarahkan ke aplikasi {method.label}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Kasir / Minimarket */}
+              {ALL_KASIR_METHODS_D.filter(m => !activeChannels || activeChannels[m.channelKey]).length > 0 && (
+                <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
+                    <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">Minimarket / Kasir</span>
+                  </div>
+                  <div className="divide-y divide-brand-muted/10">
+                    {ALL_KASIR_METHODS_D.filter(m => !activeChannels || activeChannels[m.channelKey]).map((method) => (
+                      <button key={method.value} type="button" onClick={() => setPaymentMethod(method.value)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${paymentMethod === method.value ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod === method.value ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
+                          {paymentMethod === method.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="w-11 h-8 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
+                          style={{ background: method.bg, color: method.text }}>{method.code}</div>
+                        <span className="text-sm font-medium text-brand-dark">{method.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}

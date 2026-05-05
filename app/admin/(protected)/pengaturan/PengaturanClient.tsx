@@ -538,13 +538,17 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                 <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Virtual Account</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { key: 'BCA', label: 'BCA Virtual Account', sub: 'Transfer Bank BCA', abbr: 'BCA', color: 'text-blue-700' },
-                    { key: 'Mandiri', label: 'Mandiri Virtual Account', sub: 'Transfer Bank Mandiri', abbr: 'MNR', color: 'text-yellow-700' },
-                    { key: 'BNI', label: 'BNI Virtual Account', sub: 'Transfer Bank BNI', abbr: 'BNI', color: 'text-orange-600' },
-                    { key: 'BRI', label: 'BRI Virtual Account', sub: 'Transfer Bank BRI', abbr: 'BRI', color: 'text-blue-500', defaultOff: true },
+                    { key: 'BCAVA',      label: 'BCA Virtual Account',        sub: 'Transfer Bank BCA',      abbr: 'BCA',  color: 'text-blue-700' },
+                    { key: 'MANDIRIVA',  label: 'Mandiri Virtual Account',     sub: 'Transfer Bank Mandiri',  abbr: 'MNR',  color: 'text-yellow-700' },
+                    { key: 'BNIVA',      label: 'BNI Virtual Account',         sub: 'Transfer Bank BNI',      abbr: 'BNI',  color: 'text-orange-600' },
+                    { key: 'BRIVA',      label: 'BRI Virtual Account',         sub: 'Transfer Bank BRI',      abbr: 'BRI',  color: 'text-blue-500' },
+                    { key: 'PERMATAVA',  label: 'Permata Virtual Account',     sub: 'Transfer Bank Permata',  abbr: 'PMT',  color: 'text-emerald-600', defaultOff: true },
+                    { key: 'MUAMALATVA', label: 'Muamalat Virtual Account',    sub: 'Transfer Bank Muamalat', abbr: 'MMT',  color: 'text-emerald-700', defaultOff: true },
+                    { key: 'CIMBVA',     label: 'CIMB Niaga Virtual Account',  sub: 'Transfer Bank CIMB',     abbr: 'CIMB', color: 'text-red-700',     defaultOff: true },
+                    { key: 'BSIVA',      label: 'BSI Virtual Account',         sub: 'Transfer Bank BSI',      abbr: 'BSI',  color: 'text-emerald-700', defaultOff: true },
                   ].map(({ key, label, sub, abbr, color, defaultOff }) => {
                     const settingKey = `ch_${key.toLowerCase()}`
-                    const isOn = settings[settingKey] !== 'false' && !defaultOff || settings[settingKey] === 'true'
+                    const isOn = defaultOff ? settings[settingKey] === 'true' : settings[settingKey] !== 'false'
                     return (
                       <div key={key} className={`channel-card${isOn ? ' on' : ''}`}>
                         <div className="flex items-center gap-3">
@@ -561,18 +565,19 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                 </div>
               </div>
 
-              {/* E-Wallet */}
+              {/* QRIS & E-Wallet */}
               <div className="mb-5">
-                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">E-Wallet</div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">QRIS &amp; E-Wallet</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { key: 'qris', label: 'QRIS', sub: 'Semua e-wallet mendukung QRIS', abbr: 'QRIS', bg: 'bg-[#00AED6]/10', color: 'text-[#00AED6]' },
-                    { key: 'ovo', label: 'OVO', sub: 'E-wallet OVO', abbr: 'OVO', bg: 'bg-[#4C3494]/10', color: 'text-[#4C3494]' },
-                    { key: 'dana', label: 'DANA', sub: 'E-wallet DANA', abbr: 'DANA', bg: 'bg-[#108EE9]/10', color: 'text-[#108EE9]' },
-                    { key: 'shopeepay', label: 'ShopeePay', sub: 'E-wallet ShopeePay', abbr: 'SPay', bg: 'bg-[#EE4D2D]/10', color: 'text-[#EE4D2D]', defaultOff: true },
+                    { key: 'QRIS',      label: 'QRIS',       sub: 'Semua e-wallet mendukung QRIS',   abbr: 'QRIS', bg: 'bg-[#00AED6]/10', color: 'text-[#00AED6]' },
+                    { key: 'QRIS2',     label: 'QRIS 2',     sub: 'Provider QRIS alternatif',        abbr: 'QRIS', bg: 'bg-[#00AED6]/10', color: 'text-[#00AED6]', defaultOff: true },
+                    { key: 'OVO',       label: 'OVO',        sub: 'E-wallet OVO (Redirect)',          abbr: 'OVO',  bg: 'bg-[#4C3494]/10', color: 'text-[#4C3494]', defaultOff: true },
+                    { key: 'DANA',      label: 'DANA',       sub: 'E-wallet DANA (Redirect)',         abbr: 'DANA', bg: 'bg-[#108EE9]/10', color: 'text-[#108EE9]', defaultOff: true },
+                    { key: 'SHOPEEPAY', label: 'ShopeePay',  sub: 'E-wallet ShopeePay (Redirect)',    abbr: 'SPAY', bg: 'bg-[#EE4D2D]/10', color: 'text-[#EE4D2D]', defaultOff: true },
                   ].map(({ key, label, sub, abbr, bg, color, defaultOff }) => {
-                    const settingKey = `ch_${key}`
-                    const isOn = settings[settingKey] !== 'false' && !defaultOff || settings[settingKey] === 'true'
+                    const settingKey = `ch_${key.toLowerCase()}`
+                    const isOn = defaultOff ? settings[settingKey] === 'true' : settings[settingKey] !== 'false'
                     return (
                       <div key={key} className={`channel-card${isOn ? ' on' : ''}`}>
                         <div className="flex items-center gap-3">
@@ -589,16 +594,17 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                 </div>
               </div>
 
-              {/* Ritel & Lainnya */}
+              {/* Minimarket / Kasir */}
               <div>
-                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Ritel &amp; Lainnya</div>
+                <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Minimarket / Kasir</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { key: 'alfamart', label: 'Alfamart', sub: 'Bayar di gerai Alfamart', abbr: 'Alfa', bg: 'bg-orange-50', color: 'text-orange-500' },
-                    { key: 'indomaret', label: 'Indomaret', sub: 'Bayar di gerai Indomaret', abbr: 'Indo', bg: 'bg-red-50', color: 'text-red-500', defaultOff: true },
+                    { key: 'ALFAMART',  label: 'Alfamart',  sub: 'Bayar di gerai Alfamart',  abbr: 'Alfa', bg: 'bg-[#E8192C]/10', color: 'text-[#E8192C]', defaultOff: true },
+                    { key: 'INDOMARET', label: 'Indomaret', sub: 'Bayar di gerai Indomaret', abbr: 'Indo', bg: 'bg-[#CC0000]/10', color: 'text-[#CC0000]', defaultOff: true },
+                    { key: 'ALFAMIDI',  label: 'Alfamidi',  sub: 'Bayar di gerai Alfamidi',  abbr: 'Midi', bg: 'bg-[#0063A7]/10', color: 'text-[#0063A7]', defaultOff: true },
                   ].map(({ key, label, sub, abbr, bg, color, defaultOff }) => {
-                    const settingKey = `ch_${key}`
-                    const isOn = settings[settingKey] !== 'false' && !defaultOff || settings[settingKey] === 'true'
+                    const settingKey = `ch_${key.toLowerCase()}`
+                    const isOn = defaultOff ? settings[settingKey] === 'true' : settings[settingKey] !== 'false'
                     return (
                       <div key={key} className={`channel-card${isOn ? ' on' : ''}`}>
                         <div className="flex items-center gap-3">
@@ -617,7 +623,11 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
 
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => handleSave(Object.keys(settings).filter(k => k.startsWith('ch_')))}
+                  onClick={() => handleSave([
+                    'ch_bcava','ch_mandiriva','ch_bniva','ch_briva','ch_permatava','ch_muamalatva','ch_cimbva','ch_bsiva',
+                    'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
+                    'ch_alfamart','ch_indomaret','ch_alfamidi',
+                  ])}
                   disabled={isPending}
                   className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
                 >

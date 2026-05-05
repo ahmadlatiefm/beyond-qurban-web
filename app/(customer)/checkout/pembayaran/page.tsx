@@ -88,9 +88,10 @@ export default async function PembayaranPage({
           productImage={order.product.imageUrl}
           productWeight={order.product.weight}
           createdAt={order.createdAt.toISOString()}
-          paymentMethod={order.paymentMethod ?? 'BVAI'}
+          paymentMethod={order.paymentMethod ?? 'BCAVA'}
           payCode={order.tripayReference}
           manualBank={manualBank}
+          tripayPaymentUrl={(order as any).tripayPaymentUrl ?? null}
         />
       </div>
     </main>

@@ -112,39 +112,43 @@ export default function PembayaranPenyaluranClient({
         </div>
 
         <div className="p-5">
-          {/* VA methods */}
-          {['BVAI', 'MANDIRIVA', 'BNIVA', 'BRIVA'].includes(paymentMethod) && (
+          {/* VA methods — all virtual account channels */}
+          {['BCAVA','MANDIRIVA','BNIVA','BRIVA','PERMATAVA','MUAMALATVA','CIMBVA','BSIVA'].includes(paymentMethod) && (
             <div className="flex flex-col gap-4">
-              <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-10 h-10 bg-white rounded-[8px] border border-brand-muted/20 flex items-center justify-center font-bold text-xs ${
-                    paymentMethod === 'BVAI' ? 'text-blue-700' :
-                    paymentMethod === 'MANDIRIVA' ? 'text-yellow-700' :
-                    paymentMethod === 'BNIVA' ? 'text-orange-600' : 'text-blue-500'
-                  }`}>
-                    {paymentMethod === 'BVAI' ? 'BCA' : paymentMethod === 'MANDIRIVA' ? 'MNR' : paymentMethod === 'BNIVA' ? 'BNI' : 'BRI'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-sm text-brand-dark">
-                      {paymentMethod === 'BVAI' ? 'Bank BCA' : paymentMethod === 'MANDIRIVA' ? 'Bank Mandiri' : paymentMethod === 'BNIVA' ? 'Bank BNI' : 'Bank BRI'}
+              {(() => {
+                const VA_INFO: Record<string, { abbr: string; name: string; color: string }> = {
+                  BCAVA:      { abbr: 'BCA',  name: 'Bank BCA',      color: 'text-blue-700' },
+                  MANDIRIVA:  { abbr: 'MNR',  name: 'Bank Mandiri',  color: 'text-yellow-700' },
+                  BNIVA:      { abbr: 'BNI',  name: 'Bank BNI',      color: 'text-orange-600' },
+                  BRIVA:      { abbr: 'BRI',  name: 'Bank BRI',      color: 'text-blue-500' },
+                  PERMATAVA:  { abbr: 'PMT',  name: 'Bank Permata',  color: 'text-emerald-600' },
+                  MUAMALATVA: { abbr: 'MMT',  name: 'Bank Muamalat', color: 'text-emerald-700' },
+                  CIMBVA:     { abbr: 'CIMB', name: 'CIMB Niaga',    color: 'text-red-700' },
+                  BSIVA:      { abbr: 'BSI',  name: 'Bank BSI',      color: 'text-emerald-700' },
+                }
+                const info = VA_INFO[paymentMethod] ?? { abbr: paymentMethod, name: paymentMethod, color: 'text-brand-dark' }
+                return (
+                  <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 bg-white rounded-[8px] border border-brand-muted/20 flex items-center justify-center font-bold text-xs ${info.color}`}>
+                        {info.abbr}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-brand-dark">{info.name}</div>
+                        <div className="text-xs text-brand-muted">Virtual Account</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-brand-muted">Virtual Account</div>
+                    <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
+                    <div className="inp-copy">
+                      <input type="text" value={payCode ?? '—'} readOnly />
+                      <button onClick={() => copyText(payCode ?? '', 'va')} className={`copy-btn${copied === 'va' ? ' copied' : ''}`}>
+                        <FontAwesomeIcon icon={faCopy} /> {copied === 'va' ? 'Disalin!' : 'Salin'}
+                      </button>
+                    </div>
+                    <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
                   </div>
-                </div>
-                <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
-                <div className="inp-copy">
-                  <input type="text" value={payCode ?? '—'} readOnly />
-                  <button
-                    onClick={() => copyText(payCode ?? '', 'va')}
-                    className={`copy-btn${copied === 'va' ? ' copied' : ''}`}
-                  >
-                    <FontAwesomeIcon icon={faCopy} /> {copied === 'va' ? 'Disalin!' : 'Salin'}
-                  </button>
-                </div>
-                <div className="text-xs text-brand-muted mt-2">
-                  A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong>
-                </div>
-              </div>
+                )
+              })()}
               <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
                 <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
                   <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
@@ -165,15 +169,13 @@ export default function PembayaranPenyaluranClient({
               </div>
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[8px] p-3 mt-1">
                 <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
-                <p className="text-xs text-brand-muted">
-                  Transfer <strong className="text-brand-dark">tepat nominal</strong>. Jangan dibulatkan.
-                </p>
+                <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat nominal</strong>. Jangan dibulatkan.</p>
               </div>
             </div>
           )}
 
           {/* QRIS */}
-          {['QRIS', 'QRISC'].includes(paymentMethod) && (
+          {['QRIS', 'QRIS2'].includes(paymentMethod) && (
             <div className="text-center flex flex-col items-center gap-4">
               <div className="w-44 h-44 mx-auto bg-brand-light border-2 border-brand-surface rounded-[12px] flex items-center justify-center mb-2">
                 <FontAwesomeIcon icon={faQrcode} className="text-7xl text-brand-dark/30" />
@@ -185,6 +187,59 @@ export default function PembayaranPenyaluranClient({
                 <div className="text-xs text-brand-muted mb-1">Total yang harus dibayar</div>
                 <div className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(totalAmount)}</div>
               </div>
+            </div>
+          )}
+
+          {/* E-Wallet Redirect (OVO, DANA, ShopeePay) */}
+          {['OVO','DANA','SHOPEEPAY'].includes(paymentMethod) && (
+            <div className="flex flex-col items-center gap-5 text-center p-4">
+              <div className="w-20 h-16 rounded-[10px] flex items-center justify-center font-bold text-base"
+                style={{
+                  background: paymentMethod === 'OVO' ? '#4C3494' : paymentMethod === 'DANA' ? '#108EE9' : '#EE4D2D',
+                  color: '#fff'
+                }}>
+                {paymentMethod === 'SHOPEEPAY' ? 'SPAY' : paymentMethod}
+              </div>
+              <p className="text-sm text-brand-muted">Klik tombol di bawah untuk melanjutkan pembayaran melalui {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod}</p>
+              <a href="#" target="_blank" rel="noopener noreferrer"
+                className="w-full py-3.5 font-bold text-white rounded-[10px] flex items-center justify-center gap-2 text-sm"
+                style={{ background: paymentMethod === 'OVO' ? '#4C3494' : paymentMethod === 'DANA' ? '#108EE9' : '#EE4D2D' }}
+              >
+                Bayar via {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod} →
+              </a>
+              <p className="text-xs text-brand-muted">Anda akan diarahkan ke aplikasi {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod} untuk menyelesaikan pembayaran</p>
+            </div>
+          )}
+
+          {/* Kasir / Minimarket */}
+          {['ALFAMART','INDOMARET','ALFAMIDI'].includes(paymentMethod) && (
+            <div className="flex flex-col gap-4">
+              {(() => {
+                const KASIR_INFO: Record<string, { abbr: string; name: string; bg: string }> = {
+                  ALFAMART:  { abbr: 'Alfa', name: 'Alfamart',  bg: '#E8192C' },
+                  INDOMARET: { abbr: 'Indo', name: 'Indomaret', bg: '#CC0000' },
+                  ALFAMIDI:  { abbr: 'Midi', name: 'Alfamidi',  bg: '#0063A7' },
+                }
+                const info = KASIR_INFO[paymentMethod]!
+                return (
+                  <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-[8px] flex items-center justify-center font-bold text-xs text-white shadow-sm" style={{ background: info.bg }}>{info.abbr}</div>
+                      <div>
+                        <div className="font-bold text-sm text-brand-dark">{info.name}</div>
+                        <div className="text-xs text-brand-muted">Bayar di kasir</div>
+                      </div>
+                    </div>
+                    <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Kode Pembayaran</label>
+                    <div className="inp-copy">
+                      <input type="text" value={payCode ?? '—'} readOnly />
+                      <button onClick={() => copyText(payCode ?? '', 'kasir')} className={`copy-btn${copied === 'kasir' ? ' copied' : ''}`}>
+                        <FontAwesomeIcon icon={faCopy} /> {copied === 'kasir' ? 'Disalin!' : 'Salin'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )}
 

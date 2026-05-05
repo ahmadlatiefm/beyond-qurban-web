@@ -23,11 +23,12 @@ interface Props {
     bankName: string; accountNumber: string; accountOwner: string
     banks?: {id:string;code:string;name:string;number:string;owner:string}[]
   } | null
+  tripayPaymentUrl?: string | null
 }
 
 export default function PembayaranClient({
   orderNumber, totalAmount, productName, productImage, productWeight, createdAt,
-  paymentMethod, payCode, manualBank,
+  paymentMethod, payCode, manualBank, tripayPaymentUrl,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null)
   const [countdown, setCountdown] = useState('23:59:00')
@@ -96,36 +97,45 @@ export default function PembayaranClient({
           </div>
 
           <div className="p-5">
-            {/* VA methods: BVAI, MANDIRIVA, BNIVA, BRIVA */}
-            {['BVAI','MANDIRIVA','BNIVA','BRIVA'].includes(paymentMethod) && (
+            {/* VA methods — all virtual account channels */}
+            {['BCAVA','MANDIRIVA','BNIVA','BRIVA','PERMATAVA','MUAMALATVA','CIMBVA','BSIVA'].includes(paymentMethod) && (
               <div className="flex flex-col gap-4">
                 {/* Bank card */}
-                <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm shadow-sm ${
-                      paymentMethod === 'BVAI' ? 'text-blue-700' :
-                      paymentMethod === 'MANDIRIVA' ? 'text-yellow-700' :
-                      paymentMethod === 'BNIVA' ? 'text-orange-600' : 'text-blue-500'
-                    }`}>
-                      {paymentMethod === 'BVAI' ? 'BCA' : paymentMethod === 'MANDIRIVA' ? 'MNR' : paymentMethod === 'BNIVA' ? 'BNI' : 'BRI'}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm text-brand-dark">
-                        {paymentMethod === 'BVAI' ? 'Bank BCA' : paymentMethod === 'MANDIRIVA' ? 'Bank Mandiri' : paymentMethod === 'BNIVA' ? 'Bank BNI' : 'Bank BRI'}
+                {(() => {
+                  const VA_INFO: Record<string, { abbr: string; name: string; color: string }> = {
+                    BCAVA:      { abbr: 'BCA',  name: 'Bank BCA',          color: 'text-blue-700' },
+                    MANDIRIVA:  { abbr: 'MNR',  name: 'Bank Mandiri',      color: 'text-yellow-700' },
+                    BNIVA:      { abbr: 'BNI',  name: 'Bank BNI',          color: 'text-orange-600' },
+                    BRIVA:      { abbr: 'BRI',  name: 'Bank BRI',          color: 'text-blue-500' },
+                    PERMATAVA:  { abbr: 'PMT',  name: 'Bank Permata',      color: 'text-emerald-600' },
+                    MUAMALATVA: { abbr: 'MMT',  name: 'Bank Muamalat',     color: 'text-emerald-700' },
+                    CIMBVA:     { abbr: 'CIMB', name: 'CIMB Niaga',        color: 'text-red-700' },
+                    BSIVA:      { abbr: 'BSI',  name: 'Bank BSI',          color: 'text-emerald-700' },
+                  }
+                  const info = VA_INFO[paymentMethod] ?? { abbr: paymentMethod, name: paymentMethod, color: 'text-brand-dark' }
+                  return (
+                    <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-12 h-12 bg-white rounded-[10px] border border-brand-muted/15 flex items-center justify-center font-bold text-sm shadow-sm ${info.color}`}>
+                          {info.abbr}
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-brand-dark">{info.name}</div>
+                          <div className="text-xs text-brand-muted">Virtual Account</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-brand-muted">Virtual Account</div>
+                      <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
+                      <div className="inp-copy">
+                        <input type="text" value={payCode ?? 'Menunggu...'} readOnly />
+                        <button className={`copy-btn${copied === 'va' ? ' copied' : ''}`} onClick={() => copyText(payCode ?? '', 'va')}>
+                          <FontAwesomeIcon icon={faCopy} className="mr-1" />
+                          {copied === 'va' ? 'Disalin!' : 'Salin'}
+                        </button>
+                      </div>
+                      <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
                     </div>
-                  </div>
-                  <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Virtual Account</label>
-                  <div className="inp-copy">
-                    <input type="text" value={payCode ?? 'Menunggu...'} readOnly />
-                    <button className={`copy-btn${copied === 'va' ? ' copied' : ''}`} onClick={() => copyText(payCode ?? '', 'va')}>
-                      <FontAwesomeIcon icon={faCopy} className="mr-1" />
-                      {copied === 'va' ? 'Disalin!' : 'Salin'}
-                    </button>
-                  </div>
-                  <div className="text-xs text-brand-muted mt-2">A/N: <strong className="text-brand-dark">Yayasan One Ummah</strong></div>
-                </div>
+                  )
+                })()}
 
                 {/* Instructions */}
                 <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
@@ -134,8 +144,8 @@ export default function PembayaranClient({
                   </h3>
                   <ol className="flex flex-col gap-2.5">
                     {['Buka aplikasi mobile banking atau ATM Anda',
-                      `Pilih menu Transfer Virtual Account ${paymentMethod === 'BVAI' ? 'BCA' : paymentMethod === 'MANDIRIVA' ? 'Mandiri' : paymentMethod === 'BNIVA' ? 'BNI' : 'BRI'}`,
-                      'Masukkan nomor VA di atas, pastikan nama penerima Yayasan One Ummah dan nominal sesuai',
+                      'Pilih menu Transfer Virtual Account, masukkan nomor VA di atas',
+                      'Pastikan nama penerima Yayasan One Ummah dan nominal sesuai',
                       'Selesaikan transfer lalu upload bukti pembayaran di bawah',
                     ].map((step, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
@@ -154,7 +164,7 @@ export default function PembayaranClient({
             )}
 
             {/* QRIS */}
-            {['QRIS','QRISC'].includes(paymentMethod) && (
+            {['QRIS','QRIS2'].includes(paymentMethod) && (
               <div className="flex flex-col items-center gap-4 text-center">
                 <p className="text-sm text-brand-muted">Scan QR Code menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS</p>
                 <div className="w-52 h-52 bg-brand-light border-2 border-brand-surface/30 rounded-[14px] flex items-center justify-center mx-auto">
@@ -163,6 +173,85 @@ export default function PembayaranClient({
                 <div className="bg-brand-light rounded-[10px] border border-brand-muted/15 p-3 w-full">
                   <div className="text-xs text-brand-muted mb-1">Total yang harus dibayar</div>
                   <div className="font-serif text-2xl font-bold text-brand-accent">{formatCurrency(totalAmount)}</div>
+                </div>
+              </div>
+            )}
+
+            {/* E-Wallet Redirect (OVO, DANA, ShopeePay) */}
+            {['OVO','DANA','SHOPEEPAY'].includes(paymentMethod) && (
+              <div className="flex flex-col items-center gap-5 text-center p-4">
+                <div className="w-20 h-16 rounded-[10px] flex items-center justify-center font-bold text-base"
+                  style={{
+                    background: paymentMethod === 'OVO' ? '#4C3494' : paymentMethod === 'DANA' ? '#108EE9' : '#EE4D2D',
+                    color: '#fff'
+                  }}>
+                  {paymentMethod === 'SHOPEEPAY' ? 'SPAY' : paymentMethod}
+                </div>
+                <p className="text-sm text-brand-muted">Klik tombol di bawah untuk melanjutkan pembayaran melalui {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod}</p>
+                <a
+                  href={tripayPaymentUrl ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 font-bold text-white rounded-[10px] flex items-center justify-center gap-2 text-sm"
+                  style={{
+                    background: paymentMethod === 'OVO' ? '#4C3494' : paymentMethod === 'DANA' ? '#108EE9' : '#EE4D2D'
+                  }}
+                >
+                  Bayar via {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod} →
+                </a>
+                <p className="text-xs text-brand-muted">Anda akan diarahkan ke aplikasi {paymentMethod === 'SHOPEEPAY' ? 'ShopeePay' : paymentMethod} untuk menyelesaikan pembayaran</p>
+              </div>
+            )}
+
+            {/* Kasir / Minimarket (ALFAMART, INDOMARET, ALFAMIDI) */}
+            {['ALFAMART','INDOMARET','ALFAMIDI'].includes(paymentMethod) && (
+              <div className="flex flex-col gap-4">
+                <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                  {(() => {
+                    const KASIR_INFO: Record<string, { abbr: string; name: string; bg: string }> = {
+                      ALFAMART:  { abbr: 'Alfa', name: 'Alfamart',  bg: '#E8192C' },
+                      INDOMARET: { abbr: 'Indo', name: 'Indomaret', bg: '#CC0000' },
+                      ALFAMIDI:  { abbr: 'Midi', name: 'Alfamidi',  bg: '#0063A7' },
+                    }
+                    const info = KASIR_INFO[paymentMethod]!
+                    return (
+                      <>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-12 h-12 rounded-[10px] flex items-center justify-center font-bold text-sm text-white shadow-sm"
+                            style={{ background: info.bg }}>{info.abbr}</div>
+                          <div>
+                            <div className="font-bold text-sm text-brand-dark">{info.name}</div>
+                            <div className="text-xs text-brand-muted">Bayar di kasir</div>
+                          </div>
+                        </div>
+                        <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Kode Pembayaran</label>
+                        <div className="inp-copy">
+                          <input type="text" value={payCode ?? 'Menunggu...'} readOnly />
+                          <button className={`copy-btn${copied === 'kasir' ? ' copied' : ''}`} onClick={() => copyText(payCode ?? '', 'kasir')}>
+                            <FontAwesomeIcon icon={faCopy} className="mr-1" />
+                            {copied === 'kasir' ? 'Disalin!' : 'Salin'}
+                          </button>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+                <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
+                  <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Bayar
+                  </h3>
+                  <ol className="flex flex-col gap-2.5">
+                    {[`Pergi ke gerai ${paymentMethod === 'ALFAMART' ? 'Alfamart' : paymentMethod === 'INDOMARET' ? 'Indomaret' : 'Alfamidi'} terdekat`,
+                      'Tunjukkan kode pembayaran di atas ke kasir',
+                      'Sebutkan nominal pembayaran yang harus dibayar',
+                      'Simpan struk pembayaran sebagai bukti',
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
+                        <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i+1}</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </div>
             )}

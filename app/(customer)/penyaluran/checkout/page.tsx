@@ -18,18 +18,38 @@ export default async function CheckoutPenyaluranPage({
   if (!campaign) notFound()
 
   const settingsRows = await prisma.settings.findMany({
-    where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','manual_transfer_enabled','manual_banks'] } }
+    where: {
+      key: {
+        in: [
+          'ch_bcava','ch_mandiriva','ch_bniva','ch_briva','ch_permatava','ch_muamalatva','ch_cimbva','ch_bsiva',
+          'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
+          'ch_alfamart','ch_indomaret','ch_alfamidi',
+          'manual_transfer_enabled','manual_banks',
+        ]
+      }
+    }
   })
   const settingsMap: Record<string, string> = {}
   settingsRows.forEach(s => { settingsMap[s.key] = s.value })
 
   const activeChannels = {
-    BVAI:      settingsMap.ch_bca !== 'false',
-    MANDIRIVA: settingsMap.ch_mandiri !== 'false',
-    BNIVA:     settingsMap.ch_bni !== 'false',
-    BRIVA:     settingsMap.ch_bri !== 'false',
-    QRIS:      settingsMap.ch_qris !== 'false',
-    MANUAL:    settingsMap.manual_transfer_enabled === 'true',
+    BCAVA:      settingsMap.ch_bcava !== 'false',
+    MANDIRIVA:  settingsMap.ch_mandiriva !== 'false',
+    BNIVA:      settingsMap.ch_bniva !== 'false',
+    BRIVA:      settingsMap.ch_briva !== 'false',
+    PERMATAVA:  settingsMap.ch_permatava === 'true',
+    MUAMALATVA: settingsMap.ch_muamalatva === 'true',
+    CIMBVA:     settingsMap.ch_cimbva === 'true',
+    BSIVA:      settingsMap.ch_bsiva === 'true',
+    QRIS:       settingsMap.ch_qris !== 'false',
+    QRIS2:      settingsMap.ch_qris2 === 'true',
+    OVO:        settingsMap.ch_ovo === 'true',
+    DANA:       settingsMap.ch_dana === 'true',
+    SHOPEEPAY:  settingsMap.ch_shopeepay === 'true',
+    ALFAMART:   settingsMap.ch_alfamart === 'true',
+    INDOMARET:  settingsMap.ch_indomaret === 'true',
+    ALFAMIDI:   settingsMap.ch_alfamidi === 'true',
+    MANUAL:     settingsMap.manual_transfer_enabled === 'true',
   }
 
   let manualBanksList: {id:string;code:string;name:string;number:string;owner:string}[] = []
