@@ -41,3 +41,7 @@ next-env.d.ts
 /public/uploads/
 !public/uploads/.gitkeep
 .claude/settings.local.json
+
+# Claude Code files (jangan deploy ke production)
+.claude/
+.claude/**/*
