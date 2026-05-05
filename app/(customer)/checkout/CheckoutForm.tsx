@@ -13,14 +13,46 @@ import type { Product } from '@prisma/client'
 interface ActiveChannels {
   BVAI: boolean; MANDIRIVA: boolean; BNIVA: boolean; BRIVA: boolean; QRIS: boolean; MANUAL: boolean
 }
-interface ManualBank { enabled: boolean; bankName: string; accountNumber: string; accountOwner: string }
+interface ManualBankItem { id: string; code: string; name: string; number: string; owner: string }
+interface ManualBank {
+  enabled: boolean; bankName: string; accountNumber: string; accountOwner: string
+  banks?: ManualBankItem[]
+}
 
+// Proper Indonesian bank brand colors
+const BANK_STYLE: Record<string, { bg: string; text: string; abbr: string }> = {
+  BCA:   { bg: '#003D86', text: '#fff',    abbr: 'BCA' },
+  MNR:   { bg: '#003087', text: '#FFD700', abbr: 'MNR' },
+  BNI:   { bg: '#FF6600', text: '#fff',    abbr: 'BNI' },
+  BRI:   { bg: '#00529B', text: '#fff',    abbr: 'BRI' },
+  BSI:   { bg: '#007A52', text: '#fff',    abbr: 'BSI' },
+  CIMB:  { bg: '#BE1E2D', text: '#fff',    abbr: 'CIMB' },
+  DNN:   { bg: '#E40522', text: '#fff',    abbr: 'DNN' },
+  PMT:   { bg: '#00A651', text: '#fff',    abbr: 'PMT' },
+  BTN:   { bg: '#009A44', text: '#fff',    abbr: 'BTN' },
+  MEGA:  { bg: '#1B1464', text: '#fff',    abbr: 'MEGA' },
+  OCBC:  { bg: '#EE3124', text: '#fff',    abbr: 'OCBC' },
+  PANIN: { bg: '#003399', text: '#fff',    abbr: 'PANIN' },
+}
+
+// VA methods with proper brand styles
 const ALL_VA_METHODS = [
-  { value: 'BVAI',      bank: 'BCA',  label: 'BCA Virtual Account',    color: 'text-blue-700',   bgColor: 'bg-blue-50',    channelKey: 'BVAI' as const },
-  { value: 'MANDIRIVA', bank: 'MNR',  label: 'Mandiri Virtual Account', color: 'text-yellow-700', bgColor: 'bg-yellow-50',  channelKey: 'MANDIRIVA' as const },
-  { value: 'BNIVA',     bank: 'BNI',  label: 'BNI Virtual Account',     color: 'text-orange-600', bgColor: 'bg-orange-50',  channelKey: 'BNIVA' as const },
-  { value: 'BRIVA',     bank: 'BRI',  label: 'BRI Virtual Account',     color: 'text-blue-500',   bgColor: 'bg-blue-50',    channelKey: 'BRIVA' as const },
+  { value: 'BVAI',      code: 'BCA', label: 'BCA Virtual Account',    channelKey: 'BVAI' as const },
+  { value: 'MANDIRIVA', code: 'MNR', label: 'Mandiri Virtual Account', channelKey: 'MANDIRIVA' as const },
+  { value: 'BNIVA',     code: 'BNI', label: 'BNI Virtual Account',     channelKey: 'BNIVA' as const },
+  { value: 'BRIVA',     code: 'BRI', label: 'BRI Virtual Account',     channelKey: 'BRIVA' as const },
 ]
+
+function BankBadge({ code, size = 'md' }: { code: string; size?: 'sm' | 'md' }) {
+  const style = BANK_STYLE[code] ?? { bg: '#6B7280', text: '#fff', abbr: code.substring(0, 4) }
+  const dim = size === 'sm' ? 'w-8 h-7 text-[9px]' : 'w-11 h-8 text-[10px]'
+  return (
+    <div className={`${dim} rounded-[6px] flex items-center justify-center font-bold shrink-0 leading-none`}
+      style={{ background: style.bg, color: style.text }}>
+      {style.abbr}
+    </div>
+  )
+}
 
 const inputCls = 'w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
 
@@ -162,9 +194,8 @@ export default function CheckoutForm({
                         }`}>
                           {paymentMethod === method.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
-                        <div className={`w-10 h-7 rounded-[6px] ${method.bgColor} flex items-center justify-center font-bold text-[10px] ${method.color} shrink-0`}>
-                          {method.bank}
-                        </div>
+                        {/* Proper bank badge with brand color */}
+                        <BankBadge code={method.code} />
                         <span className="text-sm font-medium text-brand-dark">{method.label}</span>
                       </button>
                     ))}
@@ -192,14 +223,18 @@ export default function CheckoutForm({
                       }`}>
                         {paymentMethod === 'QRIS' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </div>
-                      <div className="w-10 h-7 rounded-[6px] bg-brand-light flex items-center justify-center font-bold text-[10px] text-brand-dark shrink-0">QRIS</div>
-                      <span className="text-sm font-medium text-brand-dark">QRIS — Semua E-Wallet &amp; M-Banking</span>
+                      <div className="w-11 h-8 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
+                        style={{ background: '#00AED6', color: '#fff' }}>QRIS</div>
+                      <div>
+                        <span className="text-sm font-medium text-brand-dark">QRIS</span>
+                        <div className="text-xs text-brand-muted">GoPay · OVO · DANA · ShopeePay · M-Banking</div>
+                      </div>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Manual Transfer — only if enabled in settings */}
+              {/* Manual Transfer — show all configured banks */}
               {showManual && manualBank && (
                 <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
@@ -207,20 +242,42 @@ export default function CheckoutForm({
                     <span className="text-xs font-bold text-brand-dark">Transfer Manual</span>
                     <span className="text-[10px] text-brand-muted ml-1">— langsung ke rekening</span>
                   </div>
+                  {/* ONE selectable option that covers all banks */}
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('MANUAL_TRANSFER')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${paymentMethod === 'MANUAL_TRANSFER' ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
+                    className={`w-full px-4 py-3 text-left transition-all ${paymentMethod === 'MANUAL_TRANSFER' ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
                   >
-                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod === 'MANUAL_TRANSFER' ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
-                      {paymentMethod === 'MANUAL_TRANSFER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="w-10 h-7 rounded-[6px] bg-brand-surface/10 flex items-center justify-center font-bold text-[10px] text-brand-surface shrink-0">
-                      {manualBank.bankName.split(' ')[0].substring(0, 3).toUpperCase()}
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-brand-dark">{manualBank.bankName}</span>
-                      <div className="text-xs text-brand-muted">{manualBank.accountNumber} — A/N {manualBank.accountOwner}</div>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 mt-1 flex items-center justify-center ${paymentMethod === 'MANUAL_TRANSFER' ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
+                        {paymentMethod === 'MANUAL_TRANSFER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-brand-dark block mb-2">
+                          Transfer ke rekening bank kami
+                        </span>
+                        {/* Show all configured banks */}
+                        <div className="flex flex-col gap-1.5">
+                          {(manualBank.banks && manualBank.banks.length > 0
+                            ? manualBank.banks
+                            : [{ id:'0', code:'', name: manualBank.bankName, number: manualBank.accountNumber, owner: manualBank.accountOwner }]
+                          ).map((b, idx) => {
+                            const style = BANK_STYLE[b.code] ?? { bg: '#1B5E3B', text: '#fff', abbr: b.name.replace('Bank ','').substring(0,4).toUpperCase() }
+                            return (
+                              <div key={idx} className="flex items-center gap-2.5">
+                                <div className="w-10 h-7 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
+                                  style={{ background: style.bg, color: style.text }}>
+                                  {style.abbr}
+                                </div>
+                                <div>
+                                  <span className="text-xs font-semibold text-brand-dark">{b.name}</span>
+                                  <span className="text-xs text-brand-muted ml-2">{b.number} — A/N {b.owner}</span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </button>
                 </div>

@@ -18,7 +18,7 @@ export default async function CheckoutPenyaluranPage({
   if (!campaign) notFound()
 
   const settingsRows = await prisma.settings.findMany({
-    where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','manual_transfer_enabled','manual_bank_name','manual_bank_number','manual_bank_owner'] } }
+    where: { key: { in: ['ch_bca','ch_mandiri','ch_bni','ch_bri','ch_qris','manual_transfer_enabled','manual_banks'] } }
   })
   const settingsMap: Record<string, string> = {}
   settingsRows.forEach(s => { settingsMap[s.key] = s.value })
@@ -32,11 +32,15 @@ export default async function CheckoutPenyaluranPage({
     MANUAL:    settingsMap.manual_transfer_enabled === 'true',
   }
 
+  let manualBanksList: {id:string;code:string;name:string;number:string;owner:string}[] = []
+  try { manualBanksList = JSON.parse(settingsMap.manual_banks ?? '[]') } catch {}
+
   const manualBank = {
-    enabled: settingsMap.manual_transfer_enabled === 'true',
-    bankName: settingsMap.manual_bank_name ?? 'Bank BCA',
-    accountNumber: settingsMap.manual_bank_number ?? '',
-    accountOwner: settingsMap.manual_bank_owner ?? 'Yayasan One Ummah',
+    enabled: settingsMap.manual_transfer_enabled === 'true' && manualBanksList.length > 0,
+    banks: manualBanksList,
+    bankName: manualBanksList[0]?.name ?? '',
+    accountNumber: manualBanksList[0]?.number ?? '',
+    accountOwner: manualBanksList[0]?.owner ?? 'Yayasan One Ummah',
   }
 
   const qty = parseInt(searchParams.qty ?? '1') || 1
