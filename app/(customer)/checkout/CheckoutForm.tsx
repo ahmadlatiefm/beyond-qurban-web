@@ -1,5 +1,5 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faPenToSquare, faBuildingColumns, faQrcode,
@@ -8,6 +8,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import { createOrder } from '@/lib/actions/orders'
+import { validateVoucherCode } from '@/lib/actions/settings'
 import { getShippingInfo, DEFAULT_SHIPPING_ZONES } from '@/lib/shipping'
 import type { ShippingZone } from '@/lib/shipping'
 import type { Product } from '@prisma/client'
@@ -107,28 +108,46 @@ export default function CheckoutForm({
     return 'BCAVA'
   })
   const [isPending, startTransition] = useTransition()
+  const [voucherPending, startVoucherTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [voucherCode, setVoucherCode] = useState('')
+  const [voucherDiscount, setVoucherDiscount] = useState(0)      // actual discount Rp
+  const [voucherPct, setVoucherPct] = useState(0)
   const [voucherApplied, setVoucherApplied] = useState(false)
   const [voucherError, setVoucherError] = useState<string | null>(null)
   const [city, setCity] = useState('')
 
   // Effective display price (global discount already computed server-side)
   const baseDisplayPrice = discountedPrice ?? product.price
-  const discountAmount = product.price - baseDisplayPrice
+  const globalDiscountAmount = product.price - baseDisplayPrice
 
   // Live shipping from zones (use server-passed zones, fallback to defaults)
   const zones = shippingZones ?? DEFAULT_SHIPPING_ZONES
   const shippingInfo = city.trim() ? getShippingInfo(city, zones) : { available: true, cost: 0, zoneName: '' }
   const shippingCost = shippingInfo.available ? shippingInfo.cost : 0
-  const totalDisplay = baseDisplayPrice + shippingCost
   const cityNotServed = city.trim().length > 2 && !shippingInfo.available
 
-  // Simulate voucher client-side hint (actual validation is server-side in createOrder)
+  // Final totals
+  const subtotalAfterGlobal = baseDisplayPrice + shippingCost
+  const totalDisplay = subtotalAfterGlobal - voucherDiscount
+
   function handleApplyVoucher() {
-    if (!voucherCode.trim()) return
-    setVoucherApplied(true)
+    const code = voucherCode.trim().toUpperCase()
+    if (!code) return
     setVoucherError(null)
+    startVoucherTransition(async () => {
+      const result = await validateVoucherCode(code, subtotalAfterGlobal)
+      if (result.valid) {
+        setVoucherDiscount(result.discountAmount)
+        setVoucherPct(result.discountPct)
+        setVoucherApplied(true)
+        setVoucherError(null)
+      } else {
+        setVoucherDiscount(0)
+        setVoucherApplied(false)
+        setVoucherError(result.error)
+      }
+    })
   }
 
   const activeVA = ALL_VA_METHODS.filter(m => !activeChannels || activeChannels[m.channelKey])
@@ -435,19 +454,25 @@ export default function CheckoutForm({
                   <input
                     type="text"
                     value={voucherCode}
-                    onChange={e => { setVoucherCode(e.target.value.toUpperCase()); setVoucherApplied(false) }}
+                    onChange={e => {
+                      setVoucherCode(e.target.value.toUpperCase())
+                      setVoucherApplied(false)
+                      setVoucherDiscount(0)
+                      setVoucherError(null)
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyVoucher() } }}
                     placeholder="Masukkan kode voucher"
                     className={`${inputCls} flex-1 font-mono tracking-wider`}
                   />
-                  <button type="button" onClick={handleApplyVoucher}
-                    className="px-4 h-12 bg-brand-surface text-white text-sm font-bold rounded-[8px] hover:bg-brand-dark transition-colors flex items-center gap-1.5 shrink-0">
-                    {voucherApplied ? <><FontAwesomeIcon icon={faCheck} /> Diterapkan</> : 'Terapkan'}
+                  <button type="button" onClick={handleApplyVoucher} disabled={voucherPending || !voucherCode.trim()}
+                    className="px-4 h-12 bg-brand-surface text-white text-sm font-bold rounded-[8px] hover:bg-brand-dark transition-colors flex items-center gap-1.5 shrink-0 disabled:opacity-60">
+                    {voucherPending ? '...' : voucherApplied ? <><FontAwesomeIcon icon={faCheck} /> Diterapkan</> : 'Terapkan'}
                   </button>
                 </div>
-                {voucherApplied && !voucherError && (
-                  <p className="text-xs text-emerald-600 font-medium">✓ Voucher akan diterapkan saat checkout</p>
+                {voucherApplied && voucherDiscount > 0 && (
+                  <p className="text-xs text-emerald-600 font-semibold">✓ Diskon {voucherPct}% ({formatCurrency(voucherDiscount)}) berhasil diterapkan</p>
                 )}
-                {voucherError && <p className="text-xs text-red-600">{voucherError}</p>}
+                {voucherError && <p className="text-xs text-red-600 font-medium">✕ {voucherError}</p>}
               </div>
             )}
 
@@ -485,27 +510,31 @@ export default function CheckoutForm({
                 <span className="bg-brand-surface-light/50 text-brand-accent-light text-xs px-2 py-0.5 rounded-[4px] w-fit mb-2">
                   <FontAwesomeIcon icon={faWeightScale} className="mr-1" />{product.weight} kg
                 </span>
-                {discountAmount > 0
+                {/* Show strikethrough if any discount active */}
+                {(globalDiscountAmount > 0 || voucherDiscount > 0)
                   ? <div className="flex flex-col gap-0.5">
-                      <span className="text-brand-accent-light/50 line-through text-sm">{formatCurrency(product.price)}</span>
-                      <span className="font-bold text-brand-accent text-base">{formatCurrency(baseDisplayPrice)}</span>
+                      <span className="text-brand-accent-light/40 line-through text-sm">{formatCurrency(product.price)}</span>
+                      <span className="font-bold text-brand-accent text-base">{formatCurrency(totalDisplay)}</span>
                     </div>
                   : <span className="font-bold text-brand-accent text-base">{formatCurrency(product.price)}</span>
                 }
               </div>
             </div>
-            <div className="flex flex-col gap-3 text-sm border-t border-brand-surface-light/30 pt-4 mb-4">
-              <div className="flex justify-between text-brand-accent-light/80"><span>Harga Produk</span><span>{formatCurrency(product.price)}</span></div>
-              {discountAmount > 0 && (
+            <div className="flex flex-col gap-2.5 text-sm border-t border-brand-surface-light/30 pt-4 mb-4">
+              <div className="flex justify-between text-brand-accent-light/80">
+                <span>Harga Produk</span>
+                <span>{formatCurrency(product.price)}</span>
+              </div>
+              {globalDiscountAmount > 0 && (
                 <div className="flex justify-between text-emerald-400 font-semibold">
                   <span><FontAwesomeIcon icon={faTag} className="mr-1 text-xs" />{discountLabel}</span>
-                  <span>-{formatCurrency(discountAmount)}</span>
+                  <span>-{formatCurrency(globalDiscountAmount)}</span>
                 </div>
               )}
-              {voucherApplied && voucherCode && (
+              {voucherApplied && voucherDiscount > 0 && (
                 <div className="flex justify-between text-emerald-400 font-semibold">
-                  <span><FontAwesomeIcon icon={faTag} className="mr-1 text-xs" />Voucher {voucherCode}</span>
-                  <span className="text-xs opacity-70">diterapkan</span>
+                  <span><FontAwesomeIcon icon={faTag} className="mr-1 text-xs" />Voucher {voucherCode} ({voucherPct}%)</span>
+                  <span>-{formatCurrency(voucherDiscount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-brand-accent-light/80">

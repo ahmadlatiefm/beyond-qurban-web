@@ -1104,9 +1104,9 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                         <tr key={label} className="border-b border-brand-muted/8">
                           <td className="px-4 py-3 font-medium text-sm">{flag} {label}</td>
                           <td className="px-4 py-3">
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted text-xs">Rp</span>
-                              <input type="number" value={settings[priceKey] ?? defaultPrice} onChange={e => set(priceKey, e.target.value)} className="inp pl-8 text-sm" style={{ height: 36 }} />
+                            <div className="flex items-center rounded-[8px] border border-brand-muted/20 overflow-hidden bg-white focus-within:border-brand-accent" style={{ height: 36 }}>
+                              <span className="px-2.5 text-xs font-bold text-brand-muted bg-brand-light border-r border-brand-muted/20 h-full flex items-center shrink-0">Rp</span>
+                              <input type="number" value={settings[priceKey] ?? defaultPrice} onChange={e => set(priceKey, e.target.value)} className="flex-1 px-3 text-sm text-brand-dark bg-white outline-none min-w-0" style={{ height: 36 }} />
                             </div>
                           </td>
                           <td className="px-4 py-3">
