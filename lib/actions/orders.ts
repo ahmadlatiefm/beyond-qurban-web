@@ -86,6 +86,7 @@ export async function updateOrderStatus(id: string, status: string) {
     data: { status: status as any },
   })
   revalidatePath('/admin/pesanan')
+  revalidatePath('/lacak-pesanan')  // refresh customer tracking page
 }
 
 export async function confirmPayment(id: string) {

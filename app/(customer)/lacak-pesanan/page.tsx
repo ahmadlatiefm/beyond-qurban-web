@@ -59,23 +59,41 @@ export default async function LacakPesananPage({
                 <h3 className="font-serif text-xl font-bold text-brand-text-dark mb-7">Status Pesanan</h3>
                 <div className="relative flex flex-col gap-7">
                   <div className="absolute left-3.5 top-3 bottom-3 w-0.5 bg-brand-muted/20" />
-                  {[
-                    { key: 'PENDING', label: 'Pesanan Masuk', desc: 'Pesanan diterima dan menunggu pembayaran.', icon: '✓', done: true },
-                    { key: 'CONFIRMED', label: 'Verifikasi Pembayaran', desc: 'Pembayaran berhasil diverifikasi.', icon: '✓', done: ['CONFIRMED','PREPARING','SHIPPED','DELIVERED'].includes(order.status) },
-                    { key: 'PREPARING', label: 'Hewan Disiapkan', desc: 'Hewan kurban Anda sedang dalam perawatan intensif.', icon: '⟳', done: ['PREPARING','SHIPPED','DELIVERED'].includes(order.status) },
-                    { key: 'SHIPPED', label: 'Penyembelihan', desc: 'Akan dilaksanakan pada hari Idul Adha.', icon: '✂', done: ['SHIPPED','DELIVERED'].includes(order.status) },
-                    { key: 'DELIVERED', label: 'Selesai', desc: 'Laporan dan dokumentasi dikirim via WhatsApp.', icon: '✓✓', done: order.status === 'DELIVERED' },
-                  ].map((step, i) => (
-                    <div key={step.key} className={`flex gap-5 items-start relative z-10 ${!step.done ? 'opacity-40' : ''}`}>
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-sm ${step.done ? 'bg-brand-surface' : 'bg-brand-muted/20'}`}>
-                        <span className={`text-[9px] font-bold ${step.done ? 'text-white' : 'text-brand-muted'}`}>{step.icon}</span>
-                      </div>
-                      <div>
-                        <h4 className={`font-bold text-sm ${step.done ? 'text-brand-text-dark' : 'text-brand-muted'}`}>{step.label}</h4>
-                        <p className="text-xs text-brand-muted mt-0.5">{step.desc}</p>
-                      </div>
-                    </div>
-                  ))}
+                  {(() => {
+                    const STATUS_ORDER = ['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED']
+                    const currentIdx = STATUS_ORDER.indexOf(order.status === 'CANCELLED' ? 'PENDING' : order.status)
+                    const steps = [
+                      { key: 'PENDING',   label: 'Pesanan Masuk',        desc: 'Pesanan diterima dan menunggu pembayaran.' },
+                      { key: 'CONFIRMED', label: 'Verifikasi Pembayaran', desc: 'Pembayaran berhasil diverifikasi.' },
+                      { key: 'PREPARING', label: 'Hewan Disiapkan',       desc: 'Hewan kurban Anda sedang dalam perawatan intensif.' },
+                      { key: 'SHIPPED',   label: 'Disembelih',            desc: 'Hewan kurban telah disembelih pada hari Idul Adha.' },
+                      { key: 'DELIVERED', label: 'Selesai',               desc: 'Laporan foto & sertifikat kurban dikirim via WhatsApp.' },
+                    ]
+                    return steps.map((step, i) => {
+                      const stepIdx = STATUS_ORDER.indexOf(step.key)
+                      const isDone = stepIdx <= currentIdx
+                      const isCurrent = stepIdx === currentIdx
+                      return (
+                        <div key={step.key} className={`flex gap-5 items-start relative z-10 ${!isDone ? 'opacity-40' : ''}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border-2 border-white shadow-sm ${
+                            isCurrent ? 'bg-brand-accent ring-2 ring-brand-accent/30' :
+                            isDone ? 'bg-brand-surface' : 'bg-brand-muted/20'
+                          }`}>
+                            {isDone && !isCurrent && <span className="text-[9px] font-bold text-white">✓</span>}
+                            {isCurrent && <span className="text-[9px] font-bold text-brand-dark">●</span>}
+                            {!isDone && <span className="text-[9px] font-bold text-brand-muted">{i + 1}</span>}
+                          </div>
+                          <div>
+                            <h4 className={`font-bold text-sm flex items-center gap-2 ${isDone ? 'text-brand-text-dark' : 'text-brand-muted'}`}>
+                              {step.label}
+                              {isCurrent && <span className="text-[10px] font-bold text-brand-accent bg-brand-accent/10 px-2 py-0.5 rounded-full">Saat ini</span>}
+                            </h4>
+                            <p className="text-xs text-brand-muted mt-0.5">{step.desc}</p>
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()}
                 </div>
               </div>
 

@@ -13,8 +13,12 @@ type TabType = 'semua' | 'baru' | 'menunggu' | 'diproses' | 'dikirim' | 'selesai
 
 const STATUS_OPTIONS = ['CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 const STATUS_LABELS: Record<string, string> = {
-  CONFIRMED: 'Dikonfirmasi', PREPARING: 'Disiapkan',
-  SHIPPED: 'Dikirim', DELIVERED: 'Selesai', CANCELLED: 'Dibatalkan',
+  PENDING:   'Menunggu Bayar',
+  CONFIRMED: 'Dikonfirmasi',
+  PREPARING: 'Hewan Disiapkan',
+  SHIPPED:   'Disembelih',
+  DELIVERED: 'Selesai',
+  CANCELLED: 'Dibatalkan',
 }
 
 const PAYMENT_BADGES: Record<string, { label: string; cls: string }> = {
@@ -264,7 +268,14 @@ export default function PesananClient({ initialOrders }: { initialOrders: OrderW
                             onClick={() => setUpdateMenuId(updateMenuId === order.id ? null : order.id)}
                             className="px-3 py-1.5 bg-brand-light border border-brand-muted/20 text-brand-dark text-xs font-medium rounded-[8px] flex items-center gap-1.5 hover:bg-brand-surface/5"
                           >
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Update Status
+                            <span className={`w-2 h-2 rounded-full inline-block ${
+                              order.status === 'PENDING'   ? 'bg-amber-400' :
+                              order.status === 'CONFIRMED' ? 'bg-blue-500' :
+                              order.status === 'PREPARING' ? 'bg-purple-500' :
+                              order.status === 'SHIPPED'   ? 'bg-violet-500' :
+                              order.status === 'DELIVERED' ? 'bg-emerald-500' : 'bg-gray-400'
+                            }`} />
+                            {STATUS_LABELS[order.status] ?? 'Status'}
                             <FontAwesomeIcon icon={faChevronDown} className="text-[9px]" />
                           </button>
                           {updateMenuId === order.id && (
