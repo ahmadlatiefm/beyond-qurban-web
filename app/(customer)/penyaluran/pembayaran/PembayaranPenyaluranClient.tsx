@@ -51,6 +51,11 @@ export default function PembayaranPenyaluranClient({
   const [uploadingProof, setUploadingProof] = useState(false)
   const [uploadError, setUploadError] = useState('')
 
+  // Scroll ke atas saat halaman pembayaran pertama kali muncul
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
   useEffect(() => {
     const deadline = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000
     const tick = () => {

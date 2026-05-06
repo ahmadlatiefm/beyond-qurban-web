@@ -211,31 +211,36 @@ export default function DonationForm({
               </Link>
             </div>
             <div
-              className="rounded-[12px] border-2 border-brand-accent/30 p-5 relative overflow-hidden"
+              className="rounded-[12px] border-2 border-brand-accent/30 p-4 relative overflow-hidden"
               style={{ background: 'rgba(200,150,42,.03)' }}
             >
-              <div className="flex items-start gap-4">
-                <span className="text-3xl">{getFlag(campaign.location)}</span>
-                <div className="flex-1">
-                  <h3 className="font-bold text-brand-dark mb-1">{campaign.title}</h3>
-                  <p className="text-xs text-brand-muted leading-relaxed">{campaign.description}</p>
-                  <div className="flex items-center gap-3 mt-3 flex-wrap">
-                    {['Laporan Foto & Video', 'Sertifikat Qurban', 'Sesuai Syariat'].map((f) => (
-                      <div
-                        key={f}
-                        className="flex items-center gap-1.5 text-xs text-brand-surface font-medium bg-brand-surface/10 px-2.5 py-1 rounded-full"
-                      >
-                        {f}
-                      </div>
-                    ))}
-                  </div>
+              {/* Baris 1: Flag + Judul + Harga */}
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-2xl shrink-0">{getFlag(campaign.location)}</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-brand-dark text-sm leading-snug">{campaign.title}</h3>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-xs text-brand-muted">Harga</div>
-                  <div className="font-serif text-2xl font-bold text-brand-accent">
+                <div className="text-right shrink-0 ml-2">
+                  <div className="text-[10px] text-brand-muted">Harga</div>
+                  <div className="font-serif text-lg font-bold text-brand-accent leading-tight">
                     {formatCurrency(campaign.price)}
                   </div>
                 </div>
+              </div>
+              {/* Baris 2: Deskripsi singkat */}
+              <p className="text-xs text-brand-muted leading-relaxed line-clamp-2 mb-3 pl-9">
+                {campaign.description}
+              </p>
+              {/* Baris 3: Chips fitur — penuh lebar */}
+              <div className="flex flex-row flex-wrap gap-1.5 pl-9">
+                {['Laporan Foto & Video', 'Sertifikat Qurban', 'Sesuai Syariat'].map((f) => (
+                  <span
+                    key={f}
+                    className="text-[11px] text-brand-surface font-medium bg-brand-surface/10 px-2.5 py-1 rounded-full whitespace-nowrap"
+                  >
+                    {f}
+                  </span>
+                ))}
               </div>
             </div>
           </div>

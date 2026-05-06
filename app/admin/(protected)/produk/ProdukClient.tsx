@@ -1,5 +1,6 @@
 'use client'
-import { useState, useTransition, useMemo, useRef } from 'react'
+import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faMagnifyingGlass, faPlus, faDownload, faPen, faTrash,
@@ -14,6 +15,12 @@ const emptyForm = { name: '', weight: '', price: '', stock: '', description: '',
 
 export default function ProdukClient({ initialProducts }: Props) {
   const [products, setProducts] = useState(initialProducts)
+  const router = useRouter()
+
+  // Sync state setiap kali initialProducts berubah (setelah router.refresh)
+  useEffect(() => {
+    setProducts(initialProducts)
+  }, [initialProducts])
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 
@@ -39,6 +46,11 @@ export default function ProdukClient({ initialProducts }: Props) {
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Tampilkan preview LANGSUNG dari file lokal (blob URL), tanpa tunggu upload
+    const localUrl = URL.createObjectURL(file)
+    setPreviewImg(localUrl)
+
     setIsUploading(true)
     try {
       const fd = new FormData()
@@ -47,12 +59,16 @@ export default function ProdukClient({ initialProducts }: Props) {
       const data = await res.json()
       if (data.url) {
         setForm(f => ({ ...f, imageUrl: data.url }))
-        setPreviewImg(data.url)
+        setPreviewImg(data.url) // Ganti ke server URL setelah upload selesai
       } else {
         showToast(data.error || 'Upload gagal.')
+        URL.revokeObjectURL(localUrl)
+        setPreviewImg(null)
       }
     } catch {
       showToast('Upload gagal, coba lagi.')
+      URL.revokeObjectURL(localUrl)
+      setPreviewImg(null)
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -147,8 +163,8 @@ export default function ProdukClient({ initialProducts }: Props) {
         showToast('Produk berhasil diperbarui!')
       } else {
         await createProduct(fd)
+        router.refresh() // Re-fetch server component → update initialProducts → useEffect sync products state
         showToast('Produk baru berhasil ditambahkan!')
-        // Refresh list from server would be better, but optimistic update for now
       }
       setModalOpen(false)
     })

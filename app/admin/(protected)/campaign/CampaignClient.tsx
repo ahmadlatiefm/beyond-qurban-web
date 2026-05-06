@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash, faPlus, faXmark, faFloppyDisk, faCloudArrowUp, faCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
@@ -450,12 +451,18 @@ function GalleryEditor({ value, onChange }: { value: string; onChange: (v: strin
 
 export default function CampaignClient({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
   const [campaigns, setCampaigns] = useState(initialCampaigns)
+  const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: '', title: '' })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState({ show: false, msg: '' })
+
+  // Sync state setiap kali initialCampaigns berubah (setelah router.refresh)
+  useEffect(() => {
+    setCampaigns(initialCampaigns)
+  }, [initialCampaigns])
 
   function showToast(msg: string) { setToast({ show: true, msg }); setTimeout(() => setToast({ show: false, msg: '' }), 2800) }
 
@@ -496,6 +503,7 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
         showToast('Campaign berhasil diperbarui!')
       } else {
         await createCampaign(fd)
+        router.refresh() // Re-fetch server component → update initialCampaigns → useEffect sync
         showToast('Campaign baru berhasil dibuat!')
       }
       setModalOpen(false)

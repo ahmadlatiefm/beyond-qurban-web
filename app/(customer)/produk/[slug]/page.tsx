@@ -87,10 +87,12 @@ export default async function ProdukDetailPage({ params }: { params: { slug: str
           </div>
 
           {/* Description */}
-          <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 mb-6 shadow-sm">
-            <h3 className="font-bold text-brand-text-dark text-lg mb-3">Deskripsi Domba</h3>
-            <p className="text-brand-muted text-sm leading-relaxed">{product.description}</p>
-          </div>
+          {product.description && (
+            <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 mb-6 shadow-sm">
+              <h3 className="font-bold text-brand-text-dark text-lg mb-3">Deskripsi {product.name}</h3>
+              <p className="text-brand-muted text-sm leading-relaxed">{product.description}</p>
+            </div>
+          )}
 
           {/* Shipping info */}
           <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 mb-8 shadow-sm">
@@ -161,17 +163,17 @@ export default async function ProdukDetailPage({ params }: { params: { slug: str
       </div>
 
       {/* Sticky CTA Bar — always visible at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-brand-muted/15 shadow-[0_-4px_20px_rgba(13,51,32,0.10)] px-6 py-3.5 flex items-center justify-between gap-4">
-        <div>
-          <div className="text-xs text-brand-muted">Harga</div>
-          <div className="font-serif text-[1.6rem] font-bold text-brand-accent leading-none">{formatCurrency(product.price)}</div>
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-brand-muted/15 shadow-[0_-4px_20px_rgba(13,51,32,0.10)] px-4 py-3 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[10px] text-brand-muted">Harga</div>
+          <div className="font-serif text-base sm:text-xl font-bold text-brand-accent leading-tight truncate">{formatCurrency(product.price)}</div>
         </div>
-        <div className="flex items-center gap-3">
-          <a href={waLink} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-[#25D366] text-[#25D366] font-bold rounded-[12px] py-3 px-5 flex items-center gap-2 text-sm hover:bg-[#25D366] hover:text-white transition-all">
+        <div className="flex items-center gap-2 shrink-0">
+          <a href={waLink} target="_blank" rel="noopener noreferrer" className="bg-white border-2 border-[#25D366] text-[#25D366] font-bold rounded-[12px] py-2.5 px-3 sm:px-5 flex items-center justify-center gap-2 text-sm hover:bg-[#25D366] hover:text-white transition-all">
             <FontAwesomeIcon icon={faWhatsapp} className="text-lg" />
             <span className="hidden sm:inline">Tanya Admin</span>
           </a>
-          <Link href={checkoutLink} className="bg-cta-gradient text-brand-text-dark font-bold rounded-[12px] py-3 px-6 flex items-center gap-2 text-base hover:scale-[1.03] transition-transform">
+          <Link href={checkoutLink} className="bg-cta-gradient text-brand-text-dark font-bold rounded-[12px] py-2.5 px-4 sm:px-6 flex items-center gap-2 text-sm sm:text-base hover:scale-[1.03] transition-transform whitespace-nowrap">
             <FontAwesomeIcon icon={faCartShopping} /> Pesan Sekarang
           </Link>
         </div>
