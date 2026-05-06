@@ -1,7 +1,6 @@
 'use client'
-export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
-import { signIn, useSession } from 'next-auth/react'
+import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -11,26 +10,11 @@ import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const { status } = useSession()
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Jika sudah login → langsung ke dashboard
-  useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace('/admin/dashboard')
-    }
-  }, [status, router])
-
-  // Tampilkan loading saat cek sesi
-  if (status === 'loading' || status === 'authenticated') {
-    return (
-      <div className="min-h-screen bg-brand-dark flex items-center justify-center">
-        <div className="text-brand-accent text-sm animate-pulse">Mengalihkan ke dashboard...</div>
-      </div>
-    )
-  }
+  // Redirect jika sudah login ditangani oleh middleware (middleware.ts)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
