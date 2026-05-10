@@ -22,7 +22,10 @@ export default async function PembayaranPage({
   if (!order) notFound()
 
   const manualBankSettings = await prisma.settings.findMany({
-    where: { key: { in: ['manual_banks','manual_transfer_enabled'] } }
+    where: { key: { in: [
+      'manual_banks','manual_transfer_enabled',
+      'manual_qris_enabled','manual_qris_image','manual_qris_bank','manual_qris_label',
+    ] } }
   })
   const mbMap: Record<string, string> = {}
   manualBankSettings.forEach(s => { mbMap[s.key] = s.value })
@@ -33,6 +36,12 @@ export default async function PembayaranPage({
     accountNumber: banksList[0]?.number ?? '',
     accountOwner: banksList[0]?.owner ?? '',
     banks: banksList,
+  } : null
+
+  const manualQris = mbMap.manual_qris_enabled === 'true' && (mbMap.manual_qris_image ?? '').length > 0 ? {
+    image: mbMap.manual_qris_image ?? '',
+    bank: mbMap.manual_qris_bank ?? '',
+    label: mbMap.manual_qris_label ?? '',
   } : null
 
   return (
@@ -93,6 +102,7 @@ export default async function PembayaranPage({
           paymentMethod={order.paymentMethod ?? 'BCAVA'}
           payCode={order.tripayReference}
           manualBank={manualBank}
+          manualQris={manualQris}
           tripayPaymentUrl={(order as any).tripayPaymentUrl ?? null}
         />
       </div>

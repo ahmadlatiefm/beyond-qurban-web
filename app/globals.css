@@ -58,8 +58,13 @@
   -webkit-text-fill-color: transparent;
   animation: shimmer 3s linear infinite;
 }
-.product-card { transition: all 0.3s ease; }
-.product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(13,51,32,.15); }
+.product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.product-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 36px rgba(13,51,32,.18); }
+@keyframes campaign-widget-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,150,42,0); }
+  30%, 70% { box-shadow: 0 0 0 6px rgba(200,150,42,.55); }
+}
+.campaign-widget-flash { animation: campaign-widget-flash 1.4s ease-in-out; border-radius: 16px; }
 .filter-chip {
   transition: all 0.2s; cursor: pointer;
   border: 1.5px solid rgba(107,114,128,.25); border-radius: 9999px;
@@ -90,7 +95,7 @@
 textarea.inp { height: auto; padding: 10px 12px; resize: vertical; }
 
 /* Toggle switch */
-.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; vertical-align: middle; }
 .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
 .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #d1d5db; border-radius: 24px; transition: .3s; }
 .toggle-slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .3s; }

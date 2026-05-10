@@ -22,7 +22,10 @@ export default async function PembayaranPenyaluranPage({
   if (!donation) notFound()
 
   const manualBankSettings = await prisma.settings.findMany({
-    where: { key: { in: ['manual_banks','manual_transfer_enabled'] } }
+    where: { key: { in: [
+      'manual_banks','manual_transfer_enabled',
+      'manual_qris_enabled','manual_qris_image','manual_qris_bank','manual_qris_label',
+    ] } }
   })
   const mbMap: Record<string, string> = {}
   manualBankSettings.forEach(s => { mbMap[s.key] = s.value })
@@ -33,6 +36,12 @@ export default async function PembayaranPenyaluranPage({
     accountNumber: banksList[0]?.number ?? '',
     accountOwner: banksList[0]?.owner ?? 'Yayasan One Ummah',
     banks: banksList,
+  } : null
+
+  const manualQris = mbMap.manual_qris_enabled === 'true' && (mbMap.manual_qris_image ?? '').length > 0 ? {
+    image: mbMap.manual_qris_image ?? '',
+    bank: mbMap.manual_qris_bank ?? '',
+    label: mbMap.manual_qris_label ?? '',
   } : null
 
   return (
@@ -100,6 +109,7 @@ export default async function PembayaranPenyaluranPage({
           payCode={donation.tripayReference}
           tripayPaymentUrl={(donation as any).tripayPaymentUrl ?? null}
           manualBank={manualBank}
+          manualQris={manualQris}
         />
       </div>
     </main>

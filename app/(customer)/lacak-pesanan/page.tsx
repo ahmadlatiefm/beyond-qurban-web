@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
 import LacakForm from './LacakForm'
+import StatusAutoRefresh from './StatusAutoRefresh'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export default async function LacakPesananPage({
@@ -33,6 +34,7 @@ export default async function LacakPesananPage({
 
       {order && (
         <div className="flex flex-col gap-6 mt-8">
+          <StatusAutoRefresh />
           {/* Order header */}
           <div className="bg-white rounded-[14px] shadow-premium border border-brand-muted/10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-surface/5 rounded-bl-[100px]" />

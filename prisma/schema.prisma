@@ -6,6 +6,266 @@ datasource db {
   provider = "postgresql"
 }
 
+model Product {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  name              String
+  weight            Float
+  price             Int
+  stock             Int            @default(1)
+  description       String
+  imageUrl          String
+  images            String[]
+  badge             String?
+  category          String?
+  qurbanLocation    QurbanLocation @default(INDONESIA)
+  allowHomeDelivery Boolean        @default(true)
+  status            ProductStatus  @default(ACTIVE)
+  videoUrls         String[]       @default([])
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  orders            Order[]
+}
+
+model Order {
+  id               String         @id @default(cuid())
+  orderNumber      String         @unique
+  customerName     String
+  phone            String
+  whatsapp         String
+  deliveryMethod   DeliveryMethod
+  qurbanLocation   QurbanLocation
+  address          String?
+  kelurahan        String?
+  kecamatan        String?
+  city             String?
+  province         String?
+  postalCode       String?
+  deliveryNotes    String?
+  sacrificeDate    DateTime
+  deliveryDate     DateTime?
+  notes            String?
+  productId        String
+  quantity         Int            @default(1)
+  shippingCost     Int            @default(0)
+  totalAmount      Int
+  paymentMethod    String?
+  paymentStatus    PaymentStatus  @default(UNPAID)
+  tripayReference  String?
+  tripayPaymentUrl String?
+  paymentProofUrl  String?
+  status           OrderStatus    @default(PENDING)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  product          Product        @relation(fields: [productId], references: [id])
+}
+
+model Campaign {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  title         String
+  location      QurbanLocation
+  targetCount   Int
+  price         Int?
+  imageUrl      String
+  description   String
+  richContent   String?
+  animalType    String         @default("domba")
+  programType   String         @default("qurban")
+  ctaButtonText String?
+  allowShare    Boolean        @default(false)
+  animals       String?
+  gallery       String?
+  isActive      Boolean        @default(true)
+  videoUrls     String[]       @default([])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  donations     Donation[]
+  updates       CampaignUpdate[]
+  laporan       LaporanPenyaluran[]
+}
+
+model Pengiriman {
+  id              String    @id @default(cuid())
+  token           String    @unique @default(cuid())
+
+  // IDENTITAS PEMESAN
+  namaPemesan     String?
+  noWhatsapp      String
+  alamatLengkap   String?
+  kecamatan       String?
+  kota            String?
+  gmapsPin        String?
+  catatan         String?
+
+  // DATA HEWAN
+  jenisHewan      String    @default("Domba")
+  jumlahHewan     Int       @default(1)
+  beratHewan      String?
+  nomorTagHewan   Json      @default("[]")
+  atasNama        String?
+
+  // PEMBAYARAN
+  totalHarga      Int       @default(0)
+  statusBayar     String    @default("belum_bayar")
+  jumlahDP        Int?
+  sisaPembayaran  Int?
+  metodeBayar     String?
+  tanggalBayar    DateTime?
+  buktiTransfer   String?
+
+  // PENGIRIMAN
+  tanggalKirim         DateTime?
+  jamKirim             String?
+  requestTanggalKirim  DateTime?
+  requestJamKirim      String?
+  statusKirim     String    @default("menunggu_data")
+  picId           String?
+  pic             PICPengiriman? @relation(fields: [picId], references: [id])
+  namaPengirim    String?
+  noKendaraan     String?
+  namaPenerima    String?
+  noWaPenerima    String?
+  keteranganSerahTerima String?
+  fotoSerahTerima String?
+
+  // STATUS FORM KONSUMEN
+  formDiisi       Boolean   @default(false)
+  formDiisiAt     DateTime?
+
+  // SUMBER
+  sumber          String    @default("offline")
+  orderId         String?
+
+  // META
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+
+  @@index([statusKirim])
+  @@index([tanggalKirim])
+  @@index([picId])
+}
+
+model PICPengiriman {
+  id          String        @id @default(cuid())
+  nama        String
+  noTelepon   String
+  keterangan  String?
+  aktif       Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  pengiriman  Pengiriman[]
+}
+
+model CampaignUpdate {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Donation {
+  id               String        @id @default(cuid())
+  orderNumber      String        @unique
+  campaignId       String
+  customerName     String
+  phone            String
+  whatsapp         String
+  qurbanName       String?
+  qurbanNames      String?
+  forWhom          String?
+  shareType        String?
+  donationType     String?
+  email            String?
+  quantity         Int           @default(1)
+  totalAmount      Int
+  paymentMethod    String?
+  paymentStatus    PaymentStatus @default(UNPAID)
+  tripayReference  String?
+  tripayPaymentUrl String?
+  paymentProofUrl  String?
+  status           OrderStatus   @default(PENDING)
+  nomorSertifikat  String?       @unique
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  campaign         Campaign      @relation(fields: [campaignId], references: [id])
+  laporanDonatur   LaporanDonatur?
+}
+
+model LaporanPenyaluran {
+  id             String    @id @default(cuid())
+  campaignId     String?
+  campaign       Campaign? @relation(fields: [campaignId], references: [id])
+  judul          String
+  tanggalKirim   DateTime  @default(now())
+  lokasi         String
+  jumlahHewan    Int
+  jumlahPenerima Int?
+  deskripsi      String
+  fotoUrls       Json      @default("[]")
+  tandaTerima    String?
+  pdfUrl         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  laporanDonatur LaporanDonatur[]
+}
+
+model LaporanDonatur {
+  id                   String   @id @default(cuid())
+  donationId           String   @unique
+  donation             Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  laporanId            String?
+  laporan              LaporanPenyaluran? @relation(fields: [laporanId], references: [id])
+  fotoPenyembelihan    Json     @default("[]")
+  isPatungan           Boolean  @default(false)
+  namaPatungan         Json     @default("[]")
+  statusPenyembelihan  String   @default("menunggu") // menunggu | disembelih | disalurkan
+  assignedAt           DateTime?
+  sudahDikirim         Boolean  @default(false)
+  dikirimAt            DateTime?
+  pdfUrl               String?
+  pdfGeneratedAt       DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([laporanId])
+  @@index([sudahDikirim])
+  @@index([statusPenyembelihan])
+}
+
+model Settings {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model TemplateSertifikat {
+  id        String   @id @default(cuid())
+  nama      String
+  tipe      String
+  blankoUrl String
+  width     Int      @default(0)
+  height    Int      @default(0)
+  fields    Json     @default("[]")
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tipe, aktif])
+}
+
 enum ProductStatus {
   ACTIVE
   INACTIVE
@@ -36,119 +296,4 @@ enum PaymentStatus {
   PAID
   EXPIRED
   REFUNDED
-}
-
-model Product {
-  id                String         @id @default(cuid())
-  slug              String         @unique
-  name              String
-  weight            Float
-  price             Int
-  stock             Int            @default(1)
-  description       String         @db.Text
-  imageUrl          String
-  images            String[]
-  badge             String?
-  qurbanLocation    QurbanLocation @default(INDONESIA)
-  allowHomeDelivery Boolean        @default(true)
-  status            ProductStatus  @default(ACTIVE)
-  orders            Order[]
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-}
-
-model Order {
-  id               String         @id @default(cuid())
-  orderNumber      String         @unique
-  customerName     String
-  phone            String
-  whatsapp         String
-  deliveryMethod   DeliveryMethod
-  qurbanLocation   QurbanLocation
-  address          String?        @db.Text
-  kelurahan        String?
-  kecamatan        String?
-  city             String?
-  province         String?
-  postalCode       String?
-  deliveryNotes    String?        @db.Text
-  sacrificeDate    DateTime
-  deliveryDate     DateTime?
-  notes            String?        @db.Text
-  product          Product        @relation(fields: [productId], references: [id])
-  productId        String
-  quantity         Int            @default(1)
-  shippingCost     Int            @default(0)
-  totalAmount      Int
-  paymentMethod    String?
-  paymentStatus    PaymentStatus  @default(UNPAID)
-  tripayReference  String?
-  tripayPaymentUrl String?
-  paymentProofUrl  String?
-  status           OrderStatus    @default(PENDING)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-}
-
-model Campaign {
-  id            String         @id @default(cuid())
-  slug          String         @unique
-  title         String
-  location      QurbanLocation
-  targetCount   Int
-  price         Int
-  imageUrl      String
-  description   String         @db.Text
-  richContent   String?        @db.Text  // JSON: [{type:'text'|'image', value:string, caption?:string}]
-  animalType    String         @default("domba")  // domba|kambing|sapi|unta|mix
-  programType   String         @default("qurban") // qurban|sedekah|keduanya
-  ctaButtonText String?                           // Custom button text override
-  allowShare    Boolean        @default(false)    // Allow 1/7 sapi share
-  // JSON: [{id,name,weight,originalPrice,price,imageUrl,stock}]
-  animals       String?        @db.Text
-  // JSON: [url1, url2, ...] — campaign photo gallery
-  gallery       String?        @db.Text
-  isActive      Boolean        @default(true)
-  donations     Donation[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-}
-
-model Donation {
-  id               String        @id @default(cuid())
-  orderNumber      String        @unique
-  campaign         Campaign      @relation(fields: [campaignId], references: [id])
-  campaignId       String
-  customerName     String
-  phone            String
-  whatsapp         String
-  qurbanName       String?       // Nama atas nama qurban (qty=1)
-  qurbanNames      String?       @db.Text  // JSON array of names (qty>1)
-  forWhom          String?       // "self" | "other"
-  shareType        String?       // "1/1" | "1/7" (untuk sapi)
-  email            String?
-  quantity         Int           @default(1)
-  totalAmount      Int
-  paymentMethod    String?
-  paymentStatus    PaymentStatus @default(UNPAID)
-  tripayReference  String?
-  tripayPaymentUrl String?
-  paymentProofUrl  String?
-  status           OrderStatus   @default(PENDING)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-}
-
-model Settings {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String @db.Text
-}
-
-model AdminUser {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
 }

@@ -6,7 +6,8 @@ import { signOut } from 'next-auth/react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faChartPie, faBoxOpen, faCartShopping, faCircleCheck,
-  faHandHoldingHeart, faUsers, faGear, faArrowRightFromBracket, faBullhorn, faFileLines,
+  faHandHoldingHeart, faUsers, faGear, faArrowRightFromBracket, faBullhorn, faFileLines, faTruck, faBookOpen, faClipboardList,
+  faCertificate, faImages, faFileImport,
 } from '@fortawesome/free-solid-svg-icons'
 
 const NAV_ITEMS = [
@@ -14,14 +15,25 @@ const NAV_ITEMS = [
   { href: '/admin/produk', label: 'Produk', icon: faBoxOpen },
   { href: '/admin/pesanan', label: 'Pesanan', icon: faCartShopping },
   { href: '/admin/konfirmasi', label: 'Konfirmasi Bayar', icon: faCircleCheck },
+  { href: '/admin/pengiriman', label: 'Pengiriman', icon: faTruck },
   { href: '/admin/campaign', label: 'Campaign', icon: faBullhorn },
   { href: '/admin/penyaluran', label: 'Penyaluran', icon: faHandHoldingHeart },
+  { href: '/admin/laporan', label: 'Laporan', icon: faClipboardList },
+  { href: '/admin/laporan/assign', label: 'Assign Foto', icon: faImages },
+  { href: '/admin/import', label: 'Import Data', icon: faFileImport },
   { href: '/admin/konten', label: 'Konten Halaman', icon: faFileLines },
+  { href: '/admin/pengaturan/sertifikat', label: 'Sertifikat', icon: faCertificate },
   { href: '/admin/pengaturan', label: 'Pengaturan', icon: faGear },
+  { href: '/admin/panduan', label: 'Panduan', icon: faBookOpen },
 ]
 
 export default function AdminSidebar({ adminName = 'Admin', adminEmail = 'admin@beyondqurban.com' }: { adminName?: string; adminEmail?: string }) {
   const pathname = usePathname()
+
+  // Pick the most specific (longest) matching href so nested links don't double-highlight
+  const activeHref = NAV_ITEMS
+    .filter(({ href }) => pathname === href || pathname.startsWith(href + '/'))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null
 
   return (
     <aside className="hidden md:flex flex-col w-[260px] bg-brand-dark min-h-screen sticky top-0 border-r border-brand-surface/30 z-40 shrink-0">
@@ -36,7 +48,7 @@ export default function AdminSidebar({ adminName = 'Admin', adminEmail = 'admin@
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 flex flex-col gap-1">
         {NAV_ITEMS.map(({ href, label, icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/')
+          const isActive = href === activeHref
           return (
             <Link
               key={href}

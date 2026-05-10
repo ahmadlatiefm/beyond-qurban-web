@@ -4,14 +4,21 @@ import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faMagnifyingGlass, faPlus, faDownload, faPen, faTrash,
-  faFloppyDisk, faXmark, faBell, faCloudArrowUp, faCircleCheck,
+  faFloppyDisk, faXmark, faBell, faCloudArrowUp,
 } from '@fortawesome/free-solid-svg-icons'
-import { createProduct, updateProduct, deleteProduct } from '@/lib/actions/products'
+import { createProduct, updateProduct, deleteProduct, deleteProducts } from '@/lib/actions/products'
+import { useAppToast } from '@/components/ui/AppToast'
+import AdminNotifBell from '@/components/admin/AdminNotifBell'
+import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
+import { VideoUrlInput, type VideoUrlInputHandle } from '@/components/admin/VideoUrlInput'
 import type { Product } from '@prisma/client'
 
 interface Props { initialProducts: Product[] }
 
-const emptyForm = { name: '', weight: '', price: '', stock: '', description: '', imageUrl: '', status: true }
+const CATEGORY_OPTIONS = ['SAPI', 'KAMBING', 'DOMBA', 'UNTA'] as const
+const CATEGORY_LABEL: Record<string, string> = { SAPI: 'Sapi', KAMBING: 'Kambing', DOMBA: 'Domba', UNTA: 'Unta' }
+
+const emptyForm = { name: '', weight: '', price: '', stock: '', description: '', imageUrl: '', status: true, category: '', videoUrls: '[]' }
 
 export default function ProdukClient({ initialProducts }: Props) {
   const [products, setProducts] = useState(initialProducts)
@@ -23,6 +30,13 @@ export default function ProdukClient({ initialProducts }: Props) {
   }, [initialProducts])
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
+
+  // Bulk select
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkDeleteModal, setBulkDeleteModal] = useState(false)
+
+  const appToast = useAppToast()
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
@@ -33,8 +47,6 @@ export default function ProdukClient({ initialProducts }: Props) {
   // Delete modal
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' })
 
-  // Toast
-  const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
 
   const [isPending, startTransition] = useTransition()
   const [isUploading, setIsUploading] = useState(false)
@@ -42,6 +54,7 @@ export default function ProdukClient({ initialProducts }: Props) {
   const [galleryImages, setGalleryImages] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const galleryFileInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<VideoUrlInputHandle>(null)
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -58,6 +71,7 @@ export default function ProdukClient({ initialProducts }: Props) {
       const res = await fetch('/api/uploads?folder=produk', { method: 'POST', body: fd })
       const data = await res.json()
       if (data.url) {
+        URL.revokeObjectURL(localUrl)
         setForm(f => ({ ...f, imageUrl: data.url }))
         setPreviewImg(data.url) // Ganti ke server URL setelah upload selesai
       } else {
@@ -102,17 +116,103 @@ export default function ProdukClient({ initialProducts }: Props) {
     setGalleryImages(prev => prev.filter(u => u !== url))
   }
 
-  function showToast(msg: string) {
-    setToast({ show: true, msg })
-    setTimeout(() => setToast({ show: false, msg: '' }), 2800)
+  function showToast(msg: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') {
+    appToast.show(msg, type)
   }
 
   // Filtered products
   const filtered = useMemo(() => products.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || (filterStatus === 'aktif' ? p.status === 'ACTIVE' : p.status === 'INACTIVE')
-    return matchSearch && matchStatus
-  }), [products, search, filterStatus])
+    const matchCategory = filterCategory === 'all' || (p.category ?? '').toUpperCase() === filterCategory
+    return matchSearch && matchStatus && matchCategory
+  }), [products, search, filterStatus, filterCategory])
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id))
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    setSelected(prev => {
+      if (allFilteredSelected) {
+        const next = new Set(prev)
+        filtered.forEach(p => next.delete(p.id))
+        return next
+      }
+      const next = new Set(prev)
+      filtered.forEach(p => next.add(p.id))
+      return next
+    })
+  }
+
+  function openBulkDeleteModal() {
+    if (selected.size === 0) {
+      showToast('Pilih minimal 1 produk untuk dihapus', 'warning')
+      return
+    }
+    setBulkDeleteModal(true)
+  }
+
+  function handleExport() {
+    if (filtered.length === 0) {
+      showToast('Tidak ada produk untuk diekspor', 'warning')
+      return
+    }
+    const headers = ['Nama', 'Kategori', 'Berat (kg)', 'Harga', 'Stok', 'Status', 'Slug']
+    const escape = (v: unknown) => {
+      const s = String(v ?? '')
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+    }
+    const rows = filtered.map(p => [
+      p.name,
+      CATEGORY_LABEL[(p.category ?? '').toUpperCase()] ?? '',
+      p.weight,
+      p.price,
+      p.stock,
+      p.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif',
+      p.slug,
+    ].map(escape).join(','))
+    const csv = '﻿' + [headers.join(','), ...rows].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `produk-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selected)
+    startTransition(async () => {
+      try {
+        const res = await deleteProducts(ids)
+        if (res && res.success === false) {
+          setBulkDeleteModal(false)
+          showToast(res.error || 'Gagal menghapus produk.', 'error')
+          return
+        }
+        setProducts(prev => prev.filter(p => !ids.includes(p.id)))
+        setSelected(new Set())
+        setBulkDeleteModal(false)
+        const extra = res?.deletedOrders ? ` (${res.deletedOrders} pesanan terkait dihapus)` : ''
+        showToast(`${res?.count ?? ids.length} produk berhasil dihapus.${extra}`)
+        router.refresh()
+      } catch (err) {
+        console.error('[handleBulkDelete] error:', err)
+        setBulkDeleteModal(false)
+        showToast('Terjadi kesalahan. Silakan coba lagi.', 'error')
+      }
+    })
+  }
 
   // Open modal to add
   function openAdd() {
@@ -134,6 +234,8 @@ export default function ProdukClient({ initialProducts }: Props) {
       description: p.description,
       imageUrl: p.imageUrl,
       status: p.status === 'ACTIVE',
+      category: (p.category ?? '').toUpperCase(),
+      videoUrls: JSON.stringify((p as any).videoUrls ?? []),
     })
     setPreviewImg(p.imageUrl)
     setGalleryImages(p.images.filter(img => img !== p.imageUrl))
@@ -142,6 +244,10 @@ export default function ProdukClient({ initialProducts }: Props) {
 
   // Save (create or update)
   function handleSave() {
+    // Commit any URL the user typed but didn't click "+ Tambah" on
+    const flushedVideos = videoInputRef.current?.flush()
+      ?? (() => { try { return JSON.parse(form.videoUrls || '[]') as string[] } catch { return [] } })()
+
     const fd = new FormData()
     fd.set('name', form.name)
     fd.set('weight', form.weight)
@@ -150,7 +256,9 @@ export default function ProdukClient({ initialProducts }: Props) {
     fd.set('description', form.description)
     fd.set('imageUrl', form.imageUrl)
     fd.set('status', form.status ? 'true' : 'false')
+    fd.set('category', form.category)
     fd.set('images', JSON.stringify(galleryImages))
+    fd.set('videoUrls', JSON.stringify(flushedVideos))
 
     startTransition(async () => {
       if (editingId) {
@@ -159,6 +267,8 @@ export default function ProdukClient({ initialProducts }: Props) {
           ...p, name: form.name, weight: parseFloat(form.weight), price: parseInt(form.price),
           stock: parseInt(form.stock), description: form.description, imageUrl: form.imageUrl || p.imageUrl,
           status: form.status ? 'ACTIVE' : 'INACTIVE',
+          category: form.category || null,
+          videoUrls: flushedVideos,
         } : p))
         showToast('Produk berhasil diperbarui!')
       } else {
@@ -174,10 +284,23 @@ export default function ProdukClient({ initialProducts }: Props) {
   function handleDelete() {
     const id = deleteModal.id
     startTransition(async () => {
-      await deleteProduct(id)
-      setProducts(prev => prev.filter(p => p.id !== id))
-      setDeleteModal({ open: false, id: '', name: '' })
-      showToast('Produk berhasil dihapus.')
+      try {
+        const res = await deleteProduct(id)
+        if (res && res.success === false) {
+          setDeleteModal({ open: false, id: '', name: '' })
+          showToast(res.error || 'Gagal menghapus produk.', 'error')
+          return
+        }
+        setProducts(prev => prev.filter(p => p.id !== id))
+        setDeleteModal({ open: false, id: '', name: '' })
+        const extra = res?.deletedOrders ? ` (${res.deletedOrders} pesanan terkait dihapus)` : ''
+        showToast('Produk berhasil dihapus.' + extra)
+        router.refresh()
+      } catch (err) {
+        console.error('[handleDelete] error:', err)
+        setDeleteModal({ open: false, id: '', name: '' })
+        showToast('Terjadi kesalahan. Silakan coba lagi.', 'error')
+      }
     })
   }
 
@@ -190,10 +313,8 @@ export default function ProdukClient({ initialProducts }: Props) {
           <p className="text-brand-muted text-xs mt-0.5">Kelola daftar hewan kurban yang tersedia</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="relative w-9 h-9 rounded-full bg-white border border-brand-muted/20 flex items-center justify-center text-brand-muted shadow-sm">
-            <FontAwesomeIcon icon={faBell} className="text-sm" />
-          </button>
-          <div className="w-9 h-9 rounded-full bg-brand-surface border border-brand-accent/30 flex items-center justify-center text-xs text-brand-accent font-bold">A</div>
+          <AdminNotifBell />
+          <AdminProfileMenu />
         </div>
       </header>
 
@@ -223,23 +344,42 @@ export default function ProdukClient({ initialProducts }: Props) {
               <option value="aktif">Aktif</option>
               <option value="nonaktif">Nonaktif</option>
             </select>
-            <button className="h-9 px-4 border border-brand-muted/20 rounded-[8px] text-sm bg-white text-brand-dark hover:bg-brand-surface hover:text-white hover:border-brand-surface transition-colors font-medium">
-              Filter
+            {/* Category filter */}
+            <select
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+              className="h-9 px-3 border border-brand-muted/20 rounded-[8px] text-sm bg-white text-brand-dark focus:outline-none"
+            >
+              <option value="all">Semua Kategori</option>
+              {CATEGORY_OPTIONS.map(c => (
+                <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            {selected.size > 0 && (
+              <button
+                onClick={openBulkDeleteModal}
+                disabled={isPending}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-500 text-white font-bold text-sm rounded-[10px] shadow-sm hover:bg-red-600 transition-colors disabled:opacity-60 whitespace-nowrap"
+              >
+                <FontAwesomeIcon icon={faTrash} /> Hapus Terpilih ({selected.size})
+              </button>
+            )}
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 px-5 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[10px] shadow-premium hover:scale-[1.02] transition-transform whitespace-nowrap"
+            >
+              <FontAwesomeIcon icon={faPlus} /> Tambah Produk
             </button>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 px-5 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[10px] shadow-premium hover:scale-[1.02] transition-transform whitespace-nowrap"
-          >
-            <FontAwesomeIcon icon={faPlus} /> Tambah Produk
-          </button>
         </div>
 
         {/* Table */}
         <div className="bg-white rounded-[12px] shadow-premium border border-brand-muted/10 overflow-hidden">
           <div className="p-4 border-b border-brand-muted/10 flex items-center justify-between">
-            <p className="text-sm font-medium text-brand-dark"><span className="font-bold">{filtered.length}</span> produk ditemukan</p>
-            <button className="flex items-center gap-1.5 text-sm text-brand-muted hover:text-brand-dark border border-brand-muted/20 px-3 py-1.5 rounded-[8px]">
+            <p className="text-sm font-medium text-brand-dark"><span className="font-bold">{filtered.length}</span> produk ditemukan{selected.size > 0 && <> · <span className="text-brand-surface font-bold">{selected.size}</span> dipilih</>}</p>
+            <button onClick={handleExport} className="flex items-center gap-1.5 text-sm text-brand-muted hover:text-brand-dark border border-brand-muted/20 px-3 py-1.5 rounded-[8px]">
               <FontAwesomeIcon icon={faDownload} className="text-xs" /> Export
             </button>
           </div>
@@ -248,10 +388,16 @@ export default function ProdukClient({ initialProducts }: Props) {
               <thead>
                 <tr className="bg-brand-surface text-brand-light border-b border-brand-surface/30">
                   <th className="py-4 px-6 font-medium text-sm w-12 text-center">
-                    <input type="checkbox" className="w-4 h-4 rounded border-brand-muted/30" />
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-brand-muted/30 cursor-pointer"
+                      aria-label="Pilih semua"
+                    />
                   </th>
                   <th className="py-4 px-6 font-medium text-sm">Produk</th>
-                  <th className="py-4 px-6 font-medium text-sm w-32">Tipe</th>
+                  <th className="py-4 px-6 font-medium text-sm w-32">Kategori</th>
                   <th className="py-4 px-6 font-medium text-sm w-24">Berat</th>
                   <th className="py-4 px-6 font-medium text-sm w-40">Harga (Inline)</th>
                   <th className="py-4 px-6 font-medium text-sm w-24">Stok</th>
@@ -261,12 +407,25 @@ export default function ProdukClient({ initialProducts }: Props) {
               </thead>
               <tbody>
                 {filtered.map((p) => {
-                  const tipe = p.name.toLowerCase().includes('sapi') ? 'Sapi' : p.name.toLowerCase().includes('kambing') ? 'Kambing' : 'Domba'
+                  const catKey = (p.category ?? '').toUpperCase()
+                  const kategori = CATEGORY_LABEL[catKey] ?? (
+                    p.name.toLowerCase().includes('sapi') ? 'Sapi'
+                      : p.name.toLowerCase().includes('kambing') ? 'Kambing'
+                      : p.name.toLowerCase().includes('unta') ? 'Unta'
+                      : 'Domba'
+                  )
+                  const isSelected = selected.has(p.id)
                   return (
-                    <tr key={p.id} className="hover:bg-brand-surface/5 transition-colors group border-b border-brand-muted/10">
+                    <tr key={p.id} className={`hover:bg-brand-surface/5 transition-colors group border-b border-brand-muted/10 ${isSelected ? 'bg-brand-surface/5' : ''}`}>
                       {/* Checkbox */}
                       <td className="py-3 px-6 text-center">
-                        <input type="checkbox" className="w-4 h-4 rounded border-brand-muted/30 text-brand-surface" />
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(p.id)}
+                          className="w-4 h-4 rounded border-brand-muted/30 text-brand-surface cursor-pointer"
+                          aria-label={`Pilih ${p.name}`}
+                        />
                       </td>
                       {/* Product */}
                       <td className="py-3 px-6">
@@ -281,8 +440,12 @@ export default function ProdukClient({ initialProducts }: Props) {
                           </div>
                         </div>
                       </td>
-                      {/* Tipe */}
-                      <td className="py-3 px-6 text-sm text-brand-muted">{tipe}</td>
+                      {/* Kategori */}
+                      <td className="py-3 px-6 text-sm">
+                        <span className="px-2.5 py-1 text-xs font-semibold rounded-[20px] bg-brand-light text-brand-dark border border-brand-muted/20">
+                          {kategori}
+                        </span>
+                      </td>
                       {/* Berat */}
                       <td className="py-3 px-6 text-sm text-brand-muted">{p.weight} kg</td>
                       {/* Harga inline */}
@@ -493,10 +656,34 @@ export default function ProdukClient({ initialProducts }: Props) {
                   <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Jumlah Stok *</label>
                   <input type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} className="inp" placeholder="10" min="0" />
                 </div>
+                {/* Kategori */}
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Kategori Hewan</label>
+                  <select
+                    value={form.category}
+                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                    className="inp"
+                  >
+                    <option value="">Pilih kategori (opsional)</option>
+                    {CATEGORY_OPTIONS.map(c => (
+                      <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>
+                    ))}
+                  </select>
+                </div>
                 {/* Deskripsi */}
                 <div className="col-span-2">
                   <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Deskripsi</label>
                   <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="inp" placeholder="Deskripsi kondisi hewan..." />
+                </div>
+                {/* Gallery Video */}
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Gallery Video (Opsional)</label>
+                  <p className="text-xs text-brand-muted mb-2">Tambah video YouTube atau Google Drive untuk ditampilkan di halaman detail produk.</p>
+                  <VideoUrlInput
+                    ref={videoInputRef}
+                    value={(() => { try { return JSON.parse(form.videoUrls || '[]') as string[] } catch { return [] } })()}
+                    onChange={urls => setForm(f => ({ ...f, videoUrls: JSON.stringify(urls) }))}
+                  />
                 </div>
                 {/* Status toggle */}
                 <div className="col-span-2 flex items-center justify-between p-3 bg-brand-light rounded-[8px] border border-brand-muted/10">
@@ -545,11 +732,27 @@ export default function ProdukClient({ initialProducts }: Props) {
         </div>
       )}
 
-      {/* Toast */}
-      <div className={`fixed bottom-6 right-6 z-[100] bg-brand-dark text-brand-accent-light px-5 py-3 rounded-[10px] text-sm font-medium flex items-center gap-2 shadow-lg transition-all duration-300 ${toast.show ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}`}>
-        <FontAwesomeIcon icon={faCircleCheck} className="text-brand-accent" />
-        {toast.msg}
-      </div>
+      {/* Bulk Delete Confirm Modal */}
+      {bulkDeleteModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setBulkDeleteModal(false) }}>
+          <div className="bg-white rounded-[16px] w-full max-w-sm p-8 text-center shadow-xl">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <FontAwesomeIcon icon={faTrash} className="text-red-500 text-xl" />
+            </div>
+            <h3 className="font-serif text-lg font-bold text-brand-dark mb-2">Hapus Produk Terpilih?</h3>
+            <p className="text-brand-muted text-sm mb-6">
+              Yakin hapus <strong className="text-brand-dark">{selected.size}</strong> produk?
+              Tidak bisa dikembalikan.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setBulkDeleteModal(false)} className="flex-1 py-2.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light">Batal</button>
+              <button onClick={handleBulkDelete} disabled={isPending} className="flex-1 py-2.5 bg-red-500 text-white font-bold text-sm rounded-[8px] hover:bg-red-600 transition-colors disabled:opacity-60">
+                {isPending ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

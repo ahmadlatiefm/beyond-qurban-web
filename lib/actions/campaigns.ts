@@ -6,7 +6,6 @@ import slugify from 'slugify'
 export async function createCampaign(formData: FormData) {
   const title = formData.get('title') as string
   const location = formData.get('location') as string
-  const price = parseInt(formData.get('price') as string)
   const targetCount = parseInt(formData.get('targetCount') as string)
   const description = formData.get('description') as string
   const imageUrl = formData.get('imageUrl') as string
@@ -17,8 +16,21 @@ export async function createCampaign(formData: FormData) {
   const richContent = (formData.get('richContent') as string) || null
   const animals = (formData.get('animals') as string) || null
   const gallery = (formData.get('gallery') as string) || null
+  const videoUrlsRaw = formData.get('videoUrls') as string | null
+  let videoUrls: string[] = []
+  try { if (videoUrlsRaw) videoUrls = JSON.parse(videoUrlsRaw) } catch {}
 
-  if (!title || !location || !price) throw new Error('Data tidak lengkap')
+  if (!title || !location) throw new Error('Data tidak lengkap')
+
+  // Animal cards are mandatory: at least 1 with a valid price.
+  let parsedAnimals: { price?: number; name?: string }[] = []
+  try { parsedAnimals = JSON.parse(animals || '[]') } catch {}
+  if (!Array.isArray(parsedAnimals) || parsedAnimals.length === 0) {
+    throw new Error('Minimal 1 pilihan hewan wajib ditambahkan')
+  }
+  if (parsedAnimals.some(a => !a.name || !a.price || a.price <= 0)) {
+    throw new Error('Setiap pilihan hewan wajib memiliki nama dan harga yang valid')
+  }
 
   const baseSlug = slugify(title, { lower: true, strict: true })
   const existing = await prisma.campaign.findUnique({ where: { slug: baseSlug } })
@@ -29,7 +41,6 @@ export async function createCampaign(formData: FormData) {
       slug,
       title,
       location: location as any,
-      price,
       targetCount: isNaN(targetCount) ? 0 : targetCount,
       description: description || '',
       imageUrl: imageUrl || 'https://storage.googleapis.com/uxpilot-auth.appspot.com/92bbac4904-633c0c42c771a49f61b6.png',
@@ -40,6 +51,7 @@ export async function createCampaign(formData: FormData) {
       richContent,
       animals: animals || null,
       gallery: gallery || null,
+      videoUrls,
       isActive: true,
     },
   })
@@ -79,9 +91,23 @@ export async function updateCampaign(id: string, formData: FormData) {
   const richContent = formData.get('richContent') as string | null
   if (richContent !== null) data.richContent = richContent || null
   const animals = formData.get('animals') as string | null
-  if (animals !== null) data.animals = animals || null
+  if (animals !== null) {
+    let parsed: { price?: number; name?: string }[] = []
+    try { parsed = JSON.parse(animals || '[]') } catch {}
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('Minimal 1 pilihan hewan wajib ditambahkan')
+    }
+    if (parsed.some(a => !a.name || !a.price || a.price <= 0)) {
+      throw new Error('Setiap pilihan hewan wajib memiliki nama dan harga yang valid')
+    }
+    data.animals = animals
+  }
   const gallery = formData.get('gallery') as string | null
   if (gallery !== null) data.gallery = gallery || null
+  const videoUrlsRaw = formData.get('videoUrls') as string | null
+  if (videoUrlsRaw !== null) {
+    try { data.videoUrls = JSON.parse(videoUrlsRaw) } catch { data.videoUrls = [] }
+  }
 
   if (Object.keys(data).length === 0) return
 
@@ -92,8 +118,23 @@ export async function updateCampaign(id: string, formData: FormData) {
   revalidatePath('/penyaluran/[slug]', 'page')
 }
 
-export async function deleteCampaign(id: string) {
-  await prisma.campaign.delete({ where: { id } })
-  revalidatePath('/admin/campaign')
-  revalidatePath('/penyaluran')
+export async function deleteCampaign(id: string): Promise<{ success: boolean; error?: string; deletedDonations?: number }> {
+  try {
+    const campaign = await prisma.campaign.findUnique({ where: { id }, select: { id: true } })
+    if (!campaign) {
+      return { success: false, error: 'Campaign tidak ditemukan.' }
+    }
+    const [deletedDonations] = await prisma.$transaction([
+      prisma.donation.deleteMany({ where: { campaignId: id } }),
+      prisma.campaign.delete({ where: { id } }),
+    ])
+    revalidatePath('/admin/campaign')
+    revalidatePath('/admin/penyaluran')
+    revalidatePath('/penyaluran')
+    revalidatePath('/penyaluran', 'layout')
+    return { success: true, deletedDonations: deletedDonations.count }
+  } catch (err) {
+    console.error('[deleteCampaign] error:', err)
+    return { success: false, error: 'Terjadi kesalahan saat menghapus campaign. Silakan coba lagi.' }
+  }
 }

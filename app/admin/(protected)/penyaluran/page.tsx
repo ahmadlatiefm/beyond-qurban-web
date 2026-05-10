@@ -2,11 +2,16 @@ export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
 import PenyaluranAdminClient from './PenyaluranAdminClient'
 
+const DEFAULT_FOLLOWUP_DONATION = `Halo Kak {{nama}}, 😊\n\nKami ingin mengingatkan bahwa donasi qurban Anda untuk program *{{campaign}}* dengan nomor *{{nomor_pesanan}}* masih menunggu pembayaran.\n\n💰 Nominal: *{{total}}*\n⏰ Segera selesaikan pembayaran agar hewan kurban Anda bisa segera disiapkan.\n\nTerima kasih, semoga dimudahkan 🤲`
+
 export default async function AdminPenyaluranPage() {
   const donations = await prisma.donation.findMany({
     orderBy: { createdAt: 'desc' },
     include: { campaign: true },
   })
+
+  const tplRow = await prisma.settings.findUnique({ where: { key: 'wa_template_donation_followup' } })
+  const followupTemplate = tplRow?.value || DEFAULT_FOLLOWUP_DONATION
 
   // Stats per location
   const stats = {
@@ -30,5 +35,5 @@ export default async function AdminPenyaluranPage() {
     },
   }
 
-  return <PenyaluranAdminClient donations={donations} stats={stats} />
+  return <PenyaluranAdminClient donations={donations} stats={stats} followupTemplate={followupTemplate} />
 }

@@ -11,6 +11,8 @@ import {
   faBell, faChevronDown,
 } from '@fortawesome/free-solid-svg-icons'
 import DashboardChart from './DashboardChart'
+import AdminNotifBell from '@/components/admin/AdminNotifBell'
+import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
 
 async function getDashboardData() {
   const [totalOrders, pendingPayment, paidOrders, recentOrders] = await Promise.all([
@@ -84,21 +86,8 @@ export default async function DashboardPage() {
           <p className="text-brand-muted text-xs mt-0.5">{today} — Selamat datang kembali 👋</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="relative w-9 h-9 rounded-full bg-white border border-brand-muted/20 flex items-center justify-center text-brand-muted hover:text-brand-dark shadow-sm">
-            <FontAwesomeIcon icon={faBell} className="text-sm" />
-            {pendingPayment > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold border-2 border-brand-light">
-                {pendingPayment}
-              </span>
-            )}
-          </button>
-          <div className="hidden md:flex items-center gap-2 bg-white border border-brand-muted/15 rounded-full px-3 py-1.5 shadow-sm">
-            <div className="w-7 h-7 rounded-full bg-brand-surface flex items-center justify-center text-xs text-brand-accent font-bold">
-              {(session?.user?.name ?? 'A').charAt(0).toUpperCase()}
-            </div>
-            <span className="text-sm font-medium text-brand-dark">{session?.user?.name ?? 'Admin'}</span>
-            <FontAwesomeIcon icon={faChevronDown} className="text-[10px] text-brand-muted" />
-          </div>
+          <AdminNotifBell />
+          <AdminProfileMenu />
         </div>
       </header>
 

@@ -5,14 +5,18 @@ import {
   faFloppyDisk, faRotateLeft, faPaperPlane, faCreditCard,
   faTag, faCode, faSliders, faCircleInfo, faBell, faEye,
   faCopy, faPlugCircleCheck, faExternalLinkAlt,
-  faMinus, faPlus, faTrash, faTruck,
+  faMinus, faPlus, faTrash, faTruck, faQrcode, faImage, faLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { DEFAULT_SHIPPING_ZONES } from '@/lib/shipping'
 import type { ShippingZone } from '@/lib/shipping'
 import { faWhatsapp, faWhatsapp as faWhatsappPrev, faFacebookF, faTiktok } from '@fortawesome/free-brands-svg-icons'
-import { saveSettings } from '@/lib/actions/settings'
+import { saveSettings, changePassword } from '@/lib/actions/settings'
+import AdminNotifBell from '@/components/admin/AdminNotifBell'
+import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
+import Link from 'next/link'
+import { faCertificate } from '@fortawesome/free-solid-svg-icons'
 
-type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'info'
+type SectionKey = 'onesender' | 'tripay' | 'diskon' | 'pixel' | 'umum' | 'keamanan' | 'info'
 
 // ─── Major Indonesian Banks ────────────────────────────────────────────────
 const ID_BANKS = [
@@ -158,7 +162,7 @@ function ManualBanksEditor({ value, onChange }: { value: string; onChange: (v: s
   )
 }
 
-export default function PengaturanClient({ initialSettings }: { initialSettings: Record<string, string> }) {
+export default function PengaturanClient({ initialSettings, adminEmail }: { initialSettings: Record<string, string>; adminEmail: string }) {
   const [activeSection, setActiveSection] = useState<SectionKey>('onesender')
   const [settings, setSettings] = useState(initialSettings)
   const [showKeys, setShowKeys] = useState({ apiKey: false, privKey: false, fbToken: false })
@@ -181,6 +185,68 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
   })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
+  const [qrisUploading, setQrisUploading] = useState(false)
+  const [qrisUploadError, setQrisUploadError] = useState('')
+  const [firstTab, setFirstTab] = useState<'product' | 'donation'>('product')
+  const [followupTab, setFollowupTab] = useState<'product' | 'donation'>('product')
+  const [testWaOpen, setTestWaOpen] = useState(false)
+  const [testWaTo, setTestWaTo] = useState('')
+  const [testWaSending, setTestWaSending] = useState(false)
+  const [testWaResult, setTestWaResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [pwOld, setPwOld] = useState('')
+  const [pwNew, setPwNew] = useState('')
+  const [pwConfirm, setPwConfirm] = useState('')
+  const [pwSubmitting, setPwSubmitting] = useState(false)
+  const [pwResult, setPwResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
+  async function handleChangePassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setPwResult(null)
+    if (pwNew !== pwConfirm) {
+      setPwResult({ ok: false, msg: 'Konfirmasi password tidak sama dengan password baru.' })
+      return
+    }
+    if (pwNew.length < 8) {
+      setPwResult({ ok: false, msg: 'Password baru minimal 8 karakter.' })
+      return
+    }
+    setPwSubmitting(true)
+    try {
+      const res = await changePassword(pwOld, pwNew)
+      if (res.success) {
+        setPwResult({ ok: true, msg: 'Password berhasil diganti. Gunakan password baru di login berikutnya.' })
+        setPwOld(''); setPwNew(''); setPwConfirm('')
+      } else {
+        setPwResult({ ok: false, msg: res.error || 'Gagal mengganti password.' })
+      }
+    } catch (err) {
+      setPwResult({ ok: false, msg: err instanceof Error ? err.message : 'Gagal mengganti password.' })
+    } finally {
+      setPwSubmitting(false)
+    }
+  }
+
+  async function handleTestWa() {
+    setTestWaSending(true)
+    setTestWaResult(null)
+    try {
+      const res = await fetch('/api/onesender/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: testWaTo }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (data.success) {
+        setTestWaResult({ ok: true, msg: `Pesan test terkirim ke ${data.normalizedPhone ?? testWaTo}` })
+      } else {
+        setTestWaResult({ ok: false, msg: data.error || 'Gagal mengirim pesan test' })
+      }
+    } catch (err) {
+      setTestWaResult({ ok: false, msg: err instanceof Error ? err.message : 'Gagal mengirim' })
+    } finally {
+      setTestWaSending(false)
+    }
+  }
 
   function showToast(msg: string) {
     setToast({ show: true, msg }); setTimeout(() => setToast({ show: false, msg: '' }), 2800)
@@ -188,6 +254,30 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
 
   function set(key: string, value: string) {
     setSettings(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handleQrisUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setQrisUploading(true)
+    setQrisUploadError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('folder', 'qris')
+      const res = await fetch('/api/media-upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        set('manual_qris_image', data.url)
+      } else {
+        setQrisUploadError(data.error ?? 'Upload gagal')
+      }
+    } catch {
+      setQrisUploadError('Upload gagal — coba lagi')
+    } finally {
+      setQrisUploading(false)
+      e.target.value = ''
+    }
   }
 
   function handleSave(sectionKeys: string[]) {
@@ -199,12 +289,19 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
     })
   }
 
+  // Default templates
+  const DEFAULT_FIRST_PRODUCT  = `Halo Kak {{nama}}, 👋\n\nTerima kasih telah memesan kurban di *Beyond Qurban* 🐑\n\nBerikut detail pesanan Anda:\n📋 No. Pesanan: *{{nomor_pesanan}}*\n🐑 Produk: {{produk}}\n💰 Total: *{{total}}*\n🚚 Jadwal Kirim: {{tanggal_kirim}}\n💳 Metode: {{metode_bayar}}\n🏦 Rekening: {{rekening}}\n\nSegera selesaikan pembayaran Anda ya, Kak!\n\n_Beyond Qurban — Amanah & Berkualitas_`
+  const DEFAULT_FIRST_DONATION = `Halo Kak {{nama}}, 🤝\nJazakallah khairan telah berqurban melalui *Beyond Qurban* 🐑\n\nDetail donasi Anda:\n📋 No. Pesanan: *{{nomor_pesanan}}*\n🌍 Program: {{campaign}}\n🐑 Hewan: {{hewan}}\n👤 Atas Nama: {{atas_nama}}\n💰 Total: *{{total}}*\n💳 Metode: {{metode_bayar}}\n🏦 Rekening: {{rekening}}\n\nTim kami akan menghubungi setelah pembayaran dikonfirmasi. 🙏`
+  const DEFAULT_FOLLOWUP_PRODUCT  = `Halo Kak {{nama}}, 😊\n\nKami ingin mengingatkan bahwa pesanan kurban Anda *{{nomor_pesanan}}* masih menunggu pembayaran.\n\n⏰ *Batas waktu: 24 jam sejak pemesanan*\n\nNominal tepat: *{{total}}*\n\nTerima kasih, semoga dimudahkan 🤲\n\n_Beyond Qurban_`
+  const DEFAULT_FOLLOWUP_DONATION = `Halo Kak {{nama}}, 😊\n\nKami ingin mengingatkan bahwa donasi qurban Anda untuk program *{{campaign}}* dengan nomor *{{nomor_pesanan}}* masih menunggu pembayaran.\n\n💰 Nominal: *{{total}}*\n⏰ Segera selesaikan pembayaran agar hewan kurban Anda bisa segera disiapkan.\n\nTerima kasih, semoga dimudahkan 🤲`
+
   const SECTIONS: { key: SectionKey; label: string; icon: any }[] = [
     { key: 'onesender', label: 'OneSender', icon: faWhatsapp },
     { key: 'tripay', label: 'Tripay', icon: faCreditCard },
     { key: 'diskon', label: 'Manajemen Diskon', icon: faTag },
     { key: 'pixel', label: 'Pixel & Tracking', icon: faCode },
     { key: 'umum', label: 'Umum', icon: faSliders },
+    { key: 'keamanan', label: 'Keamanan Akun', icon: faLock },
     { key: 'info', label: 'Info Sistem', icon: faCircleInfo },
   ]
 
@@ -217,10 +314,8 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
           <p className="text-brand-muted text-xs mt-0.5">Konfigurasi sistem, integrasi, dan template pesan</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="relative w-9 h-9 rounded-full bg-brand-light border border-brand-muted/20 flex items-center justify-center text-brand-muted">
-            <FontAwesomeIcon icon={faBell} />
-          </button>
-          <div className="w-9 h-9 rounded-full bg-brand-surface border border-brand-accent/30 flex items-center justify-center text-xs text-brand-accent font-bold">A</div>
+          <AdminNotifBell />
+          <AdminProfileMenu />
         </div>
       </header>
 
@@ -248,6 +343,13 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                   <p className="text-brand-muted text-sm leading-relaxed">Konfigurasi API OneSender untuk WhatsApp otomatis.</p>
                 </div>
                 <div className="flex-1 flex flex-col gap-5">
+                  <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-[10px] p-3 text-xs text-blue-900 leading-relaxed">
+                    <FontAwesomeIcon icon={faCircleInfo} className="text-blue-500 mt-0.5 shrink-0" />
+                    <div>
+                      <strong>Notifikasi otomatis</strong> dikirim via OneSender API saat order dibuat (pesan pertama) dan saat cron follow-up jalan.{' '}
+                      <strong>Tombol WA</strong> di halaman /admin/pesanan, /admin/penyaluran, dan /admin/konfirmasi adalah follow-up <strong>MANUAL</strong> yang membuka WhatsApp di perangkat kamu — tidak via OneSender.
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
                     <div>
                       <div className="font-semibold text-sm text-brand-dark">Enable WA API</div>
@@ -270,134 +372,379 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                     <button onClick={() => handleSave(['onesender_enabled', 'onesender_url', 'onesender_api_key'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
                       <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Pengaturan
                     </button>
-                    <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
-                      <FontAwesomeIcon icon={faPaperPlane} /> Test API
+                    <button
+                      type="button"
+                      onClick={() => setTestWaOpen(o => !o)}
+                      className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faPaperPlane} /> Test Kirim
                     </button>
                   </div>
+
+                  {testWaOpen && (
+                    <div className="mt-2 p-4 bg-brand-light rounded-[10px] border border-brand-muted/15 flex flex-col gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Kirim Pesan Test ke Nomor WA</label>
+                        <p className="text-xs text-brand-muted">Pastikan OneSender sudah disimpan terlebih dulu. Pesan: "Halo! Ini pesan test dari Beyond Qurban ✅"</p>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <input
+                          type="tel"
+                          value={testWaTo}
+                          onChange={e => setTestWaTo(e.target.value)}
+                          className="inp flex-1"
+                          placeholder="08123456789 atau 628123456789"
+                          style={{ minWidth: 200 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleTestWa}
+                          disabled={testWaSending || !testWaTo.trim()}
+                          className="flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold text-sm px-4 py-2 rounded-[8px] disabled:opacity-60"
+                        >
+                          <FontAwesomeIcon icon={faPaperPlane} /> {testWaSending ? 'Mengirim...' : 'Kirim Test'}
+                        </button>
+                      </div>
+                      {testWaResult && (
+                        <div className={`text-xs px-3 py-2 rounded-[6px] font-medium ${testWaResult.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                          {testWaResult.ok ? '✅ ' : '❌ '}{testWaResult.msg}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Pesan Pertama */}
             <div className="setting-card">
-              <div className="flex flex-col md:flex-row gap-8">
-                <div className="md:w-[220px] shrink-0">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <div>
                   <h2 className="font-bold text-brand-dark text-base mb-1">Pesan Pertama</h2>
                   <p className="text-brand-muted text-sm leading-relaxed">Template pesan yang dikirim otomatis saat pesanan baru masuk.</p>
-                  <div className="mt-3 p-3 bg-brand-accent-light/60 rounded-[8px] border border-brand-accent/20">
-                    <p className="text-xs text-brand-text-dark/70 font-medium mb-1">Variabel tersedia:</p>
-                    <div className="flex flex-col gap-1 text-xs font-mono text-brand-surface">
-                      <span>{'{{nama}}'}</span>
-                      <span>{'{{nomor_pesanan}}'}</span>
-                      <span>{'{{produk}}'}</span>
-                      <span>{'{{total}}'}</span>
-                      <span>{'{{tanggal_kirim}}'}</span>
-                    </div>
-                  </div>
                 </div>
-                <div className="flex-1 flex flex-col gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Pesan</label>
-                    <textarea
-                      value={settings.msg_first ?? `Halo Kak {{nama}}, 👋\n\nTerima kasih telah memesan kurban di *Beyond Qurban* 🐑\n\nBerikut detail pesanan Anda:\n📋 No. Pesanan: *{{nomor_pesanan}}*\n🐑 Produk: {{produk}}\n💰 Total: *{{total}}*\n🚚 Jadwal Kirim: {{tanggal_kirim}}\n\nSegera selesaikan pembayaran Anda ya, Kak!\n\n_Beyond Qurban — Amanah & Berkualitas_`}
-                      onChange={e => set('msg_first', e.target.value)}
-                      className="inp"
-                      rows={10}
-                      style={{ height: 'auto' }}
-                    />
-                  </div>
-                  {/* WA Preview */}
-                  <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
-                    <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
-                    </div>
-                    <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
-                      <p className="text-xs text-brand-text-dark whitespace-pre-line">
-                        {(settings.msg_first ?? '').replace('{{nama}}', 'Ahmad').replace('{{nomor_pesanan}}', 'BQ-2025-001').replace('{{produk}}', 'Domba Garut').replace('{{total}}', 'Rp 3.500.000').replace('{{tanggal_kirim}}', '14 Juni 2025')}
-                      </p>
-                      <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 flex-wrap">
-                    <button
-                      onClick={() => handleSave(['msg_first'])}
-                      disabled={isPending}
-                      className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
-                    >
-                      <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
-                    </button>
-                    <button className="flex items-center gap-2 text-brand-surface font-bold text-sm px-5 py-2.5 rounded-[8px] border-2 border-brand-surface hover:bg-brand-surface hover:text-white transition-colors">
-                      <FontAwesomeIcon icon={faEye} /> Preview
-                    </button>
-                  </div>
+                <div className="flex bg-brand-light border border-brand-muted/20 rounded-[8px] p-1 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setFirstTab('product')}
+                    className={`px-3 py-1.5 rounded-[6px] transition-colors ${firstTab === 'product' ? 'bg-white text-brand-surface shadow-sm' : 'text-brand-muted hover:text-brand-dark'}`}
+                  >
+                    Produk Katalog
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFirstTab('donation')}
+                    className={`px-3 py-1.5 rounded-[6px] transition-colors ${firstTab === 'donation' ? 'bg-white text-brand-surface shadow-sm' : 'text-brand-muted hover:text-brand-dark'}`}
+                  >
+                    Donasi Penyaluran
+                  </button>
                 </div>
               </div>
+
+              {firstTab === 'product' ? (
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="md:w-[220px] shrink-0">
+                    <div className="p-3 bg-brand-accent-light/60 rounded-[8px] border border-brand-accent/20">
+                      <p className="text-xs text-brand-text-dark/70 font-medium mb-1">Variabel tersedia:</p>
+                      <div className="flex flex-col gap-1 text-xs font-mono text-brand-surface">
+                        <span>{'{{nama}}'}</span>
+                        <span>{'{{nomor_pesanan}}'}</span>
+                        <span>{'{{produk}}'}</span>
+                        <span>{'{{total}}'}</span>
+                        <span>{'{{tanggal_kirim}}'}</span>
+                        <span>{'{{metode_bayar}}'}</span>
+                        <span>{'{{rekening}}'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Pesan — Produk Katalog</label>
+                      <textarea
+                        value={settings.msg_first ?? DEFAULT_FIRST_PRODUCT}
+                        onChange={e => set('msg_first', e.target.value)}
+                        className="inp"
+                        rows={10}
+                        style={{ height: 'auto' }}
+                      />
+                    </div>
+                    <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
+                      <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
+                      </div>
+                      <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
+                        <p className="text-xs text-brand-text-dark whitespace-pre-line">
+                          {(settings.msg_first ?? DEFAULT_FIRST_PRODUCT)
+                            .replace(/\{\{nama\}\}/g, 'Ahmad')
+                            .replace(/\{\{nomor_pesanan\}\}/g, 'BQ-2025-001')
+                            .replace(/\{\{produk\}\}/g, 'Domba Garut')
+                            .replace(/\{\{total\}\}/g, 'Rp 3.500.000')
+                            .replace(/\{\{tanggal_kirim\}\}/g, '14 Juni 2025')
+                            .replace(/\{\{metode_bayar\}\}/g, 'QRIS BSI')
+                            .replace(/\{\{rekening\}\}/g, 'BSI 8210049787 A/N Qurban Movement')}
+                        </p>
+                        <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      <button
+                        onClick={() => handleSave(['msg_first'])}
+                        disabled={isPending}
+                        className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                      >
+                        <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="md:w-[220px] shrink-0">
+                    <div className="p-3 bg-brand-accent-light/60 rounded-[8px] border border-brand-accent/20">
+                      <p className="text-xs text-brand-text-dark/70 font-medium mb-1">Variabel tersedia:</p>
+                      <div className="flex flex-col gap-1 text-xs font-mono text-brand-surface">
+                        <span>{'{{nama}}'}</span>
+                        <span>{'{{nomor_pesanan}}'}</span>
+                        <span>{'{{campaign}}'}</span>
+                        <span>{'{{hewan}}'}</span>
+                        <span>{'{{atas_nama}}'}</span>
+                        <span>{'{{total}}'}</span>
+                        <span>{'{{metode_bayar}}'}</span>
+                        <span>{'{{rekening}}'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Pesan — Donasi Penyaluran</label>
+                      <textarea
+                        value={settings.wa_template_donation_first ?? DEFAULT_FIRST_DONATION}
+                        onChange={e => set('wa_template_donation_first', e.target.value)}
+                        className="inp"
+                        rows={10}
+                        style={{ height: 'auto' }}
+                      />
+                    </div>
+                    <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
+                      <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
+                      </div>
+                      <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
+                        <p className="text-xs text-brand-text-dark whitespace-pre-line">
+                          {(settings.wa_template_donation_first ?? DEFAULT_FIRST_DONATION)
+                            .replace(/\{\{nama\}\}/g, 'Ahmad')
+                            .replace(/\{\{nomor_pesanan\}\}/g, 'BQ-DON-2025-001')
+                            .replace(/\{\{campaign\}\}/g, 'Qurban Pedalaman Indonesia')
+                            .replace(/\{\{hewan\}\}/g, 'Kambing')
+                            .replace(/\{\{atas_nama\}\}/g, 'Keluarga Ahmad')
+                            .replace(/\{\{total\}\}/g, 'Rp 2.500.000')
+                            .replace(/\{\{metode_bayar\}\}/g, 'QRIS BSI')
+                            .replace(/\{\{rekening\}\}/g, 'BSI 8210049787 A/N Qurban Movement')}
+                        </p>
+                        <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      <button
+                        onClick={() => handleSave(['wa_template_donation_first'])}
+                        disabled={isPending}
+                        className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                      >
+                        <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pesan Follow Up */}
             <div className="setting-card">
-              <div className="flex flex-col md:flex-row gap-8">
-                <div className="md:w-[220px] shrink-0">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <div>
                   <h2 className="font-bold text-brand-dark text-base mb-1">Pesan Follow Up</h2>
-                  <p className="text-brand-muted text-sm leading-relaxed">Template pesan follow up untuk mengingatkan pelanggan yang belum membayar.</p>
-                  <div className="mt-3 flex flex-col gap-2">
-                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Kirim otomatis setelah</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={settings.followup_hours ?? '6'}
-                        onChange={e => set('followup_hours', e.target.value)}
-                        className="inp"
-                        style={{ width: 72 }}
-                        min={1} max={48}
-                      />
-                      <span className="text-sm text-brand-muted">jam</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <label className="toggle">
-                        <input
-                          type="checkbox"
-                          checked={settings.followup_enabled !== 'false'}
-                          onChange={e => set('followup_enabled', e.target.checked ? 'true' : 'false')}
-                        />
-                        <span className="toggle-slider" />
-                      </label>
-                      <span className="text-xs text-brand-dark font-medium">Aktifkan auto follow up</span>
+                  <p className="text-brand-muted text-sm leading-relaxed">Template pesan follow up untuk pelanggan yang belum membayar.</p>
+                </div>
+                <div className="flex bg-brand-light border border-brand-muted/20 rounded-[8px] p-1 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setFollowupTab('product')}
+                    className={`px-3 py-1.5 rounded-[6px] transition-colors ${followupTab === 'product' ? 'bg-white text-brand-surface shadow-sm' : 'text-brand-muted hover:text-brand-dark'}`}
+                  >
+                    Produk Katalog
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFollowupTab('donation')}
+                    className={`px-3 py-1.5 rounded-[6px] transition-colors ${followupTab === 'donation' ? 'bg-white text-brand-surface shadow-sm' : 'text-brand-muted hover:text-brand-dark'}`}
+                  >
+                    Donasi Penyaluran
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0 flex flex-col gap-3">
+                  {/* Auto follow-up settings — shared antara produk & donasi */}
+                  {(() => {
+                    // Read total minutes — fallback ke followup_hours legacy, default 6 jam (360 menit)
+                    const totalMin = settings.followup_minutes !== undefined
+                      ? (parseInt(settings.followup_minutes) || 0)
+                      : (parseInt(settings.followup_hours ?? '6') * 60)
+                    const safeTotal = Math.max(0, Math.min(48 * 60, totalMin))
+                    const fhours = Math.floor(safeTotal / 60)
+                    const fmins = safeTotal % 60
+                    const updateTotal = (h: number, m: number) => {
+                      const total = Math.max(0, Math.min(48 * 60, h * 60 + m))
+                      set('followup_minutes', String(total))
+                    }
+                    return (
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Kirim otomatis setelah</label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input
+                            type="number"
+                            value={fhours}
+                            onChange={e => updateTotal(parseInt(e.target.value) || 0, fmins)}
+                            className="inp"
+                            style={{ width: 72 }}
+                            min={0} max={48}
+                          />
+                          <span className="text-sm text-brand-muted">jam</span>
+                          <select
+                            value={fmins}
+                            onChange={e => updateTotal(fhours, parseInt(e.target.value) || 0)}
+                            className="inp"
+                            style={{ width: 80 }}
+                          >
+                            <option value={0}>0</option>
+                            <option value={15}>15</option>
+                            <option value={30}>30</option>
+                            <option value={45}>45</option>
+                          </select>
+                          <span className="text-sm text-brand-muted">menit</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <label className="toggle">
+                            <input
+                              type="checkbox"
+                              checked={settings.followup_enabled !== 'false'}
+                              onChange={e => set('followup_enabled', e.target.checked ? 'true' : 'false')}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                          <span className="text-xs text-brand-dark font-medium">Aktifkan auto follow up</span>
+                        </div>
+                        <p className="text-[10px] text-brand-muted mt-1">Minimum 30 menit. Berlaku untuk produk &amp; donasi penyaluran.</p>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Variable hint per tab */}
+                  <div className="p-3 bg-brand-accent-light/60 rounded-[8px] border border-brand-accent/20">
+                    <p className="text-xs text-brand-text-dark/70 font-medium mb-1">Variabel tersedia:</p>
+                    <div className="flex flex-col gap-1 text-xs font-mono text-brand-surface">
+                      {followupTab === 'product' ? (
+                        <>
+                          <span>{'{{nama}}'}</span>
+                          <span>{'{{nomor_pesanan}}'}</span>
+                          <span>{'{{produk}}'}</span>
+                          <span>{'{{total}}'}</span>
+                          <span>{'{{tanggal_kirim}}'}</span>
+                          <span>{'{{metode_bayar}}'}</span>
+                          <span>{'{{rekening}}'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{'{{nama}}'}</span>
+                          <span>{'{{nomor_pesanan}}'}</span>
+                          <span>{'{{campaign}}'}</span>
+                          <span>{'{{hewan}}'}</span>
+                          <span>{'{{atas_nama}}'}</span>
+                          <span>{'{{total}}'}</span>
+                          <span>{'{{metode_bayar}}'}</span>
+                          <span>{'{{rekening}}'}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
+
                 <div className="flex-1 flex flex-col gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Follow Up</label>
-                    <textarea
-                      value={settings.msg_followup ?? `Halo Kak {{nama}}, 😊\n\nKami ingin mengingatkan bahwa pesanan kurban Anda *{{nomor_pesanan}}* masih menunggu pembayaran.\n\n⏰ *Batas waktu: 24 jam sejak pemesanan*\n\nNominal tepat: *{{total}}*\n\nTerima kasih, semoga dimudahkan 🤲\n\n_Beyond Qurban_`}
-                      onChange={e => set('msg_followup', e.target.value)}
-                      className="inp"
-                      rows={10}
-                      style={{ height: 'auto' }}
-                    />
-                  </div>
-                  {/* WA Preview */}
-                  <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
-                    <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
-                    </div>
-                    <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
-                      <p className="text-xs text-brand-text-dark whitespace-pre-line">
-                        {(settings.msg_followup ?? '').replace('{{nama}}', 'Ahmad').replace('{{nomor_pesanan}}', 'BQ-2025-001').replace('{{total}}', 'Rp 3.500.000')}
-                      </p>
-                      <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 flex-wrap">
-                    <button
-                      onClick={() => handleSave(['msg_followup', 'followup_hours', 'followup_enabled'])}
-                      disabled={isPending}
-                      className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
-                    >
-                      <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
-                    </button>
-                  </div>
+                  {followupTab === 'product' ? (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Follow Up — Produk Katalog</label>
+                        <textarea
+                          value={settings.msg_followup ?? DEFAULT_FOLLOWUP_PRODUCT}
+                          onChange={e => set('msg_followup', e.target.value)}
+                          className="inp"
+                          rows={10}
+                          style={{ height: 'auto' }}
+                        />
+                      </div>
+                      <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
+                        <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                          <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
+                        </div>
+                        <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
+                          <p className="text-xs text-brand-text-dark whitespace-pre-line">
+                            {(settings.msg_followup ?? DEFAULT_FOLLOWUP_PRODUCT)
+                              .replace(/\{\{nama\}\}/g, 'Ahmad')
+                              .replace(/\{\{nomor_pesanan\}\}/g, 'BQ-2025-001')
+                              .replace(/\{\{total\}\}/g, 'Rp 3.500.000')}
+                          </p>
+                          <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 flex-wrap">
+                        <button
+                          onClick={() => handleSave(['msg_followup', 'followup_minutes', 'followup_enabled'])}
+                          disabled={isPending}
+                          className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                        >
+                          <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Template Follow Up — Donasi Penyaluran</label>
+                        <textarea
+                          value={settings.wa_template_donation_followup ?? DEFAULT_FOLLOWUP_DONATION}
+                          onChange={e => set('wa_template_donation_followup', e.target.value)}
+                          className="inp"
+                          rows={10}
+                          style={{ height: 'auto' }}
+                        />
+                      </div>
+                      <div className="bg-[#ece5dd] rounded-[12px] p-4 border border-brand-muted/10">
+                        <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                          <FontAwesomeIcon icon={faWhatsappPrev} className="text-[#25D366]" /> Preview WhatsApp
+                        </div>
+                        <div className="bg-white rounded-[10px] p-3 shadow-sm max-w-xs ml-auto">
+                          <p className="text-xs text-brand-text-dark whitespace-pre-line">
+                            {(settings.wa_template_donation_followup ?? DEFAULT_FOLLOWUP_DONATION)
+                              .replace(/\{\{nama\}\}/g, 'Ahmad')
+                              .replace(/\{\{nomor_pesanan\}\}/g, 'BQ-DON-2025-001')
+                              .replace(/\{\{campaign\}\}/g, 'Qurban Pedalaman Indonesia')
+                              .replace(/\{\{total\}\}/g, 'Rp 2.500.000')}
+                          </p>
+                          <div className="text-[10px] text-brand-muted text-right mt-1">✓✓</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 flex-wrap">
+                        <button
+                          onClick={() => handleSave(['wa_template_donation_followup', 'followup_minutes', 'followup_enabled'])}
+                          disabled={isPending}
+                          className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                        >
+                          <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Template
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -545,6 +892,27 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
               <h2 className="font-bold text-brand-dark text-base mb-1">Channel Pembayaran</h2>
               <p className="text-sm text-brand-muted mb-5">Pilih channel pembayaran yang aktif ditampilkan ke pelanggan.</p>
 
+              {/* Master Tripay toggle */}
+              <div className="flex items-center justify-between gap-4 px-4 py-3 mb-5 bg-brand-light border border-brand-muted/20 rounded-[10px]">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-[8px] bg-white border border-brand-muted/15 flex items-center justify-center text-brand-surface shrink-0">
+                    <FontAwesomeIcon icon={faCreditCard} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-brand-dark">Tripay Payment Gateway</div>
+                    <div className="text-xs text-brand-muted">Aktifkan untuk menampilkan semua channel Tripay (VA, QRIS, E-wallet) di checkout</div>
+                  </div>
+                </div>
+                <label className="toggle shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={settings.tripay_enabled !== 'false'}
+                    onChange={e => set('tripay_enabled', e.target.checked ? 'true' : 'false')}
+                  />
+                  <span className="toggle-slider" />
+                </label>
+              </div>
+
               {/* Virtual Account */}
               <div className="mb-5">
                 <div className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-3">Virtual Account</div>
@@ -636,6 +1004,7 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => handleSave([
+                    'tripay_enabled',
                     'ch_bcava','ch_mandiriva','ch_bniva','ch_briva','ch_permatava','ch_muamalatva','ch_cimbva','ch_bsiva',
                     'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
                     'ch_alfamart','ch_indomaret','ch_alfamidi',
@@ -646,6 +1015,91 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                   <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Perubahan
                 </button>
               </div>
+            </div>
+
+            {/* QRIS Manual Config */}
+            <div className="setting-card">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-bold text-brand-dark text-base flex items-center gap-2">
+                  <FontAwesomeIcon icon={faQrcode} className="text-brand-surface text-sm" /> QRIS Manual
+                </h2>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.manual_qris_enabled === 'true'} onChange={e => set('manual_qris_enabled', e.target.checked ? 'true' : 'false')} />
+                  <span className="toggle-slider" />
+                </label>
+              </div>
+              <p className="text-sm text-brand-muted mb-5">Upload QR code statis dari bank Anda. Pelanggan akan scan QR ini lalu upload bukti transfer.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5">
+                {/* QR Code uploader */}
+                <div>
+                  <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-2">Gambar QR Code</label>
+                  {settings.manual_qris_image ? (
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={settings.manual_qris_image} alt="QRIS" className="w-full aspect-square object-contain rounded-[10px] border border-brand-muted/20 bg-white" />
+                      <button
+                        type="button"
+                        onClick={() => set('manual_qris_image', '')}
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded font-bold"
+                      >
+                        ✕ Hapus
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-[10px] cursor-pointer transition-colors ${qrisUploading ? 'border-brand-surface/30 bg-brand-surface/5' : 'border-brand-muted/30 hover:border-brand-accent/50 hover:bg-brand-accent/[0.02]'}`}>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={qrisUploading}
+                        onChange={handleQrisUpload}
+                      />
+                      <FontAwesomeIcon icon={faImage} className="text-2xl text-brand-muted/50 mb-2" />
+                      <div className="text-xs font-medium text-brand-dark text-center px-2">
+                        {qrisUploading ? 'Mengupload...' : 'Klik untuk upload QR'}
+                      </div>
+                      <div className="text-[10px] text-brand-muted mt-0.5">JPG, PNG · Max 3MB</div>
+                    </label>
+                  )}
+                  {qrisUploadError && <p className="text-xs text-red-600 mt-1">{qrisUploadError}</p>}
+                </div>
+
+                {/* Fields */}
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Nama Bank QRIS *</label>
+                    <input
+                      type="text"
+                      value={settings.manual_qris_bank ?? ''}
+                      onChange={e => set('manual_qris_bank', e.target.value)}
+                      className="inp"
+                      placeholder="Contoh: BCA, Mandiri, BSI"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-brand-dark uppercase tracking-wider block mb-1">Keterangan (opsional)</label>
+                    <input
+                      type="text"
+                      value={settings.manual_qris_label ?? ''}
+                      onChange={e => set('manual_qris_label', e.target.value)}
+                      className="inp"
+                      placeholder='Contoh: "Scan QRIS BCA"'
+                    />
+                  </div>
+                  <p className="text-xs text-brand-muted">
+                    💡 Saat aktif, opsi pembayaran <strong>QRIS — {settings.manual_qris_bank || '[nama bank]'}</strong> akan tampil di checkout sebelum Transfer Manual.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleSave(['manual_qris_enabled', 'manual_qris_image', 'manual_qris_bank', 'manual_qris_label'])}
+                disabled={isPending}
+                className="mt-5 flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60"
+              >
+                <FontAwesomeIcon icon={faFloppyDisk} /> Simpan QRIS Manual
+              </button>
             </div>
 
             {/* Manual Transfer Config — multi-bank */}
@@ -678,6 +1132,25 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
         {/* === UMUM === */}
         {activeSection === 'umum' && (
           <div className="flex flex-col gap-6">
+            {/* Template Sertifikat */}
+            <div className="setting-card">
+              <Link
+                href="/admin/pengaturan/sertifikat"
+                className="flex items-center justify-between gap-4 group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-[10px] bg-cta-gradient flex items-center justify-center shrink-0">
+                    <FontAwesomeIcon icon={faCertificate} className="text-brand-text-dark text-lg" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-brand-dark text-base">Template Sertifikat</h2>
+                    <p className="text-sm text-brand-muted mt-0.5">Upload blanko & atur posisi teks dengan drag &amp; drop</p>
+                  </div>
+                </div>
+                <FontAwesomeIcon icon={faExternalLinkAlt} className="text-brand-muted group-hover:text-brand-dark transition-colors" />
+              </Link>
+            </div>
+
             {/* Info Toko */}
             <div className="setting-card flex flex-col gap-5">
               <h2 className="font-bold text-brand-dark text-base">Pengaturan Umum</h2>
@@ -699,6 +1172,30 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
               </div>
               <button onClick={() => handleSave(['store_name', 'store_whatsapp', 'store_email', 'store_address'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
                 <FontAwesomeIcon icon={faFloppyDisk} /> Simpan
+              </button>
+            </div>
+
+            {/* Tim Lapangan */}
+            <div className="setting-card flex flex-col gap-4">
+              <div>
+                <h2 className="font-bold text-brand-dark text-base flex items-center gap-2">
+                  <FontAwesomeIcon icon={faTruck} className="text-brand-surface text-sm" /> Tim Lapangan
+                </h2>
+                <p className="text-sm text-brand-muted mt-1">Kode akses untuk halaman tim lapangan di <span className="font-mono">/lapangan</span>. Bagikan kode ini ke kurir/tim pengiriman.</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Kode Akses Tim Lapangan</label>
+                <input
+                  type="text"
+                  value={settings.lapangan_access_code ?? ''}
+                  onChange={e => set('lapangan_access_code', e.target.value)}
+                  className="inp font-mono"
+                  placeholder="QURBAN2026"
+                />
+                <p className="text-[11px] text-brand-muted">Kode default: QURBAN2026 — ganti agar lebih aman.</p>
+              </div>
+              <button onClick={() => handleSave(['lapangan_access_code'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60">
+                <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Kode
               </button>
             </div>
 
@@ -755,16 +1252,21 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                           />
                         </td>
                         <td className="px-3 py-2.5">
-                          <div className="relative" style={{ width: 140 }}>
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted text-xs">Rp</span>
+                          <div
+                            className="flex items-stretch border border-brand-muted/20 rounded-[8px] bg-brand-light overflow-hidden focus-within:border-brand-accent focus-within:shadow-[0_0_0_1px_#C8962A]"
+                            style={{ width: 140, height: 36 }}
+                          >
+                            <span className="px-2.5 text-xs font-bold text-brand-muted bg-white border-r border-brand-muted/20 flex items-center shrink-0">
+                              Rp
+                            </span>
                             <input
                               type="number"
                               value={zone.cost}
                               min={0}
                               step={10000}
                               onChange={e => setShippingZones(prev => prev.map((z, idx) => idx === i ? { ...z, cost: parseInt(e.target.value) || 0 } : z))}
-                              className="inp pl-8 text-sm"
-                              style={{ height: 36 }}
+                              className="flex-1 min-w-0 px-2 text-sm bg-transparent focus:outline-none"
+                              placeholder="0"
                             />
                           </div>
                           {zone.cost === 0 && <span className="text-[10px] text-emerald-600 font-bold">GRATIS</span>}
@@ -825,6 +1327,13 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                   </div>
                 </div>
                 <div className="flex-1 flex flex-col gap-4">
+                  <div className="flex items-center justify-between p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                    <div className="font-semibold text-sm text-brand-dark">Aktifkan Meta Pixel</div>
+                    <label className="toggle">
+                      <input type="checkbox" checked={settings.fb_pixel_enabled !== 'false'} onChange={e => set('fb_pixel_enabled', e.target.checked ? 'true' : 'false')} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
                   {/* Pixel #1 */}
                   <div className="flex flex-col gap-3 p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
                     <div className="flex items-center justify-between">
@@ -871,12 +1380,24 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                   <div>
                     <label className="text-xs font-bold text-brand-dark uppercase tracking-wider block mb-3">Event Mapping per Halaman</label>
                     <div className="flex flex-col gap-2">
-                      {[
-                        { label: 'Page Campaign', sub: 'qurban-penyaluran.html', key: 'fb_event_campaign', options: ['ViewContent', 'PageView', 'Lead', 'Purchase', 'Donate', 'AddToCart', 'InitiateCheckout'], default: 'ViewContent' },
-                        { label: 'Page Form / Checkout', sub: 'Checkout _ Form P.html', key: 'fb_event_checkout', options: ['AddToCart', 'InitiateCheckout', 'Lead', 'ViewContent'], default: 'AddToCart' },
-                        { label: 'Page Invoice / Pembayaran', sub: 'Detail pembayaran', key: 'fb_event_payment', options: ['Purchase', 'InitiateCheckout', 'Lead'], default: 'Purchase' },
-                        { label: 'Page Sukses Pembayaran', sub: 'Setelah konfirmasi bayar', key: 'fb_event_success', options: ['Donate', 'Purchase', 'Lead', 'CompleteRegistration'], default: 'Donate' },
-                      ].map(({ label, sub, key, options, default: def }) => (
+                      {(() => {
+                        const EVENT_OPTIONS = [
+                          'ViewContent',
+                          'PageView',
+                          'InitiateCheckout',
+                          'AddToCart',
+                          'AddPaymentInfo',
+                          'Purchase',
+                          'Lead',
+                          'Donate',
+                        ]
+                        return [
+                          { label: 'Page Campaign', sub: 'qurban-penyaluran.html', key: 'fb_event_campaign', options: EVENT_OPTIONS, default: 'ViewContent' },
+                          { label: 'Page Form / Checkout', sub: 'Checkout _ Form P.html', key: 'fb_event_checkout', options: EVENT_OPTIONS, default: 'InitiateCheckout' },
+                          { label: 'Page Invoice / Pembayaran', sub: 'Detail pembayaran', key: 'fb_event_payment', options: EVENT_OPTIONS, default: 'AddToCart' },
+                          { label: 'Page Sukses Pembayaran', sub: 'Setelah konfirmasi bayar', key: 'fb_event_success', options: EVENT_OPTIONS, default: 'Purchase' },
+                        ]
+                      })().map(({ label, sub, key, options, default: def }) => (
                         <div key={key} className="grid grid-cols-2 items-center gap-3 p-3 bg-brand-light rounded-[8px] border border-brand-muted/10">
                           <div>
                             <div className="text-sm font-semibold text-brand-dark">{label}</div>
@@ -896,7 +1417,7 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                   </div>
 
                   <button
-                    onClick={() => handleSave(['fb_pixel_id', 'fb_secret_token', 'fb_test_code', 'fb_event_campaign', 'fb_event_checkout', 'fb_event_payment', 'fb_event_success'])}
+                    onClick={() => handleSave(['fb_pixel_enabled', 'fb_pixel_id', 'fb_secret_token', 'fb_test_code', 'fb_event_campaign', 'fb_event_checkout', 'fb_event_payment', 'fb_event_success'])}
                     disabled={isPending}
                     className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium w-fit disabled:opacity-60"
                   >
@@ -1152,32 +1673,47 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                   </thead>
                   <tbody>
                     {[
-                      { label: 'Sapi', discKey: 'disc_sapi', defaultDisc: '5' },
-                      { label: 'Kambing', discKey: 'disc_kambing', defaultDisc: '0' },
-                      { label: 'Domba', discKey: 'disc_domba', defaultDisc: '10' },
-                      { label: 'Unta', discKey: 'disc_unta', defaultDisc: '0' },
-                    ].map(({ label, discKey, defaultDisc }) => (
-                      <tr key={label} className="border-b border-brand-muted/8">
-                        <td className="px-4 py-3 font-medium text-sm text-brand-dark">{label}</td>
-                        <td className="px-4 py-3">
-                          <input type="number" value={settings[discKey] ?? defaultDisc} onChange={e => set(discKey, e.target.value)} className="inp text-sm" style={{ height: 36, width: 80 }} min={0} max={100} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input type="date" value={settings[`${discKey}_until`] ?? ''} onChange={e => set(`${discKey}_until`, e.target.value)} className="inp text-sm" style={{ height: 36, width: 160 }} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <label className="toggle" style={{ width: 40, height: 22 }}>
-                            <input type="checkbox" defaultChecked={parseInt(settings[discKey] ?? defaultDisc) > 0} />
-                            <span className="toggle-slider" />
-                          </label>
-                        </td>
-                      </tr>
-                    ))}
+                      { label: 'Sapi', cat: 'sapi', defaultDisc: '5' },
+                      { label: 'Kambing', cat: 'kambing', defaultDisc: '0' },
+                      { label: 'Domba', cat: 'domba', defaultDisc: '10' },
+                      { label: 'Unta', cat: 'unta', defaultDisc: '0' },
+                    ].map(({ label, cat, defaultDisc }) => {
+                      const discKey = `disc_${cat}`
+                      const untilKey = `disc_${cat}_until`
+                      const activeKey = `discount_category_${cat}_active`
+                      const active = (settings[activeKey] ?? 'true') === 'true'
+                      return (
+                        <tr key={label} className="border-b border-brand-muted/8">
+                          <td className="px-4 py-3 font-medium text-sm text-brand-dark">{label}</td>
+                          <td className="px-4 py-3">
+                            <input type="number" value={settings[discKey] ?? defaultDisc} onChange={e => set(discKey, e.target.value)} className="inp text-sm" style={{ height: 36, width: 80 }} min={0} max={100} disabled={!active} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input type="date" value={settings[untilKey] ?? ''} onChange={e => set(untilKey, e.target.value)} className="inp text-sm" style={{ height: 36, width: 160 }} disabled={!active} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <label className="toggle">
+                              <input
+                                type="checkbox"
+                                checked={active}
+                                onChange={e => set(activeKey, e.target.checked ? 'true' : 'false')}
+                                aria-label={`Aktifkan diskon ${label}`}
+                              />
+                              <span className="toggle-slider" />
+                            </label>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
               <div className="flex gap-3 mt-5">
-                <button onClick={() => handleSave(['disc_sapi','disc_kambing','disc_domba','disc_unta'])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
+                <button onClick={() => handleSave([
+                  'disc_sapi','disc_kambing','disc_domba','disc_unta',
+                  'disc_sapi_until','disc_kambing_until','disc_domba_until','disc_unta_until',
+                  'discount_category_sapi_active','discount_category_kambing_active','discount_category_domba_active','discount_category_unta_active',
+                ])} disabled={isPending} className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60">
                   <FontAwesomeIcon icon={faFloppyDisk} /> Simpan Perubahan
                 </button>
               </div>
@@ -1241,6 +1777,92 @@ export default function PengaturanClient({ initialSettings }: { initialSettings:
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === KEAMANAN AKUN === */}
+        {activeSection === 'keamanan' && (
+          <div className="flex flex-col gap-6">
+            <div className="setting-card">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="md:w-[220px] shrink-0">
+                  <h2 className="font-bold text-brand-dark text-base mb-1 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faLock} className="text-brand-surface text-sm" /> Ganti Password
+                  </h2>
+                  <p className="text-brand-muted text-sm leading-relaxed">Untuk keamanan, ganti password admin secara berkala. Minimal 8 karakter.</p>
+                </div>
+                <div className="flex-1">
+                  <form onSubmit={handleChangePassword} autoComplete="off" className="flex flex-col gap-4 max-w-md">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Email Saat Ini</label>
+                      <input
+                        type="email"
+                        value={adminEmail}
+                        readOnly
+                        className="inp opacity-70 cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Password Lama</label>
+                      <input
+                        type="password"
+                        value={pwOld}
+                        onChange={e => setPwOld(e.target.value)}
+                        autoComplete="current-password"
+                        required
+                        className="inp"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Password Baru</label>
+                      <input
+                        type="password"
+                        value={pwNew}
+                        onChange={e => setPwNew(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                        className="inp"
+                        placeholder="Min. 8 karakter"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-bold text-brand-dark uppercase tracking-wider">Konfirmasi Password Baru</label>
+                      <input
+                        type="password"
+                        value={pwConfirm}
+                        onChange={e => setPwConfirm(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                        className={`inp ${pwConfirm.length > 0 && pwConfirm !== pwNew ? 'border-red-400' : ''}`}
+                        placeholder="Ulangi password baru"
+                      />
+                      {pwConfirm.length > 0 && pwConfirm !== pwNew && (
+                        <p className="text-xs text-red-600 font-medium">Konfirmasi tidak cocok dengan password baru.</p>
+                      )}
+                    </div>
+
+                    {pwResult && (
+                      <div className={`text-xs px-3 py-2 rounded-[6px] font-medium ${pwResult.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                        {pwResult.ok ? '✅ ' : '❌ '}{pwResult.msg}
+                      </div>
+                    )}
+
+                    <div>
+                      <button
+                        type="submit"
+                        disabled={pwSubmitting || !pwOld || !pwNew || !pwConfirm}
+                        className="flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold text-sm px-5 py-2.5 rounded-[8px] shadow-premium disabled:opacity-60"
+                      >
+                        <FontAwesomeIcon icon={faFloppyDisk} /> {pwSubmitting ? 'Menyimpan...' : 'Simpan Password Baru'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </div>

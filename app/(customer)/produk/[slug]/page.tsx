@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import ProductGallery from './ProductGallery'
+import TrackPageMount from '@/components/tracking/TrackPageMount'
 
 async function getProduct(slug: string) {
   return prisma.product.findUnique({ where: { slug } })
@@ -38,11 +39,19 @@ export default async function ProdukDetailPage({ params }: { params: { slug: str
 
   if (!product) notFound()
 
+  const outOfStock = product.stock <= 0
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Halo, saya tertarik dengan ${product.name}`)}`
   const checkoutLink = `/checkout?slug=${product.slug}`
 
   return (
     <main className="pt-28 pb-32 max-w-[1440px] mx-auto px-6 md:px-12">
+      <TrackPageMount pageKey="page_campaign" props={{
+        content_ids: [product.slug],
+        content_name: product.name,
+        content_category: product.category ?? undefined,
+        value: product.price,
+        currency: 'IDR',
+      }} />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-brand-muted mb-8">
         <Link href="/" className="hover:text-brand-surface">Beranda</Link>
@@ -60,6 +69,7 @@ export default async function ProdukDetailPage({ params }: { params: { slug: str
           mainImage={product.imageUrl}
           name={product.name}
           badge={product.badge}
+          videoUrls={product.videoUrls ?? []}
         />
 
         {/* Right: Info */}
@@ -119,9 +129,19 @@ export default async function ProdukDetailPage({ params }: { params: { slug: str
 
           {/* Desktop CTA buttons — hidden on mobile (sticky bar handles mobile) */}
           <div className="hidden lg:flex flex-col sm:flex-row gap-4">
-            <Link href={checkoutLink} className="flex-1 bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 px-8 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity flex items-center justify-center gap-3">
-              <FontAwesomeIcon icon={faCartShopping} /> Pesan Sekarang
-            </Link>
+            {outOfStock ? (
+              <button
+                type="button"
+                disabled
+                className="flex-1 bg-brand-muted/30 text-brand-muted font-bold text-lg py-4 px-8 rounded-[12px] flex items-center justify-center gap-3 cursor-not-allowed"
+              >
+                <FontAwesomeIcon icon={faCartShopping} /> Stok Habis
+              </button>
+            ) : (
+              <Link href={checkoutLink} className="flex-1 bg-cta-gradient text-brand-text-dark font-bold text-lg py-4 px-8 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity flex items-center justify-center gap-3">
+                <FontAwesomeIcon icon={faCartShopping} /> Pesan Sekarang
+              </Link>
+            )}
             <a href={waLink} target="_blank" rel="noopener noreferrer" className="sm:w-auto w-full bg-white border-2 border-[#25D366] text-[#25D366] font-bold text-lg py-4 px-8 rounded-[12px] hover:bg-[#25D366]/5 transition-colors flex items-center justify-center gap-3">
               <FontAwesomeIcon icon={faWhatsapp} className="text-xl" /> Tanya Admin
             </a>
@@ -173,9 +193,15 @@ export default async function ProdukDetailPage({ params }: { params: { slug: str
             <FontAwesomeIcon icon={faWhatsapp} className="text-lg" />
             <span className="hidden sm:inline">Tanya Admin</span>
           </a>
-          <Link href={checkoutLink} className="bg-cta-gradient text-brand-text-dark font-bold rounded-[12px] py-2.5 px-4 sm:px-6 flex items-center gap-2 text-sm sm:text-base hover:scale-[1.03] transition-transform whitespace-nowrap">
-            <FontAwesomeIcon icon={faCartShopping} /> Pesan Sekarang
-          </Link>
+          {outOfStock ? (
+            <button type="button" disabled className="bg-brand-muted/30 text-brand-muted font-bold rounded-[12px] py-2.5 px-4 sm:px-6 flex items-center gap-2 text-sm sm:text-base whitespace-nowrap cursor-not-allowed">
+              <FontAwesomeIcon icon={faCartShopping} /> Stok Habis
+            </button>
+          ) : (
+            <Link href={checkoutLink} className="bg-cta-gradient text-brand-text-dark font-bold rounded-[12px] py-2.5 px-4 sm:px-6 flex items-center gap-2 text-sm sm:text-base hover:scale-[1.03] transition-transform whitespace-nowrap">
+              <FontAwesomeIcon icon={faCartShopping} /> Pesan Sekarang
+            </Link>
+          )}
         </div>
       </div>
     </main>

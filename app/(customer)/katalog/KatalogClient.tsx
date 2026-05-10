@@ -11,7 +11,7 @@ import { applyGlobalDiscount } from '@/lib/discount'
 import ProductCard from '@/components/ui/ProductCard'
 import type { Product } from '@prisma/client'
 
-type FilterType = 'all' | 'domba' | 'kambing' | 'sapi' | 'tersedia' | 'premium'
+type FilterType = 'all' | 'domba' | 'kambing' | 'sapi' | 'unta' | 'tersedia' | 'premium'
 type SortType = 'default' | 'price-asc' | 'price-desc' | 'weight-desc'
 type ViewType = 'grid' | 'list'
 
@@ -26,9 +26,17 @@ const FILTER_LABELS: { key: FilterType; label: string }[] = [
   { key: 'domba', label: 'Domba' },
   { key: 'kambing', label: 'Kambing' },
   { key: 'sapi', label: 'Sapi' },
+  { key: 'unta', label: 'Unta' },
   { key: 'tersedia', label: 'Tersedia' },
   { key: 'premium', label: 'Premium' },
 ]
+
+function matchCategory(p: Product, key: 'sapi' | 'kambing' | 'domba' | 'unta'): boolean {
+  const cat = (p.category ?? '').toUpperCase()
+  if (cat) return cat === key.toUpperCase()
+  // Fallback for products without a category set: match by name keyword.
+  return p.name.toLowerCase().includes(key)
+}
 
 export default function KatalogClient({ products, settingsMap = {}, discountPct = 0 }: Props) {
   const [search, setSearch] = useState('')
@@ -39,10 +47,11 @@ export default function KatalogClient({ products, settingsMap = {}, discountPct 
   const filtered = useMemo(() => {
     const matchFilter = (p: Product) => {
       if (filter === 'all') return true
-      if (filter === 'domba') return p.name.toLowerCase().includes('domba')
-      if (filter === 'kambing') return p.name.toLowerCase().includes('kambing')
-      if (filter === 'sapi') return p.name.toLowerCase().includes('sapi')
-      if (filter === 'tersedia') return p.status === 'ACTIVE'
+      if (filter === 'domba') return matchCategory(p, 'domba')
+      if (filter === 'kambing') return matchCategory(p, 'kambing')
+      if (filter === 'sapi') return matchCategory(p, 'sapi')
+      if (filter === 'unta') return matchCategory(p, 'unta')
+      if (filter === 'tersedia') return p.status === 'ACTIVE' && p.stock > 0
       if (filter === 'premium') return p.badge === 'Premium' || p.badge === 'Best Seller'
       return true
     }

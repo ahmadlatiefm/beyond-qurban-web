@@ -1,14 +1,39 @@
 'use client'
 import { useState, useTransition, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faClock, faCircleCheck, faCircleXmark, faEye, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faClock, faCircleCheck, faCircleXmark, faEye, faXmark, faTrash, faSort, faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { confirmPayment, rejectPayment } from '@/lib/actions/orders'
+import { confirmPayment, rejectPayment, deleteOrders } from '@/lib/actions/orders'
+import { useAppToast } from '@/components/ui/AppToast'
+import AdminNotifBell from '@/components/admin/AdminNotifBell'
+import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
 import type { Order } from '@prisma/client'
 
 type TabType = 'semua' | 'menunggu' | 'dikonfirmasi' | 'ditolak'
+type SortKey = 'date_desc' | 'date_asc' | 'total_desc' | 'total_asc' | 'status'
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'date_desc',  label: 'Tanggal: Terbaru' },
+  { key: 'date_asc',   label: 'Tanggal: Terlama' },
+  { key: 'total_desc', label: 'Nominal: Terbesar' },
+  { key: 'total_asc',  label: 'Nominal: Terkecil' },
+  { key: 'status',     label: 'Status: Menunggu dulu' },
+]
+
+const STATUS_ORDER: Record<string, number> = { UNPAID: 0, PAID: 1, EXPIRED: 2 }
 
 interface Stats { total: number; pending: number; confirmed: number; rejected: number }
+
+function waNumber(raw: string | null | undefined): string {
+  const digits = (raw ?? '').replace(/\D/g, '').replace(/^62/, '').replace(/^0/, '')
+  return `62${digits}`
+}
+
+function renderTemplate(tpl: string, vars: Record<string, string>): string {
+  return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? `{{${k}}}`)
+}
 
 const STATUS_BADGE: Record<string, string> = {
   UNPAID:   'px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-[20px] border border-amber-200',
@@ -17,32 +42,44 @@ const STATUS_BADGE: Record<string, string> = {
 }
 const STATUS_LABEL: Record<string, string> = { UNPAID: 'Menunggu', PAID: 'Dikonfirmasi', EXPIRED: 'Ditolak' }
 
-export default function KonfirmasiClient({ initialOrders, stats }: { initialOrders: Order[]; stats: Stats }) {
+export default function KonfirmasiClient({ initialOrders, stats, followupTemplate }: { initialOrders: Order[]; stats: Stats; followupTemplate: string }) {
+  const router = useRouter()
   const [orders, setOrders] = useState(initialOrders)
   const [activeTab, setActiveTab] = useState<TabType>('semua')
+  const [sortBy, setSortBy] = useState<SortKey>('date_desc')
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [previewModal, setPreviewModal] = useState<{ open: boolean; order: Order | null }>({ open: false, order: null })
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; order: Order | null }>({ open: false, order: null })
   const [isPending, startTransition] = useTransition()
-  const [toast, setToast] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' })
+  const appToast = useAppToast()
 
-  function showToast(msg: string) {
-    setToast({ show: true, msg })
-    setTimeout(() => setToast({ show: false, msg: '' }), 2800)
-  }
-
-  const filtered = useMemo(() => orders.filter(o => {
-    if (activeTab === 'semua') return true
-    if (activeTab === 'menunggu') return o.paymentStatus === 'UNPAID'
-    if (activeTab === 'dikonfirmasi') return o.paymentStatus === 'PAID'
-    if (activeTab === 'ditolak') return o.paymentStatus === 'EXPIRED'
-    return true
-  }), [orders, activeTab])
+  const filtered = useMemo(() => {
+    const list = orders.filter(o => {
+      if (activeTab === 'semua') return true
+      if (activeTab === 'menunggu') return o.paymentStatus === 'UNPAID'
+      if (activeTab === 'dikonfirmasi') return o.paymentStatus === 'PAID'
+      if (activeTab === 'ditolak') return o.paymentStatus === 'EXPIRED'
+      return true
+    })
+    const sorted = [...list]
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'date_desc':  return +new Date(b.createdAt) - +new Date(a.createdAt)
+        case 'date_asc':   return +new Date(a.createdAt) - +new Date(b.createdAt)
+        case 'total_desc': return b.totalAmount - a.totalAmount
+        case 'total_asc':  return a.totalAmount - b.totalAmount
+        case 'status':     return (STATUS_ORDER[a.paymentStatus] ?? 99) - (STATUS_ORDER[b.paymentStatus] ?? 99)
+      }
+    })
+    return sorted
+  }, [orders, activeTab, sortBy])
 
   function handleConfirm(id: string) {
     startTransition(async () => {
       await confirmPayment(id)
       setOrders(prev => prev.map(o => o.id === id ? { ...o, paymentStatus: 'PAID' as any, status: 'CONFIRMED' as any } : o))
       setPreviewModal({ open: false, order: null })
-      showToast('Pembayaran berhasil dikonfirmasi!')
+      appToast.success('Pembayaran berhasil dikonfirmasi!')
     })
   }
 
@@ -51,7 +88,25 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
       await rejectPayment(id)
       setOrders(prev => prev.map(o => o.id === id ? { ...o, paymentStatus: 'EXPIRED' as any, status: 'CANCELLED' as any } : o))
       setPreviewModal({ open: false, order: null })
-      showToast('Pembayaran ditolak.')
+      appToast.warning('Pembayaran ditolak.')
+    })
+  }
+
+  function handleDelete() {
+    const order = deleteModal.order
+    if (!order) return
+    startTransition(async () => {
+      try {
+        const res = await deleteOrders([order.id])
+        setOrders(prev => prev.filter(o => o.id !== order.id))
+        setDeleteModal({ open: false, order: null })
+        appToast.success(`Pesanan ${order.orderNumber} berhasil dihapus.${res?.count && res.count > 1 ? ` (${res.count})` : ''}`)
+        router.refresh()
+      } catch (err) {
+        console.error('[KonfirmasiClient.handleDelete]', err)
+        setDeleteModal({ open: false, order: null })
+        appToast.error('Terjadi kesalahan. Silakan coba lagi.')
+      }
     })
   }
 
@@ -76,7 +131,8 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
               <FontAwesomeIcon icon={faClock} className="text-xs" /> {liveStats.pending} Menunggu
             </div>
           )}
-          <div className="w-9 h-9 rounded-full bg-brand-surface border border-brand-accent/30 flex items-center justify-center text-xs text-brand-accent font-bold">A</div>
+          <AdminNotifBell />
+          <AdminProfileMenu />
         </div>
       </header>
 
@@ -122,6 +178,37 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
 
         {/* Table */}
         <div className="bg-white rounded-[12px] shadow-premium border border-brand-muted/10 overflow-hidden">
+          <div className="p-4 border-b border-brand-muted/10 flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-sm font-medium text-brand-dark">
+              <span className="font-bold">{filtered.length}</span> pesanan
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  onClick={() => setSortMenuOpen(o => !o)}
+                  onBlur={() => setTimeout(() => setSortMenuOpen(false), 150)}
+                  className="text-xs text-brand-dark border border-brand-muted/20 px-3 py-1.5 rounded-[8px] flex items-center gap-1.5 hover:bg-brand-light"
+                >
+                  <FontAwesomeIcon icon={faSort} className="text-brand-muted" /> Urutkan
+                  <FontAwesomeIcon icon={faChevronDown} className="text-[9px] text-brand-muted" />
+                </button>
+                {sortMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-brand-muted/20 rounded-[8px] shadow-premium z-20 min-w-[200px] overflow-hidden">
+                    {SORT_OPTIONS.map(opt => (
+                      <button
+                        key={opt.key}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { setSortBy(opt.key); setSortMenuOpen(false) }}
+                        className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-brand-light ${sortBy === opt.key ? 'text-brand-surface bg-brand-surface/5' : 'text-brand-dark'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -156,20 +243,40 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
                       <div className="flex gap-2">
                         {order.paymentStatus === 'UNPAID' && (
                           <>
-                            <button onClick={() => handleConfirm(order.id)} disabled={isPending} className="w-8 h-8 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[7px] flex items-center justify-center text-xs disabled:opacity-60">
+                            <button onClick={() => handleConfirm(order.id)} disabled={isPending} className="w-8 h-8 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[7px] flex items-center justify-center text-xs disabled:opacity-60" title="Konfirmasi">
                               <FontAwesomeIcon icon={faCircleCheck} />
                             </button>
-                            <button onClick={() => handleReject(order.id)} disabled={isPending} className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-[7px] flex items-center justify-center text-xs disabled:opacity-60">
+                            <button onClick={() => handleReject(order.id)} disabled={isPending} className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-[7px] flex items-center justify-center text-xs disabled:opacity-60" title="Tolak">
                               <FontAwesomeIcon icon={faCircleXmark} />
                             </button>
                           </>
                         )}
+                        <a
+                          href={`https://wa.me/${waNumber(order.whatsapp)}?text=${encodeURIComponent(renderTemplate(followupTemplate, {
+                            nama: order.customerName,
+                            nomor_pesanan: order.orderNumber,
+                            total: formatCurrency(order.totalAmount),
+                          }))}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="w-8 h-8 bg-[#25D366] hover:bg-[#1ebe57] text-white rounded-[7px] flex items-center justify-center text-xs transition-colors"
+                          title="Follow Up Manual via WhatsApp"
+                        >
+                          <FontAwesomeIcon icon={faWhatsapp} />
+                        </a>
+                        <button
+                          onClick={() => setDeleteModal({ open: true, order })}
+                          disabled={isPending}
+                          className="w-8 h-8 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 rounded-[7px] flex items-center justify-center text-xs border border-red-100 transition-colors disabled:opacity-60"
+                          title="Hapus pesanan"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} className="px-5 py-10 text-center text-sm text-brand-muted">Tidak ada data</td></tr>
+                  <tr><td colSpan={8} className="px-5 py-10 text-center text-sm text-brand-muted">Tidak ada data</td></tr>
                 )}
               </tbody>
             </table>
@@ -290,11 +397,26 @@ export default function KonfirmasiClient({ initialOrders, stats }: { initialOrde
         </div>
       )}
 
-      {/* Toast */}
-      <div className={`fixed bottom-6 right-6 z-[100] bg-brand-dark text-brand-accent-light px-5 py-3 rounded-[10px] text-sm font-medium flex items-center gap-2 shadow-lg transition-all duration-300 ${toast.show ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}`}>
-        <FontAwesomeIcon icon={faCircleCheck} className="text-brand-accent" />
-        {toast.msg}
-      </div>
+      {/* Delete confirm modal */}
+      {deleteModal.open && deleteModal.order && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setDeleteModal({ open: false, order: null }) }}>
+          <div className="bg-white rounded-[16px] w-full max-w-sm p-8 text-center shadow-xl">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <FontAwesomeIcon icon={faTrash} className="text-red-500 text-xl" />
+            </div>
+            <h3 className="font-serif text-lg font-bold text-brand-dark mb-2">Hapus Pesanan?</h3>
+            <p className="text-brand-muted text-sm mb-6">
+              Pesanan <strong className="text-brand-dark font-mono">{deleteModal.order.orderNumber}</strong> akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteModal({ open: false, order: null })} className="flex-1 py-2.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light">Batal</button>
+              <button onClick={handleDelete} disabled={isPending} className="flex-1 py-2.5 bg-red-500 text-white font-bold text-sm rounded-[8px] hover:bg-red-600 transition-colors disabled:opacity-60">
+                {isPending ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

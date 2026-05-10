@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faBuildingColumns,
@@ -13,6 +13,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { faCopy, faClock } from '@fortawesome/free-regular-svg-icons'
 import { formatCurrency } from '@/lib/utils'
+import { trackEvent } from '@/lib/tracking-client'
+import { usePixelEventMapping } from '@/hooks/usePixelEventMapping'
 
 interface Props {
   orderNumber: string
@@ -25,6 +27,7 @@ interface Props {
   payCode: string | null
   tripayPaymentUrl?: string | null
   manualBank?: { bankName: string; accountNumber: string; accountOwner: string; banks?: {id:string;code:string;name:string;number:string;owner:string}[] } | null
+  manualQris?: { image: string; bank: string; label: string } | null
 }
 
 function getFlag(loc: string) {
@@ -44,17 +47,42 @@ export default function PembayaranPenyaluranClient({
   payCode,
   tripayPaymentUrl,
   manualBank,
+  manualQris,
 }: Props) {
+  const router = useRouter()
   const [copied, setCopied] = useState<string | null>(null)
   const [countdown, setCountdown] = useState('23:59:00')
   const [proofUrl, setProofUrl] = useState('')
   const [uploadingProof, setUploadingProof] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   // Scroll ke atas saat halaman pembayaran pertama kali muncul
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
+
+  // Pixel event for /penyaluran/pembayaran is admin-configurable via
+  // /admin/pengaturan (key: fb_event_payment). Default: AddToCart.
+  // eventId = orderNumber so the event dedups with any matching server-side
+  // CAPI event sent in createDonation.
+  const pixelMap = usePixelEventMapping()
+  const paymentInfoFiredRef = useRef(false)
+  useEffect(() => {
+    if (paymentInfoFiredRef.current) return
+    if (!pixelMap.page_pembayaran) return
+    paymentInfoFiredRef.current = true
+    trackEvent(pixelMap.page_pembayaran, {
+      eventId: orderNumber,
+      value: totalAmount,
+      currency: 'IDR',
+      content_type: 'product',
+      content_ids: [orderNumber],
+      content_name: campaignTitle,
+      num_items: quantity,
+    })
+  }, [pixelMap.page_pembayaran, orderNumber, totalAmount, campaignTitle, quantity])
 
   useEffect(() => {
     const deadline = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000
@@ -87,6 +115,7 @@ export default function PembayaranPenyaluranClient({
     if (!file) return
     setUploadingProof(true)
     setUploadError('')
+    setSubmitError('')
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/proof-upload', { method: 'POST', body: fd })
@@ -94,13 +123,34 @@ export default function PembayaranPenyaluranClient({
     setUploadingProof(false)
     if (data.url) {
       setProofUrl(data.url)
-      await fetch('/api/orders/save-proof', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber, proofUrl: data.url })
-      })
     } else {
       setUploadError(data.error ?? 'Upload gagal. Coba lagi.')
+    }
+  }
+
+  async function handleConfirm() {
+    if (!proofUrl) {
+      setSubmitError('Mohon upload bukti transfer terlebih dahulu.')
+      return
+    }
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const res = await fetch('/api/orders/save-proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber, proofUrl }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setSubmitError(data.error ?? 'Gagal menyimpan bukti. Coba lagi.')
+        setSubmitting(false)
+        return
+      }
+      router.push(`/terimakasih?order=${orderNumber}&type=penyaluran&dest=${campaignLocation.toLowerCase()}`)
+    } catch {
+      setSubmitError('Tidak dapat terhubung ke server. Coba lagi.')
+      setSubmitting(false)
     }
   }
 
@@ -251,59 +301,124 @@ export default function PembayaranPenyaluranClient({
             </div>
           )}
 
-          {/* Manual Transfer */}
-          {paymentMethod === 'MANUAL_TRANSFER' && manualBank && (
+          {/* Manual Transfer — show only the selected bank account */}
+          {paymentMethod === 'MANUAL_QRIS' && manualQris && (
             <div className="flex flex-col gap-4">
-              <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-white rounded-[8px] border border-brand-muted/20 flex items-center justify-center font-bold text-xs text-brand-surface">
-                    {manualBank.bankName.split(' ')[0].substring(0,3).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-brand-dark">{manualBank.bankName}</div>
-                    <div className="text-xs text-brand-muted">Transfer Manual</div>
+              <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10 flex flex-col items-center text-center">
+                <div className="flex items-center gap-3 mb-3 self-start">
+                  <div className="w-12 h-12 rounded-[10px] flex items-center justify-center font-bold text-xs text-white shadow-sm" style={{ background: '#00AED6' }}>QRIS</div>
+                  <div className="text-left">
+                    <div className="font-bold text-sm text-brand-dark">QRIS{manualQris.bank ? ` — ${manualQris.bank}` : ''}</div>
+                    <div className="text-xs text-brand-muted">{manualQris.label || 'Scan QR untuk pembayaran'}</div>
                   </div>
                 </div>
-                <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Rekening</label>
-                <div className="inp-copy">
-                  <input type="text" value={manualBank.accountNumber} readOnly />
-                  <button
-                    onClick={() => copyText(manualBank.accountNumber, 'manual')}
-                    className={`copy-btn${copied === 'manual' ? ' copied' : ''}`}
-                  >
-                    <FontAwesomeIcon icon={faCopy} /> {copied === 'manual' ? 'Disalin!' : 'Salin'}
-                  </button>
-                </div>
-                <div className="text-xs text-brand-muted mt-2">
-                  A/N: <strong className="text-brand-dark">{manualBank.accountOwner}</strong>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={manualQris.image}
+                  alt={`QRIS ${manualQris.bank}`}
+                  className="w-full max-w-[280px] aspect-square object-contain rounded-[10px] border border-brand-muted/15 bg-white"
+                />
+                <div className="bg-white rounded-[10px] border border-brand-muted/15 px-4 py-2 mt-3 w-full max-w-[280px]">
+                  <div className="text-xs text-brand-muted">Total yang harus dibayar</div>
+                  <div className="font-serif text-xl font-bold text-brand-accent">{formatCurrency(totalAmount)}</div>
                 </div>
               </div>
               <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
                 <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
-                  <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
+                  <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Bayar
                 </h3>
                 <ol className="flex flex-col gap-2.5">
                   {[
-                    'Buka aplikasi mobile banking atau ATM Anda',
-                    `Transfer ke rekening ${manualBank.bankName} nomor ${manualBank.accountNumber}`,
-                    `Pastikan nama penerima ${manualBank.accountOwner} dan nominal sesuai`,
-                    'Upload bukti transfer di bawah setelah selesai',
+                    'Buka aplikasi e-wallet (GoPay, OVO, DANA, ShopeePay) atau m-banking yang mendukung QRIS',
+                    'Pilih menu Scan QRIS lalu arahkan kamera ke gambar QR di atas',
+                    `Pastikan nominal sesuai total: ${formatCurrency(totalAmount)}`,
+                    'Selesaikan pembayaran lalu upload bukti transfer di bawah',
                   ].map((step, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
-                      <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                      <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i+1}</span>
                       {step}
                     </li>
                   ))}
                 </ol>
               </div>
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[8px] p-3">
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
                 <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
-                <p className="text-xs text-brand-muted">
-                  Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan atau dikurangi.
-                </p>
+                <p className="text-xs text-brand-muted">Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan.</p>
               </div>
             </div>
           )}
+
+          {paymentMethod.startsWith('MANUAL_') && paymentMethod !== 'MANUAL_QRIS' && manualBank && (() => {
+            const banks = manualBank.banks && manualBank.banks.length > 0
+              ? manualBank.banks
+              : [{ id:'0', code:'', name: manualBank.bankName, number: manualBank.accountNumber, owner: manualBank.accountOwner }]
+            const idx = parseInt(paymentMethod.slice('MANUAL_'.length))
+            const b = banks[isNaN(idx) ? 0 : idx] ?? banks[0]
+            if (!b) return null
+            const BANK_COLORS: Record<string, {bg:string;text:string}> = {
+              BCA:   {bg:'#003D86',text:'#fff'}, MNR:  {bg:'#003087',text:'#FFD700'},
+              BNI:   {bg:'#FF6600',text:'#fff'}, BRI:  {bg:'#00529B',text:'#fff'},
+              BSI:   {bg:'#007A52',text:'#fff'}, CIMB: {bg:'#BE1E2D',text:'#fff'},
+              DNN:   {bg:'#E40522',text:'#fff'}, PMT:  {bg:'#00A651',text:'#fff'},
+              BTN:   {bg:'#009A44',text:'#fff'}, MEGA: {bg:'#1B1464',text:'#fff'},
+              OCBC:  {bg:'#EE3124',text:'#fff'}, PANIN:{bg:'#003399',text:'#fff'},
+            }
+            const colors = BANK_COLORS[b.code] ?? {bg:'#1B5E3B', text:'#fff'}
+            const abbr = b.code || b.name.split(' ').pop()?.substring(0,4).toUpperCase() || 'BANK'
+            return (
+              <div className="flex flex-col gap-4">
+                <div className="p-4 bg-brand-light rounded-[10px] border border-brand-muted/10">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-9 rounded-[8px] flex items-center justify-center font-bold text-[11px] shrink-0 shadow-sm leading-none"
+                      style={{ background: colors.bg, color: colors.text }}>
+                      {abbr}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-brand-dark">{b.name}</div>
+                      <div className="text-xs text-brand-muted">Transfer Manual</div>
+                    </div>
+                  </div>
+                  <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block mb-2">Nomor Rekening</label>
+                  <div className="inp-copy">
+                    <input type="text" value={b.number} readOnly />
+                    <button
+                      onClick={() => copyText(b.number, 'manual')}
+                      className={`copy-btn${copied === 'manual' ? ' copied' : ''}`}
+                    >
+                      <FontAwesomeIcon icon={faCopy} /> {copied === 'manual' ? 'Disalin!' : 'Salin'}
+                    </button>
+                  </div>
+                  <div className="text-xs text-brand-muted mt-2">
+                    A/N: <strong className="text-brand-dark">{b.owner}</strong>
+                  </div>
+                </div>
+                <div className="bg-brand-light rounded-[10px] border border-brand-muted/10 p-4">
+                  <h3 className="font-bold text-sm text-brand-dark mb-3 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faListOl} className="text-brand-surface text-xs" /> Cara Transfer
+                  </h3>
+                  <ol className="flex flex-col gap-2.5">
+                    {[
+                      'Buka aplikasi mobile banking atau ATM Anda',
+                      `Transfer ke rekening ${b.name} nomor ${b.number}`,
+                      `Pastikan nama penerima ${b.owner} dan nominal sesuai`,
+                      'Upload bukti transfer di bawah setelah selesai',
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-brand-muted">
+                        <span className="w-6 h-6 rounded-full bg-brand-surface/15 text-brand-surface font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-[8px] p-3">
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="text-amber-500 text-sm mt-0.5 shrink-0" />
+                  <p className="text-xs text-brand-muted">
+                    Transfer <strong className="text-brand-dark">tepat sesuai nominal</strong>. Jangan dibulatkan atau dikurangi.
+                  </p>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Payment Proof Upload */}
@@ -364,12 +479,15 @@ export default function PembayaranPenyaluranClient({
             <span className="font-bold text-brand-dark">Total Donasi</span>
             <span className="font-serif text-xl font-bold text-brand-accent">{formatCurrency(totalAmount)}</span>
           </div>
-          <Link
-            href={`/terimakasih?order=${orderNumber}&type=penyaluran&dest=${campaignLocation.toLowerCase()}`}
-            className="w-full bg-cta-gradient text-brand-text-dark font-bold py-3.5 rounded-[12px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm"
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={submitting}
+            className="w-full bg-cta-gradient text-brand-text-dark font-bold py-3.5 rounded-[12px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Sudah Transfer <FontAwesomeIcon icon={faArrowRight} />
-          </Link>
+            {submitting ? 'Memproses...' : <>Sudah Transfer <FontAwesomeIcon icon={faArrowRight} /></>}
+          </button>
+          {submitError && <p className="text-xs text-red-600 text-center">{submitError}</p>}
           <div className="flex items-center justify-center gap-1.5 text-brand-muted/50 text-xs">
             <FontAwesomeIcon icon={faShieldHalved} className="text-brand-accent/50" /> Transaksi aman &amp; amanah
           </div>
@@ -384,12 +502,14 @@ export default function PembayaranPenyaluranClient({
           <span className="text-xs text-brand-muted leading-none">Total Donasi</span>
           <span className="font-serif text-xl font-bold text-brand-accent leading-tight">{formatCurrency(totalAmount)}</span>
         </div>
-        <Link
-          href={`/terimakasih?order=${orderNumber}&type=penyaluran&dest=${campaignLocation.toLowerCase()}`}
-          className="ml-auto flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold px-6 py-3 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity text-sm whitespace-nowrap shrink-0"
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={submitting}
+          className="ml-auto flex items-center gap-2 bg-cta-gradient text-brand-text-dark font-bold px-6 py-3 rounded-[12px] shadow-premium hover:opacity-90 transition-opacity text-sm whitespace-nowrap shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Sudah Bayar <FontAwesomeIcon icon={faArrowRight} />
-        </Link>
+          {submitting ? 'Memproses...' : <>Sudah Bayar <FontAwesomeIcon icon={faArrowRight} /></>}
+        </button>
       </div>
     </div>
     <div className="h-20" />

@@ -5,48 +5,78 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRight,
   faMagnifyingGlass,
-  faShieldHalved,
-  faTruckFast,
-  faCamera,
-  faWeightScale,
-  faCow,
-  faFileInvoiceDollar,
-  faHouseCircleCheck,
   faStar as faStarSolid,
+  faMapMarkerAlt,
 } from '@fortawesome/free-solid-svg-icons'
 import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons'
 import { prisma } from '@/lib/prisma'
 import { formatCurrency } from '@/lib/utils'
 import { applyGlobalDiscount } from '@/lib/discount'
 import ProductCard from '@/components/ui/ProductCard'
+import { getContentIcon } from '@/lib/contentIcons'
+import HomeFeaturedTabs from './HomeFeaturedTabs'
 
-async function getFeaturedProducts() {
+async function getFeaturedProducts(take: number) {
+  if (take <= 0) return []
   return prisma.product.findMany({
     where: { status: 'ACTIVE' },
     orderBy: [{ badge: 'asc' }, { createdAt: 'desc' }],
-    take: 4,
+    take,
   })
 }
 
+async function getFeaturedCampaigns(take: number) {
+  if (take <= 0) return []
+  return prisma.campaign.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: 'desc' },
+    take,
+    include: {
+      donations: {
+        where: { paymentStatus: 'PAID' },
+        select: { quantity: true, totalAmount: true },
+      },
+    },
+  })
+}
+
+function locationLabel(loc: string) {
+  if (loc === 'AFRICA') return 'Afrika Sub-Sahara'
+  if (loc === 'PALESTINE') return 'Palestina'
+  return 'Pedalaman Indonesia'
+}
+function locationFlag(loc: string) {
+  if (loc === 'AFRICA') return '🌍'
+  if (loc === 'PALESTINE') return '🇵🇸'
+  return '🇮🇩'
+}
+
 export default async function HomePage() {
-  const [products, settingsRows] = await Promise.all([
-    getFeaturedProducts(),
-    prisma.settings.findMany({
-      where: { key: { in: [
-        'diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end',
-        'home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc',
-        'home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
-        'home_stats',
-        'home_features_title','home_features_desc','home_features',
-        'home_featured_title','home_featured_desc',
-        'home_steps_title','home_steps_desc','home_steps',
-        'home_testimonials_title','home_testimonials_desc','home_testimonials',
-        'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href',
-      ] } }
-    }),
-  ])
+  const settingsRows = await prisma.settings.findMany({
+    where: { key: { in: [
+      'diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end',
+      'home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc',
+      'home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
+      'home_stats',
+      'home_features_title','home_features_desc','home_features',
+      'home_featured_title','home_featured_desc',
+      'home_featured_product_label','home_featured_product_count',
+      'home_featured_campaign_label','home_featured_campaign_count',
+      'home_steps_title','home_steps_desc','home_steps',
+      'home_testimonials_title','home_testimonials_desc','home_testimonials',
+      'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href',
+    ] } }
+  })
   const settingsMap: Record<string, string> = {}
   settingsRows.forEach(s => { settingsMap[s.key] = s.value })
+  const productCount = Math.max(0, parseInt(settingsMap.home_featured_product_count ?? '4') || 0)
+  const campaignCount = Math.max(0, parseInt(settingsMap.home_featured_campaign_count ?? '4') || 0)
+  const [products, campaigns] = await Promise.all([
+    getFeaturedProducts(productCount),
+    getFeaturedCampaigns(campaignCount),
+  ])
+  const productLabel = settingsMap.home_featured_product_label || 'Produk Katalog'
+  const campaignLabel = settingsMap.home_featured_campaign_label || 'Campaign Penyaluran'
   const discountPct = settingsMap.diskon_global_enabled === 'true' && settingsMap.diskon_type !== 'nominal'
     ? parseInt(settingsMap.diskon_value ?? '0') : 0
 
@@ -68,18 +98,20 @@ export default async function HomePage() {
   try { const p = JSON.parse(settingsMap.home_stats ?? ''); if (Array.isArray(p) && p.length > 0) homeStats = p } catch {}
 
   // Features (Mengapa Memilih Kami)
-  let homeFeatures: { title: string; desc: string }[] = [
-    { title: 'Hewan Terseleksi', desc: 'Setiap hewan kurban telah memenuhi standar kesehatan dan memenuhi syarat syariat Islam.' },
-    { title: 'Pengiriman Amanah', desc: 'Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.' },
-    { title: 'Laporan Foto & Video', desc: 'Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.' },
+  type Feature = { title: string; desc: string; icon?: string }
+  let homeFeatures: Feature[] = [
+    { title: 'Hewan Terseleksi', desc: 'Setiap hewan kurban telah memenuhi standar kesehatan dan memenuhi syarat syariat Islam.', icon: 'shield' },
+    { title: 'Pengiriman Amanah', desc: 'Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.', icon: 'truck' },
+    { title: 'Laporan Foto & Video', desc: 'Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.', icon: 'camera' },
   ]
   try { const p = JSON.parse(settingsMap.home_features ?? ''); if (Array.isArray(p) && p.length > 0) homeFeatures = p } catch {}
 
   // Steps (Cara Pesan)
-  let homeSteps: { title: string; desc: string }[] = [
-    { title: 'Pilih Hewan', desc: 'Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.' },
-    { title: 'Isi Data & Transfer', desc: 'Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.' },
-    { title: 'Terima & Selesai', desc: 'Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.' },
+  type Step = { title: string; desc: string; icon?: string }
+  let homeSteps: Step[] = [
+    { title: 'Pilih Hewan', desc: 'Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.', icon: 'cow' },
+    { title: 'Isi Data & Transfer', desc: 'Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.', icon: 'invoice' },
+    { title: 'Terima & Selesai', desc: 'Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.', icon: 'house' },
   ]
   try { const p = JSON.parse(settingsMap.home_steps ?? ''); if (Array.isArray(p) && p.length > 0) homeSteps = p } catch {}
 
@@ -169,25 +201,25 @@ export default async function HomePage() {
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-3">{featuresTitle}</h2>
             <p className="text-brand-muted">{featuresDesc}</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[faShieldHalved, faTruckFast, faCamera].map((icon, i) => (
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${homeFeatures.length >= 3 ? 'lg:grid-cols-3' : ''} gap-6`}>
+            {homeFeatures.map((f, i) => (
               <div key={i} className="bg-brand-surface rounded-[12px] p-8 text-center border border-brand-surface-light/20 relative overflow-hidden group shadow-premium">
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-surface-light/20 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="w-16 h-16 mx-auto bg-brand-dark rounded-full flex items-center justify-center mb-5 border border-brand-accent/30 relative z-10">
-                  <FontAwesomeIcon icon={icon} className="text-brand-accent text-2xl" />
+                  <FontAwesomeIcon icon={getContentIcon(f.icon, 'shield')} className="text-brand-accent text-2xl" />
                 </div>
-                <h3 className="font-serif text-xl font-bold text-brand-light mb-3 relative z-10">{homeFeatures[i]?.title}</h3>
-                <p className="text-brand-accent-light/85 text-sm leading-relaxed relative z-10">{homeFeatures[i]?.desc}</p>
+                <h3 className="font-serif text-xl font-bold text-brand-light mb-3 relative z-10">{f.title}</h3>
+                <p className="text-brand-accent-light/85 text-sm leading-relaxed relative z-10">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Section 4: Produk Unggulan */}
+      {/* Section 4: Produk Unggulan / Campaign tabs */}
       <section className="py-20" style={{ background: 'linear-gradient(180deg,#FAFAF8,#E8F4EE,#F5E6C3)' }}>
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
             <div>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-dark mb-2">{featuredTitle}</h2>
               <p className="text-brand-muted">{featuredDesc}</p>
@@ -199,24 +231,87 @@ export default async function HomePage() {
               Lihat Semua Katalog <FontAwesomeIcon icon={faArrowRight} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {products.map((product) => {
-              const disc = applyGlobalDiscount(product.price, settingsMap)
-              return (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  available
-                  discountPct={disc.discountAmount > 0 ? discountPct : undefined}
-                  discountedPrice={disc.discountAmount > 0 ? disc.finalPrice : undefined}
-                />
-              )
-            })}
-          </div>
+          <HomeFeaturedTabs
+            hasProducts={products.length > 0}
+            hasCampaigns={campaigns.length > 0}
+            produkLabel={productLabel}
+            campaignLabel={campaignLabel}
+            produkSlot={
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {products.map((product) => {
+                  const disc = applyGlobalDiscount(product.price, settingsMap)
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      available
+                      discountPct={disc.discountAmount > 0 ? discountPct : undefined}
+                      discountedPrice={disc.discountAmount > 0 ? disc.finalPrice : undefined}
+                    />
+                  )
+                })}
+              </div>
+            }
+            campaignSlot={
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {campaigns.map((c) => {
+                  const totalQty = c.donations.reduce((s, d) => s + d.quantity, 0)
+                  const pct = c.targetCount > 0 ? Math.min(100, Math.round((totalQty / c.targetCount) * 100)) : 0
+                  let pricePerEkor: number | null = c.price ?? null
+                  if (!pricePerEkor) {
+                    try {
+                      const animals = JSON.parse(c.animals || '[]') as { price: number }[]
+                      if (Array.isArray(animals) && animals.length > 0) {
+                        pricePerEkor = Math.min(...animals.map(a => a.price))
+                      }
+                    } catch {}
+                  }
+                  return (
+                    <div key={c.id} className="bg-white rounded-[14px] border border-brand-muted/10 shadow-premium overflow-hidden flex flex-col">
+                      <div className="relative h-40 bg-brand-dark">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={c.imageUrl} alt={c.title} className="w-full h-full object-cover opacity-90" />
+                        <div className="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full bg-brand-accent text-brand-dark flex items-center gap-1">
+                          {locationFlag(c.location)} {locationLabel(c.location)}
+                        </div>
+                      </div>
+                      <div className="flex-1 p-4 flex flex-col gap-2">
+                        <h3 className="font-serif text-base font-bold text-brand-dark leading-tight line-clamp-2">{c.title}</h3>
+                        <div className="text-[11px] text-brand-muted flex items-center gap-1">
+                          <FontAwesomeIcon icon={faMapMarkerAlt} className="text-[9px]" />
+                          {locationLabel(c.location)}
+                        </div>
+                        <div className="mt-1">
+                          <div className="h-1.5 bg-brand-light rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#1B5E3B,#C8962A)' }} />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-brand-muted mt-1">
+                            <span>{totalQty} / {c.targetCount} ekor</span>
+                            <span>{pct}%</span>
+                          </div>
+                        </div>
+                        {pricePerEkor !== null && (
+                          <div className="text-brand-accent font-bold text-sm mt-1">
+                            {formatCurrency(pricePerEkor)}<span className="text-[10px] font-sans font-normal text-brand-muted"> / ekor</span>
+                          </div>
+                        )}
+                        <Link
+                          href={`/penyaluran/${c.slug}`}
+                          className="mt-auto bg-brand-surface text-white font-bold text-xs py-2 rounded-[10px] text-center hover:bg-brand-dark transition-colors"
+                        >
+                          Lihat Campaign
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            }
+          />
         </div>
       </section>
 
-      {/* Section 5: Cara Pesan */}
+      {/* Section 5: Cara Pesan — horizontal scroll on mobile, grid on desktop */}
       <section className="py-20 bg-brand-dark relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-surface opacity-10 blur-[100px] rounded-full pointer-events-none"></div>
         <div className="max-w-[1100px] mx-auto px-6 md:px-12 relative z-10">
@@ -224,41 +319,33 @@ export default async function HomePage() {
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-brand-light mb-3">{stepsTitle}</h2>
             <p className="text-brand-accent-light/80">{stepsDesc}</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-14 left-[18%] right-[18%] h-0.5 bg-brand-surface-light/30"></div>
-            {/* Step 1 */}
-            <div className="flex flex-col items-center text-center relative z-10">
-              <div className="w-28 h-28 rounded-full bg-brand-surface border-4 border-brand-dark flex items-center justify-center text-brand-accent text-3xl mb-5 shadow-premium">
-                <FontAwesomeIcon icon={faCow} />
+          <div className="md:hidden flex gap-5 overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory">
+            {homeSteps.map((step, i) => (
+              <div key={i} className="snap-center shrink-0 w-[78%] flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-brand-surface border-4 border-brand-dark flex items-center justify-center text-brand-accent text-3xl mb-4 shadow-premium">
+                  <FontAwesomeIcon icon={getContentIcon(step.icon, 'check')} />
+                </div>
+                <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah {i + 1}</div>
+                <h3 className="font-serif text-lg font-bold text-brand-light mb-2">{step.title}</h3>
+                <p className="text-brand-accent-light/75 text-sm">{step.desc}</p>
               </div>
-              <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah 1</div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{homeSteps[0]?.title || 'Pilih Hewan'}</h3>
-              <p className="text-brand-accent-light/75 text-sm">{homeSteps[0]?.desc}</p>
-              <Link href="/katalog" className="mt-4 text-brand-accent text-sm font-bold hover:underline">
-                Buka Katalog →
-              </Link>
-            </div>
-            {/* Step 2 */}
-            <div className="flex flex-col items-center text-center relative z-10">
-              <div className="w-28 h-28 rounded-full bg-brand-surface border-4 border-brand-dark flex items-center justify-center text-brand-accent text-3xl mb-5 shadow-premium">
-                <FontAwesomeIcon icon={faFileInvoiceDollar} />
+            ))}
+          </div>
+          <div
+            className="hidden md:grid gap-8 relative"
+            style={{ gridTemplateColumns: `repeat(${Math.min(homeSteps.length || 3, 4)}, minmax(0, 1fr))` }}
+          >
+            <div className="absolute top-14 left-[18%] right-[18%] h-0.5 bg-brand-surface-light/30"></div>
+            {homeSteps.map((step, i) => (
+              <div key={i} className="flex flex-col items-center text-center relative z-10">
+                <div className="w-28 h-28 rounded-full bg-brand-surface border-4 border-brand-dark flex items-center justify-center text-brand-accent text-3xl mb-5 shadow-premium">
+                  <FontAwesomeIcon icon={getContentIcon(step.icon, 'check')} />
+                </div>
+                <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah {i + 1}</div>
+                <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{step.title}</h3>
+                <p className="text-brand-accent-light/75 text-sm">{step.desc}</p>
               </div>
-              <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah 2</div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{homeSteps[1]?.title || 'Isi Data & Transfer'}</h3>
-              <p className="text-brand-accent-light/75 text-sm">{homeSteps[1]?.desc}</p>
-            </div>
-            {/* Step 3 */}
-            <div className="flex flex-col items-center text-center relative z-10">
-              <div className="w-28 h-28 rounded-full bg-brand-surface border-4 border-brand-dark flex items-center justify-center text-brand-accent text-3xl mb-5 shadow-premium">
-                <FontAwesomeIcon icon={faHouseCircleCheck} />
-              </div>
-              <div className="text-brand-accent font-bold text-xs uppercase tracking-widest mb-2">Langkah 3</div>
-              <h3 className="font-serif text-xl font-bold text-brand-light mb-2">{homeSteps[2]?.title || 'Terima & Selesai'}</h3>
-              <p className="text-brand-accent-light/75 text-sm">{homeSteps[2]?.desc}</p>
-              <Link href="/lacak-pesanan" className="mt-4 text-brand-accent text-sm font-bold hover:underline">
-                Lacak Pesanan →
-              </Link>
-            </div>
+            ))}
           </div>
         </div>
       </section>

@@ -13,14 +13,21 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, available = true, discountPct, discountedPrice }: ProductCardProps) {
   const hasDiscount = !!discountPct && discountPct > 0 && !!discountedPrice
+  const outOfStock = product.stock <= 0
+  const badgeLabel = outOfStock ? 'Habis' : available ? 'Tersedia' : 'Terpesan'
+  const badgeCls = outOfStock
+    ? 'bg-red-500 text-white'
+    : available
+    ? 'bg-brand-surface text-brand-light'
+    : 'bg-brand-muted text-white'
   return (
     <div className={`product-card bg-white rounded-[12px] overflow-hidden border border-brand-muted/10 flex flex-col shadow-premium${!available ? ' opacity-70' : ''}`}>
       {/* Image */}
       <div className="relative h-52 bg-brand-light overflow-hidden">
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
-          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-[20px] ${available ? 'bg-brand-surface text-brand-light' : 'bg-brand-muted text-white'}`}>
-            {available ? 'Tersedia' : 'Terpesan'}
+          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-[20px] ${badgeCls}`}>
+            {badgeLabel}
           </span>
           {product.badge && (
             <span className="bg-brand-accent text-brand-dark text-[10px] font-bold px-2.5 py-1 rounded-[20px]">
@@ -73,7 +80,15 @@ export default function ProductCard({ product, available = true, discountPct, di
             </div>
           </div>
 
-          {available ? (
+          {outOfStock ? (
+            <button
+              type="button"
+              disabled
+              className="w-full text-center text-xs text-brand-muted font-bold bg-brand-light py-2.5 rounded-[10px] cursor-not-allowed"
+            >
+              Stok Habis
+            </button>
+          ) : available ? (
             <Link
               href={`/produk/${product.slug}`}
               className="w-full bg-cta-gradient text-brand-text-dark font-bold text-sm py-2.5 rounded-[10px] flex items-center justify-center gap-2 hover:scale-[1.02] hover:shadow-glow transition-all"

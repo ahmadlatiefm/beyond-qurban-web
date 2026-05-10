@@ -1,6 +1,9 @@
 'use server'
 import { revalidatePath } from 'next/cache'
+import bcrypt from 'bcryptjs'
+import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
+import { authOptions } from '@/lib/auth'
 
 export async function saveSettings(settings: Record<string, string>) {
   for (const [key, value] of Object.entries(settings)) {
@@ -31,4 +34,32 @@ export async function validateVoucherCode(
 
   const discountAmount = Math.round(subtotal * (v.disc / 100))
   return { valid: true, discountAmount, discountPct: v.disc, error: null }
+}
+
+/**
+ * Change the currently signed-in admin's password. Verifies old password
+ * with bcrypt.compare before storing the new bcrypt hash.
+ */
+export async function changePassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions)
+  const email = session?.user?.email
+  if (!email) return { success: false, error: 'Sesi tidak ditemukan — silakan login ulang.' }
+
+  if (!oldPassword || !newPassword) return { success: false, error: 'Password lama dan baru wajib diisi.' }
+  if (newPassword.length < 8) return { success: false, error: 'Password baru minimal 8 karakter.' }
+  if (oldPassword === newPassword) return { success: false, error: 'Password baru harus berbeda dari password lama.' }
+
+  const user = await prisma.adminUser.findUnique({ where: { email } })
+  if (!user) return { success: false, error: 'User tidak ditemukan.' }
+
+  const valid = await bcrypt.compare(oldPassword, user.password)
+  if (!valid) return { success: false, error: 'Password lama salah.' }
+
+  const hash = await bcrypt.hash(newPassword, 10)
+  await prisma.adminUser.update({ where: { email }, data: { password: hash } })
+
+  return { success: true }
 }

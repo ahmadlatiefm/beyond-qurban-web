@@ -3,7 +3,7 @@ import Header from './Header'
 
 export default async function HeaderWrapper() {
   const rows = await prisma.settings.findMany({
-    where: { key: { in: ['store_name', 'nav_items', 'header_cta_text', 'header_cta_href'] } }
+    where: { key: { in: ['store_name', 'nav_items', 'header_cta_text', 'header_cta_href', 'site_logo_url'] } }
   })
   const s: Record<string, string> = {}
   rows.forEach(r => { s[r.key] = r.value })
@@ -20,6 +20,7 @@ export default async function HeaderWrapper() {
       navItems={navItems}
       ctaText={s.header_cta_text}
       ctaHref={s.header_cta_href}
+      logoUrl={s.site_logo_url || undefined}
     />
   )
 }

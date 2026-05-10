@@ -1,10 +1,15 @@
 'use client'
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash, faPlus, faXmark, faFloppyDisk, faCloudArrowUp, faCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { formatCurrency } from '@/lib/utils'
 import { createCampaign, updateCampaign, deleteCampaign } from '@/lib/actions/campaigns'
+import AdminNotifBell from '@/components/admin/AdminNotifBell'
+import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
+import { VideoUrlInput, type VideoUrlInputHandle } from '@/components/admin/VideoUrlInput'
+import BlockEditor from '@/components/admin/BlockEditor'
+import CampaignUpdatesEditor from './CampaignUpdatesEditor'
 import type { Campaign } from '@prisma/client'
 
 function getFlag(l: string) { return l === 'AFRICA' ? '🌍' : l === 'PALESTINE' ? '🇵🇸' : '🇮🇩' }
@@ -14,7 +19,6 @@ function getLocationBadgeCls(l: string) { return l === 'AFRICA' ? 'bg-blue-100 t
 const emptyForm = {
   title: '',
   location: 'INDONESIA',
-  price: '',
   targetCount: '',
   description: '',
   imageUrl: '',
@@ -25,6 +29,7 @@ const emptyForm = {
   richContent: '[]',
   animals: '[]',
   gallery: '[]',
+  videoUrls: '[]',
 }
 
 const ANIMAL_OPTIONS = [
@@ -48,83 +53,6 @@ function getProgramBadge(p: string) {
   if (p === 'sedekah') return { label: 'Sedekah', cls: 'bg-blue-100 text-blue-700' }
   if (p === 'keduanya') return { label: 'Qurban & Sedekah', cls: 'bg-purple-100 text-purple-700' }
   return { label: 'Qurban', cls: 'bg-brand-surface/10 text-brand-surface' }
-}
-
-interface ContentBlock { type: 'text' | 'image'; value: string; caption?: string }
-
-function RichContentEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [blocks, setBlocks] = useState<ContentBlock[]>(() => {
-    try { return JSON.parse(value) } catch { return [] }
-  })
-
-  // Sync blocks when value prop changes (e.g. when opening edit modal)
-  useEffect(() => {
-    try { setBlocks(JSON.parse(value)) } catch { setBlocks([]) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value === '[]' ? value : undefined])
-
-  function update(newBlocks: ContentBlock[]) {
-    setBlocks(newBlocks)
-    onChange(JSON.stringify(newBlocks))
-  }
-
-  function addText() { update([...blocks, { type: 'text', value: '' }]) }
-  function addImage() { update([...blocks, { type: 'image', value: '', caption: '' }]) }
-  function removeBlock(i: number) { update(blocks.filter((_, idx) => idx !== i)) }
-  function updateBlock(i: number, partial: Partial<ContentBlock>) {
-    update(blocks.map((b, idx) => idx === i ? { ...b, ...partial } : b))
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      {blocks.map((block, i) => (
-        <div key={i} className="border border-brand-muted/20 rounded-[8px] p-3 bg-brand-light relative">
-          <button type="button" onClick={() => removeBlock(i)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs">✕</button>
-          <div className="text-[10px] font-bold text-brand-muted uppercase tracking-wider mb-2">
-            {block.type === 'image' ? '📷 Gambar' : '📝 Teks'}
-          </div>
-          {block.type === 'text' ? (
-            <textarea
-              value={block.value}
-              onChange={e => updateBlock(i, { value: e.target.value })}
-              rows={4}
-              className="inp w-full"
-              placeholder="Tulis cerita di sini..."
-            />
-          ) : (
-            <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                value={block.value}
-                onChange={e => updateBlock(i, { value: e.target.value })}
-                className="inp"
-                placeholder="URL foto (https://...)"
-              />
-              <input
-                type="text"
-                value={block.caption || ''}
-                onChange={e => updateBlock(i, { caption: e.target.value })}
-                className="inp"
-                placeholder="Keterangan foto (opsional)"
-              />
-              {block.value && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={block.value} alt="" className="w-full h-32 object-cover rounded-[6px]" />
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-      <div className="flex gap-2">
-        <button type="button" onClick={addText} className="flex-1 py-2 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[8px] text-xs font-medium transition-colors">
-          + Tambah Teks
-        </button>
-        <button type="button" onClick={addImage} className="flex-1 py-2 border-2 border-dashed border-brand-muted/30 text-brand-muted hover:border-brand-surface hover:text-brand-surface rounded-[8px] text-xs font-medium transition-colors">
-          + Tambah Foto
-        </button>
-      </div>
-    </div>
-  )
 }
 
 // ─── Media Picker Modal ──────────────────────────────────────────────────────
@@ -458,6 +386,7 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; title: string }>({ open: false, id: '', title: '' })
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState({ show: false, msg: '' })
+  const videoInputRef = useRef<VideoUrlInputHandle>(null)
 
   // Sync state setiap kali initialCampaigns berubah (setelah router.refresh)
   useEffect(() => {
@@ -472,7 +401,6 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
     setForm({
       title: c.title,
       location: c.location,
-      price: c.price.toString(),
       targetCount: c.targetCount.toString(),
       description: c.description,
       imageUrl: c.imageUrl,
@@ -483,30 +411,53 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
       richContent: (c as any).richContent ?? '[]',
       animals: (c as any).animals ?? '[]',
       gallery: (c as any).gallery ?? '[]',
+      videoUrls: JSON.stringify((c as any).videoUrls ?? []),
     })
     setModalOpen(true)
   }
 
   function handleSave() {
+    // Validate: at least 1 animal card with name + price
+    let parsedAnimals: { name?: string; price?: number }[] = []
+    try { parsedAnimals = JSON.parse(form.animals || '[]') } catch {}
+    if (!Array.isArray(parsedAnimals) || parsedAnimals.length === 0) {
+      showToast('Minimal 1 pilihan hewan wajib ditambahkan')
+      return
+    }
+    if (parsedAnimals.some(a => !a.name || !a.price || a.price <= 0)) {
+      showToast('Setiap pilihan hewan wajib memiliki nama dan harga')
+      return
+    }
+
+    // Commit any URL the user typed but didn't click "+ Tambah" on
+    const flushedVideos = videoInputRef.current?.flush()
+      ?? (() => { try { return JSON.parse(form.videoUrls || '[]') as string[] } catch { return [] } })()
+    const videoUrlsJson = JSON.stringify(flushedVideos)
+
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => fd.set(k, v))
+    fd.set('videoUrls', videoUrlsJson)
     startTransition(async () => {
-      if (editingId) {
-        await updateCampaign(editingId, fd)
-        setCampaigns(prev => prev.map(c => c.id === editingId ? {
-          ...c, ...form,
-          price: parseInt(form.price),
-          targetCount: parseInt(form.targetCount),
-          location: form.location as any,
-          allowShare: form.allowShare === 'true',
-        } : c))
-        showToast('Campaign berhasil diperbarui!')
-      } else {
-        await createCampaign(fd)
-        router.refresh() // Re-fetch server component → update initialCampaigns → useEffect sync
-        showToast('Campaign baru berhasil dibuat!')
+      try {
+        if (editingId) {
+          await updateCampaign(editingId, fd)
+          setCampaigns(prev => prev.map(c => c.id === editingId ? {
+            ...c, ...form,
+            targetCount: parseInt(form.targetCount),
+            location: form.location as any,
+            allowShare: form.allowShare === 'true',
+            videoUrls: flushedVideos,
+          } : c))
+          showToast('Campaign berhasil diperbarui!')
+        } else {
+          await createCampaign(fd)
+          router.refresh()
+          showToast('Campaign baru berhasil dibuat!')
+        }
+        setModalOpen(false)
+      } catch (err: any) {
+        showToast(err?.message || 'Gagal menyimpan campaign')
       }
-      setModalOpen(false)
     })
   }
 
@@ -523,10 +474,22 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
   function handleDelete() {
     const id = deleteConfirm.id
     startTransition(async () => {
-      await deleteCampaign(id)
-      setCampaigns(prev => prev.filter(c => c.id !== id))
-      setDeleteConfirm({ open: false, id: '', title: '' })
-      showToast('Campaign berhasil dihapus.')
+      try {
+        const res = await deleteCampaign(id)
+        if (res && res.success === false) {
+          setDeleteConfirm({ open: false, id: '', title: '' })
+          showToast(res.error || 'Gagal menghapus campaign.')
+          return
+        }
+        setCampaigns(prev => prev.filter(c => c.id !== id))
+        setDeleteConfirm({ open: false, id: '', title: '' })
+        const extra = res?.deletedDonations ? ` (${res.deletedDonations} donasi terkait dihapus)` : ''
+        showToast('Campaign berhasil dihapus.' + extra)
+      } catch (err) {
+        console.error('[CampaignClient.handleDelete]', err)
+        setDeleteConfirm({ open: false, id: '', title: '' })
+        showToast('Terjadi kesalahan. Silakan coba lagi.')
+      }
     })
   }
 
@@ -542,7 +505,8 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
           <button onClick={openAdd} className="flex items-center gap-2 px-5 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[10px] shadow-premium hover:scale-[1.02] transition-transform">
             <FontAwesomeIcon icon={faPlus} /> Tambah Campaign
           </button>
-          <div className="w-9 h-9 rounded-full bg-brand-surface border border-brand-accent/30 flex items-center justify-center text-xs text-brand-accent font-bold">A</div>
+          <AdminNotifBell />
+          <AdminProfileMenu />
         </div>
       </header>
 
@@ -592,7 +556,14 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
                     {c.description}
                   </p>
                   <div className="flex flex-wrap gap-3 text-xs text-brand-muted mb-4">
-                    <span>💰 <strong className="text-brand-accent">{formatCurrency(c.price)}</strong>/ekor</span>
+                    {(() => {
+                      let parsed: { price?: number }[] = []
+                      try { parsed = JSON.parse((c as any).animals ?? '[]') } catch {}
+                      const count = Array.isArray(parsed) ? parsed.length : 0
+                      return (
+                        <span>🐑 <strong className="text-brand-dark">{count}</strong> pilihan hewan</span>
+                      )
+                    })()}
                     <span>🎯 Target: <strong className="text-brand-dark">{c.targetCount}</strong> ekor</span>
                   </div>
 
@@ -720,18 +691,27 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
                 </select>
               </div>
 
-              {/* Animals Editor — allow per-animal pricing */}
+              {/* Animals Editor — required, min 1 with name + price */}
               <div>
                 <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">
-                  Pilihan Hewan Qurban
+                  Pilihan Hewan Qurban <span className="text-red-500">*</span>
                 </label>
                 <p className="text-xs text-brand-muted mb-3">
-                  Tambahkan pilihan hewan dengan harga masing-masing. Jika diisi, donatur bisa memilih langsung dari halaman campaign.
+                  Wajib tambahkan minimal 1 pilihan hewan beserta harga. Donatur akan memilih hewan langsung dari halaman campaign.
                 </p>
                 <AnimalsEditor
                   value={form.animals ?? '[]'}
                   onChange={v => setForm(f => ({ ...f, animals: v }))}
                 />
+                {(() => {
+                  let parsed: any[] = []
+                  try { parsed = JSON.parse(form.animals || '[]') } catch {}
+                  const count = Array.isArray(parsed) ? parsed.length : 0
+                  if (count === 0) {
+                    return <p className="text-[11px] text-red-600 mt-2">⚠ Tambahkan minimal 1 pilihan hewan</p>
+                  }
+                  return null
+                })()}
               </div>
 
               {/* Tipe Program */}
@@ -756,17 +736,10 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Harga */}
-                <div>
-                  <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Harga / Ekor (Rp) *</label>
-                  <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} className="inp" placeholder="1900000" min="0" />
-                </div>
-                {/* Target */}
-                <div>
-                  <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Target Jumlah Hewan</label>
-                  <input type="number" value={form.targetCount} onChange={e => setForm(f => ({ ...f, targetCount: e.target.value }))} className="inp" placeholder="100" min="0" />
-                </div>
+              {/* Target */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">Target Jumlah Hewan</label>
+                <input type="number" value={form.targetCount} onChange={e => setForm(f => ({ ...f, targetCount: e.target.value }))} className="inp" placeholder="100" min="0" />
               </div>
 
               {/* Deskripsi */}
@@ -808,19 +781,42 @@ export default function CampaignClient({ initialCampaigns }: { initialCampaigns:
                 <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">
                   Konten Cerita Program (Opsional)
                 </label>
-                <p className="text-xs text-brand-muted mb-3">Tambahkan foto dan teks untuk cerita program. Akan tampil di halaman detail campaign.</p>
-                <RichContentEditor
+                <p className="text-xs text-brand-muted mb-3">Tambah blok teks, foto, atau video. Bisa diatur ulang urutannya. Akan tampil di halaman detail campaign.</p>
+                <BlockEditor
                   value={form.richContent ?? '[]'}
                   onChange={v => setForm(f => ({ ...f, richContent: v }))}
                 />
               </div>
+
+              {/* Video Gallery URLs */}
+              <div>
+                <label className="text-xs font-bold text-brand-text-dark uppercase tracking-wider block mb-2">
+                  Gallery Video (Opsional)
+                </label>
+                <p className="text-xs text-brand-muted mb-3">Tambah video YouTube atau Google Drive untuk ditampilkan di halaman detail campaign.</p>
+                <VideoUrlInput
+                  ref={videoInputRef}
+                  value={(() => { try { return JSON.parse(form.videoUrls || '[]') as string[] } catch { return [] } })()}
+                  onChange={urls => setForm(f => ({ ...f, videoUrls: JSON.stringify(urls) }))}
+                />
+              </div>
+
+              {/* Kabar Terbaru — only available after campaign is created */}
+              {editingId && (
+                <CampaignUpdatesEditor
+                  campaignId={editingId}
+                  onToast={showToast}
+                />
+              )}
             </div>
 
             <div className="px-7 py-5 border-t border-brand-muted/10 flex gap-3">
               <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-brand-muted/20 rounded-[8px] text-sm font-medium text-brand-muted hover:bg-brand-light">Batal</button>
               <button
                 onClick={handleSave}
-                disabled={isPending || !form.title || !form.price}
+                disabled={isPending || !form.title || (() => {
+                  try { return (JSON.parse(form.animals || '[]') as any[]).length === 0 } catch { return true }
+                })()}
                 className="flex-1 py-2.5 bg-cta-gradient text-brand-text-dark font-bold text-sm rounded-[8px] shadow-premium hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <FontAwesomeIcon icon={faFloppyDisk} />

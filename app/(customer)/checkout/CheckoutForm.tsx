@@ -1,5 +1,7 @@
 'use client'
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
+import { trackEvent } from '@/lib/tracking-client'
+import { usePixelEventMapping } from '@/hooks/usePixelEventMapping'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faPenToSquare, faBuildingColumns, faQrcode,
@@ -25,6 +27,9 @@ interface ManualBankItem { id: string; code: string; name: string; number: strin
 interface ManualBank {
   enabled: boolean; bankName: string; accountNumber: string; accountOwner: string
   banks?: ManualBankItem[]
+}
+interface ManualQris {
+  enabled: boolean; image: string; bank: string; label: string
 }
 
 // Proper Indonesian bank brand colors
@@ -81,11 +86,12 @@ function BankBadge({ code, size = 'md' }: { code: string; size?: 'sm' | 'md' }) 
 const inputCls = 'w-full h-12 px-4 rounded-[8px] border border-brand-muted/20 bg-brand-light text-brand-text-dark placeholder:text-brand-muted/50 text-sm focus:outline-none focus:border-brand-accent focus:shadow-[0_0_0_1px_#C8962A]'
 
 export default function CheckoutForm({
-  product, activeChannels, manualBank, discountedPrice, discountLabel, hasVouchers, shippingZones
+  product, activeChannels, manualBank, manualQris, discountedPrice, discountLabel, hasVouchers, shippingZones
 }: {
   product: Product
   activeChannels?: ActiveChannels
   manualBank?: ManualBank
+  manualQris?: ManualQris | null
   discountedPrice?: number | null
   discountLabel?: string | null
   hasVouchers?: boolean
@@ -104,11 +110,29 @@ export default function CheckoutForm({
     if (activeChannels.DANA) return 'DANA'
     if (activeChannels.SHOPEEPAY) return 'SHOPEEPAY'
     if (activeChannels.ALFAMART) return 'ALFAMART'
-    if (activeChannels.MANUAL) return 'MANUAL_TRANSFER'
+    if (activeChannels.MANUAL) return 'MANUAL_0'
     return 'BCAVA'
   })
   const [isPending, startTransition] = useTransition()
   const [voucherPending, startVoucherTransition] = useTransition()
+
+  // Pixel event for /checkout is admin-configurable via /admin/pengaturan
+  // (key: fb_event_checkout). Default: InitiateCheckout.
+  const pixelMap = usePixelEventMapping()
+  const trackedRef = useRef(false)
+  useEffect(() => {
+    if (trackedRef.current) return
+    if (!pixelMap.page_checkout) return
+    trackedRef.current = true
+    trackEvent(pixelMap.page_checkout, {
+      content_ids: [product.slug],
+      content_name: product.name,
+      content_category: product.category ?? undefined,
+      value: discountedPrice ?? product.price,
+      currency: 'IDR',
+      num_items: 1,
+    })
+  }, [pixelMap.page_checkout, product.slug, product.name, product.category, product.price, discountedPrice])
   const [error, setError] = useState<string | null>(null)
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherDiscount, setVoucherDiscount] = useState(0)      // actual discount Rp
@@ -418,54 +442,82 @@ export default function CheckoutForm({
                 </div>
               )}
 
-              {/* Manual Transfer — show all configured banks */}
-              {showManual && manualBank && (
+              {/* QRIS Manual — appears before Manual Transfer */}
+              {manualQris?.enabled && (
                 <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
-                    <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
-                    <span className="text-xs font-bold text-brand-dark">Transfer Manual</span>
-                    <span className="text-[10px] text-brand-muted ml-1">— langsung ke rekening</span>
+                    <FontAwesomeIcon icon={faQrcode} className="text-brand-muted text-sm" />
+                    <span className="text-xs font-bold text-brand-dark">QRIS Manual</span>
+                    <span className="text-[10px] text-brand-muted ml-1">— scan & upload bukti</span>
                   </div>
-                  {/* ONE selectable option that covers all banks */}
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('MANUAL_TRANSFER')}
-                    className={`w-full px-4 py-3 text-left transition-all ${paymentMethod === 'MANUAL_TRANSFER' ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
+                    onClick={() => setPaymentMethod('MANUAL_QRIS')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${paymentMethod === 'MANUAL_QRIS' ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'}`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 mt-1 flex items-center justify-center ${paymentMethod === 'MANUAL_TRANSFER' ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
-                        {paymentMethod === 'MANUAL_TRANSFER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-sm font-medium text-brand-dark block mb-2">
-                          Transfer ke rekening bank kami
-                        </span>
-                        {/* Show all configured banks */}
-                        <div className="flex flex-col gap-1.5">
-                          {(manualBank.banks && manualBank.banks.length > 0
-                            ? manualBank.banks
-                            : [{ id:'0', code:'', name: manualBank.bankName, number: manualBank.accountNumber, owner: manualBank.accountOwner }]
-                          ).map((b, idx) => {
-                            const style = BANK_STYLE[b.code] ?? { bg: '#1B5E3B', text: '#fff', abbr: b.name.replace('Bank ','').substring(0,4).toUpperCase() }
-                            return (
-                              <div key={idx} className="flex items-center gap-2.5">
-                                <div className="w-10 h-7 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
-                                  style={{ background: style.bg, color: style.text }}>
-                                  {style.abbr}
-                                </div>
-                                <div>
-                                  <span className="text-xs font-semibold text-brand-dark">{b.name}</span>
-                                  <span className="text-xs text-brand-muted ml-2">{b.number} — A/N {b.owner}</span>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
+                    <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMethod === 'MANUAL_QRIS' ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'}`}>
+                      {paymentMethod === 'MANUAL_QRIS' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="w-11 h-8 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
+                      style={{ background: '#00AED6', color: '#fff' }}>QRIS</div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-brand-dark leading-tight">
+                        QRIS{manualQris.bank ? ` — ${manualQris.bank}` : ''}
+                      </span>
+                      {manualQris.label && (
+                        <span className="text-xs text-brand-muted leading-tight mt-0.5">{manualQris.label}</span>
+                      )}
                     </div>
                   </button>
                 </div>
               )}
+
+              {/* Manual Transfer — each bank is its own radio option */}
+              {showManual && manualBank && (() => {
+                const banks = manualBank.banks && manualBank.banks.length > 0
+                  ? manualBank.banks
+                  : [{ id:'0', code:'', name: manualBank.bankName, number: manualBank.accountNumber, owner: manualBank.accountOwner }]
+                return (
+                  <div className="border border-brand-muted/20 rounded-[10px] overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light border-b border-brand-muted/15">
+                      <FontAwesomeIcon icon={faBuildingColumns} className="text-brand-muted text-sm" />
+                      <span className="text-xs font-bold text-brand-dark">Transfer Manual</span>
+                      <span className="text-[10px] text-brand-muted ml-1">— langsung ke rekening</span>
+                    </div>
+                    <div className="divide-y divide-brand-muted/10">
+                      {banks.map((b, idx) => {
+                        const value = `MANUAL_${idx}`
+                        const style = BANK_STYLE[b.code] ?? { bg: '#1B5E3B', text: '#fff', abbr: b.name.replace('Bank ','').substring(0,4).toUpperCase() }
+                        const selected = paymentMethod === value
+                        return (
+                          <button
+                            key={b.id ?? idx}
+                            type="button"
+                            onClick={() => setPaymentMethod(value)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
+                              selected ? 'bg-brand-accent/[0.04]' : 'hover:bg-brand-light/70'
+                            }`}
+                          >
+                            <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                              selected ? 'border-brand-accent bg-brand-accent' : 'border-brand-muted/40'
+                            }`}>
+                              {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
+                            <div className="w-11 h-8 rounded-[6px] flex items-center justify-center font-bold text-[10px] shrink-0"
+                              style={{ background: style.bg, color: style.text }}>
+                              {style.abbr}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-brand-dark leading-tight">{b.name}</span>
+                              <span className="text-xs text-brand-muted leading-tight mt-0.5">{b.number} — A/N {b.owner}</span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
 
               <div className="flex items-start gap-2 bg-brand-light border border-brand-accent/20 rounded-[8px] p-3">
                 <FontAwesomeIcon icon={faCircleInfo} className="text-brand-accent text-sm mt-0.5" />

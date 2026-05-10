@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { verifyTripayCallback } from '@/lib/tripay'
 import { sendOrderNotification } from '@/lib/onesender'
 import { sendFbCapiEvent } from '@/lib/facebook-capi'
+import { createPengirimanFromPaidOrder } from '@/lib/order-to-pengiriman'
 
 type TripayCallbackPayload = {
   reference: string
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
         tripayReference: payload.reference,
       },
     })
+
+    // Auto-create Pengiriman record for HOME_DELIVERY + send form link via WA
+    void createPengirimanFromPaidOrder(order.id)
 
     // WA notifications
     void sendOrderNotification('payment_confirmed_customer', {

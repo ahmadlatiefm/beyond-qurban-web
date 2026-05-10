@@ -9,7 +9,7 @@ import DonationForm from './DonationForm'
 export default async function CheckoutPenyaluranPage({
   searchParams,
 }: {
-  searchParams: { campaign?: string; qty?: string; share?: string; animalName?: string; animalPrice?: string }
+  searchParams: { campaign?: string; qty?: string; share?: string; animalName?: string; animalPrice?: string; type?: string }
 }) {
   const campaignSlug = searchParams.campaign
   if (!campaignSlug) notFound()
@@ -21,10 +21,12 @@ export default async function CheckoutPenyaluranPage({
     where: {
       key: {
         in: [
+          'tripay_enabled',
           'ch_bcava','ch_mandiriva','ch_bniva','ch_briva','ch_permatava','ch_muamalatva','ch_cimbva','ch_bsiva',
           'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
           'ch_alfamart','ch_indomaret','ch_alfamidi',
           'manual_transfer_enabled','manual_banks',
+          'manual_qris_enabled','manual_qris_image','manual_qris_bank','manual_qris_label',
           // Penyaluran pricing
           'penyaluran_harga_indonesia','penyaluran_disc_indonesia',
           'penyaluran_harga_africa','penyaluran_disc_africa',
@@ -36,23 +38,24 @@ export default async function CheckoutPenyaluranPage({
   const settingsMap: Record<string, string> = {}
   settingsRows.forEach(s => { settingsMap[s.key] = s.value })
 
+  const tripayEnabled = settingsMap.tripay_enabled !== 'false'
   const activeChannels = {
-    BCAVA:      settingsMap.ch_bcava !== 'false',
-    MANDIRIVA:  settingsMap.ch_mandiriva !== 'false',
-    BNIVA:      settingsMap.ch_bniva !== 'false',
-    BRIVA:      settingsMap.ch_briva !== 'false',
-    PERMATAVA:  settingsMap.ch_permatava === 'true',
-    MUAMALATVA: settingsMap.ch_muamalatva === 'true',
-    CIMBVA:     settingsMap.ch_cimbva === 'true',
-    BSIVA:      settingsMap.ch_bsiva === 'true',
-    QRIS:       settingsMap.ch_qris !== 'false',
-    QRIS2:      settingsMap.ch_qris2 === 'true',
-    OVO:        settingsMap.ch_ovo === 'true',
-    DANA:       settingsMap.ch_dana === 'true',
-    SHOPEEPAY:  settingsMap.ch_shopeepay === 'true',
-    ALFAMART:   settingsMap.ch_alfamart === 'true',
-    INDOMARET:  settingsMap.ch_indomaret === 'true',
-    ALFAMIDI:   settingsMap.ch_alfamidi === 'true',
+    BCAVA:      tripayEnabled && settingsMap.ch_bcava !== 'false',
+    MANDIRIVA:  tripayEnabled && settingsMap.ch_mandiriva !== 'false',
+    BNIVA:      tripayEnabled && settingsMap.ch_bniva !== 'false',
+    BRIVA:      tripayEnabled && settingsMap.ch_briva !== 'false',
+    PERMATAVA:  tripayEnabled && settingsMap.ch_permatava === 'true',
+    MUAMALATVA: tripayEnabled && settingsMap.ch_muamalatva === 'true',
+    CIMBVA:     tripayEnabled && settingsMap.ch_cimbva === 'true',
+    BSIVA:      tripayEnabled && settingsMap.ch_bsiva === 'true',
+    QRIS:       tripayEnabled && settingsMap.ch_qris !== 'false',
+    QRIS2:      tripayEnabled && settingsMap.ch_qris2 === 'true',
+    OVO:        tripayEnabled && settingsMap.ch_ovo === 'true',
+    DANA:       tripayEnabled && settingsMap.ch_dana === 'true',
+    SHOPEEPAY:  tripayEnabled && settingsMap.ch_shopeepay === 'true',
+    ALFAMART:   tripayEnabled && settingsMap.ch_alfamart === 'true',
+    INDOMARET:  tripayEnabled && settingsMap.ch_indomaret === 'true',
+    ALFAMIDI:   tripayEnabled && settingsMap.ch_alfamidi === 'true',
     MANUAL:     settingsMap.manual_transfer_enabled === 'true',
   }
 
@@ -66,6 +69,15 @@ export default async function CheckoutPenyaluranPage({
     accountNumber: manualBanksList[0]?.number ?? '',
     accountOwner: manualBanksList[0]?.owner ?? 'Yayasan One Ummah',
   }
+
+  const manualQris = settingsMap.manual_qris_enabled === 'true' && (settingsMap.manual_qris_image ?? '').length > 0
+    ? {
+        enabled: true,
+        image: settingsMap.manual_qris_image ?? '',
+        bank: settingsMap.manual_qris_bank ?? '',
+        label: settingsMap.manual_qris_label ?? '',
+      }
+    : null
 
   const qty = parseInt(searchParams.qty ?? '1') || 1
   const shareType = (searchParams.share === '1/7' ? '1/7' : '1/1') as '1/1' | '1/7'
@@ -128,8 +140,10 @@ export default async function CheckoutPenyaluranPage({
           shareType={shareType}
           animalName={animalName}
           animalPrice={animalPrice}
+          donationType={searchParams.type === 'sedekah' ? 'sedekah' : 'qurban'}
           activeChannels={activeChannels}
           manualBank={manualBank}
+          manualQris={manualQris}
         />
       </div>
     </main>

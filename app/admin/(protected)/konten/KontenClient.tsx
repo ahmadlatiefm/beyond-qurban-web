@@ -5,8 +5,12 @@ import {
   faFloppyDisk, faHome, faLink, faBars,
   faInfoCircle, faPlus, faTrash, faGlobe,
   faHandHoldingHeart, faTags, faStar, faUpload, faUser,
+  faArrowUp, faArrowDown, faImage,
 } from '@fortawesome/free-solid-svg-icons'
 import { saveSettings } from '@/lib/actions/settings'
+import IconPicker from '@/components/ui/IconPicker'
+import AdminNotifBell from '@/components/admin/AdminNotifBell'
+import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
 
 type Tab = 'homepage' | 'penyaluran' | 'katalog' | 'header' | 'footer' | 'tentang'
 
@@ -50,20 +54,20 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
   // Parsed arrays
   const [homeStats, setHomeStats] = useState<StatItem[]>(() => parseJsonOr(initialSettings.home_stats, DEFAULT_STATS_HOME))
 
-  type Feature = { title: string; desc: string }
-  type Step = { title: string; desc: string }
+  type Feature = { title: string; desc: string; icon?: string }
+  type Step = { title: string; desc: string; icon?: string }
   type Testimonial = { name: string; city: string; stars: number; text: string }
   type ImpactStat = { stat: string; label: string }
 
   const [homeFeatures, setHomeFeatures] = useState<Feature[]>(() => parseJsonOr(initialSettings.home_features, [
-    { title: 'Hewan Terseleksi', desc: 'Setiap hewan kurban lolos pemeriksaan kesehatan ketat dan memenuhi syarat syariat Islam.' },
-    { title: 'Pengiriman Amanah', desc: 'Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.' },
-    { title: 'Laporan Foto & Video', desc: 'Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.' },
+    { title: 'Hewan Terseleksi', desc: 'Setiap hewan kurban lolos pemeriksaan kesehatan ketat dan memenuhi syarat syariat Islam.', icon: 'shield' },
+    { title: 'Pengiriman Amanah', desc: 'Pengiriman gratis ke lokasi Anda dengan jadwal fleksibel hingga H-1 Idul Adha.', icon: 'truck' },
+    { title: 'Laporan Foto & Video', desc: 'Update kondisi hewan dan dokumentasi penyembelihan dikirim langsung via WhatsApp.', icon: 'camera' },
   ]))
   const [homeSteps, setHomeSteps] = useState<Step[]>(() => parseJsonOr(initialSettings.home_steps, [
-    { title: 'Pilih Hewan', desc: 'Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.' },
-    { title: 'Isi Data & Transfer', desc: 'Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.' },
-    { title: 'Terima & Selesai', desc: 'Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.' },
+    { title: 'Pilih Hewan', desc: 'Pilih hewan kurban dari katalog sesuai budget dan kriteria Anda.', icon: 'cow' },
+    { title: 'Isi Data & Transfer', desc: 'Isi formulir pemesanan dan selesaikan pembayaran via transfer atau QRIS.', icon: 'invoice' },
+    { title: 'Terima & Selesai', desc: 'Hewan diantar ke lokasi Anda, laporan foto/video dikirim via WhatsApp.', icon: 'house' },
   ]))
   const [homeTestimonials, setHomeTestimonials] = useState<Testimonial[]>(() => parseJsonOr(initialSettings.home_testimonials, [
     { name: 'Ahmad Fauzi', city: 'Jakarta', stars: 5, text: 'Pengalaman kurban terbaik! Hewan sehat, pengiriman tepat waktu, dan laporan video sangat memuaskan. Tahun depan pasti pesan lagi.' },
@@ -102,6 +106,33 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
       setUploadingIdx(null)
     }
   }
+
+  const [brandUploading, setBrandUploading] = useState<'logo' | 'favicon' | null>(null)
+  async function handleBrandUpload(kind: 'logo' | 'favicon', file: File) {
+    setBrandUploading(kind)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('folder', kind === 'logo' ? 'logo' : 'favicon')
+    try {
+      const res = await fetch('/api/media-upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        showToast(data.error || 'Gagal upload')
+        return
+      }
+      const key = kind === 'logo' ? 'site_logo_url' : 'site_favicon_url'
+      set(key, data.url)
+      // Persist immediately so the customer site picks it up without waiting for
+      // the explicit "Simpan" click — branding assets are small and uploading is
+      // already an explicit user action.
+      startTransition(async () => {
+        await saveSettings({ [key]: data.url })
+        showToast(kind === 'logo' ? 'Logo tersimpan!' : 'Favicon tersimpan!')
+      })
+    } finally {
+      setBrandUploading(null)
+    }
+  }
   const [impactStats, setImpactStats] = useState<ImpactStat[]>(() => parseJsonOr(initialSettings.penyaluran_impact_stats, [
     { stat: '1.247', label: 'Ekor Tersalurkan' },
     { stat: '48', label: 'Desa Terjangkau' },
@@ -136,9 +167,15 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
   return (
     <>
       {/* Sticky header */}
-      <header className="sticky top-0 z-30 bg-brand-light/90 backdrop-blur-md border-b border-brand-muted/15 px-6 py-4">
-        <h1 className="font-serif text-xl font-bold text-brand-dark">Konten Halaman</h1>
-        <p className="text-brand-muted text-xs mt-0.5">Edit teks, menu, dan informasi yang tampil di website</p>
+      <header className="sticky top-0 z-30 bg-brand-light/90 backdrop-blur-md border-b border-brand-muted/15 px-6 py-4 flex justify-between items-center">
+        <div>
+          <h1 className="font-serif text-xl font-bold text-brand-dark">Konten Halaman</h1>
+          <p className="text-brand-muted text-xs mt-0.5">Edit teks, menu, dan informasi yang tampil di website</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <AdminNotifBell />
+          <AdminProfileMenu />
+        </div>
       </header>
 
       <div className="p-6 md:p-8 max-w-[960px] w-full flex flex-col gap-6">
@@ -223,15 +260,29 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
 
             {/* Features */}
             <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
-              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Mengapa Memilih Kami"</h2>
+              <div className="flex items-center justify-between border-b border-brand-muted/10 pb-3">
+                <h2 className="font-bold text-brand-dark text-base">Section &quot;Mengapa Memilih Kami&quot;</h2>
+                <button onClick={() => setHomeFeatures(p => [...p, { title: '', desc: '', icon: 'star' }])}
+                  className="flex items-center gap-1.5 text-brand-surface font-semibold text-xs hover:text-brand-dark">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah Card
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className={labelCls}>Judul Section</label><input type="text" value={s.home_features_title ?? 'Mengapa Memilih Kami?'} onChange={e => set('home_features_title', e.target.value)} className={inpCls} /></div>
                 <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_features_desc ?? ''} onChange={e => set('home_features_desc', e.target.value)} className={inpCls} /></div>
               </div>
               {homeFeatures.map((f, i) => (
-                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5">
-                  <p className="text-xs font-bold text-brand-muted">Card {i + 1}</p>
-                  <input type="text" value={f.title} onChange={e => setHomeFeatures(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5 relative">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-brand-muted">Card {i + 1}</p>
+                    <button onClick={() => setHomeFeatures(p => p.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600">
+                      <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] gap-2">
+                    <IconPicker value={f.icon ?? 'shield'} onChange={key => setHomeFeatures(p => p.map((x, idx) => idx === i ? { ...x, icon: key } : x))} />
+                    <input type="text" value={f.title} onChange={e => setHomeFeatures(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                  </div>
                   <textarea rows={2} value={f.desc} onChange={e => setHomeFeatures(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi" className={`${inpCls} resize-none`} />
                 </div>
               ))}
@@ -239,24 +290,92 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
 
             {/* Featured products */}
             <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
-              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Produk Unggulan"</h2>
+              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section &quot;Produk Unggulan&quot;</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className={labelCls}>Judul</label><input type="text" value={s.home_featured_title ?? 'Produk Unggulan'} onChange={e => set('home_featured_title', e.target.value)} className={inpCls} /></div>
                 <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_featured_desc ?? ''} onChange={e => set('home_featured_desc', e.target.value)} className={inpCls} /></div>
               </div>
+              <div className="bg-brand-light rounded-[8px] p-4 flex flex-col gap-3">
+                <p className="text-xs font-bold text-brand-dark uppercase tracking-wider">Tab Produk Katalog</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Label Tab Katalog</label>
+                    <input type="text" value={s.home_featured_product_label ?? 'Produk Katalog'} onChange={e => set('home_featured_product_label', e.target.value)} className={inpCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Jumlah Produk Tampil</label>
+                    <input type="number" min={0} max={12} value={s.home_featured_product_count ?? '4'} onChange={e => set('home_featured_product_count', e.target.value)} className={inpCls} />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-brand-light rounded-[8px] p-4 flex flex-col gap-3">
+                <p className="text-xs font-bold text-brand-dark uppercase tracking-wider">Tab Campaign Penyaluran</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Label Tab Campaign</label>
+                    <input type="text" value={s.home_featured_campaign_label ?? 'Campaign Penyaluran'} onChange={e => set('home_featured_campaign_label', e.target.value)} className={inpCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Jumlah Campaign Tampil</label>
+                    <input type="number" min={0} max={12} value={s.home_featured_campaign_count ?? '4'} onChange={e => set('home_featured_campaign_count', e.target.value)} className={inpCls} />
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-brand-muted">
+                Atur jumlah ke <strong>0</strong> untuk menyembunyikan tab. Jika hanya satu tab yang aktif,
+                toggle tab disembunyikan otomatis dan konten ditampilkan langsung.
+              </p>
             </div>
 
             {/* Steps */}
             <div className="bg-white rounded-[12px] border border-brand-muted/20 p-6 flex flex-col gap-4">
-              <h2 className="font-bold text-brand-dark text-base border-b border-brand-muted/10 pb-3">Section "Cara Pesan Kurban"</h2>
+              <div className="flex items-center justify-between border-b border-brand-muted/10 pb-3">
+                <h2 className="font-bold text-brand-dark text-base">Section &quot;Cara Pesan Kurban&quot;</h2>
+                <button onClick={() => setHomeSteps(p => [...p, { title: '', desc: '', icon: 'check' }])}
+                  className="flex items-center gap-1.5 text-brand-surface font-semibold text-xs hover:text-brand-dark">
+                  <FontAwesomeIcon icon={faPlus} /> Tambah Langkah
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className={labelCls}>Judul</label><input type="text" value={s.home_steps_title ?? 'Cara Pesan Kurban'} onChange={e => set('home_steps_title', e.target.value)} className={inpCls} /></div>
                 <div><label className={labelCls}>Subtitle</label><input type="text" value={s.home_steps_desc ?? ''} onChange={e => set('home_steps_desc', e.target.value)} className={inpCls} /></div>
               </div>
               {homeSteps.map((step, i) => (
-                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5">
-                  <p className="text-xs font-bold text-brand-muted">Langkah {i + 1}</p>
-                  <input type="text" value={step.title} onChange={e => setHomeSteps(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                <div key={i} className="bg-brand-light rounded-[8px] p-3 flex flex-col gap-1.5 relative">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-brand-muted">Langkah {i + 1}</p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setHomeSteps(p => {
+                          if (i === 0) return p
+                          const next = [...p]; const tmp = next[i - 1]; next[i - 1] = next[i]; next[i] = tmp; return next
+                        })}
+                        disabled={i === 0}
+                        className="w-6 h-6 flex items-center justify-center text-brand-muted hover:text-brand-dark disabled:opacity-30"
+                        aria-label="Naik"
+                      >
+                        <FontAwesomeIcon icon={faArrowUp} className="text-xs" />
+                      </button>
+                      <button
+                        onClick={() => setHomeSteps(p => {
+                          if (i === p.length - 1) return p
+                          const next = [...p]; const tmp = next[i + 1]; next[i + 1] = next[i]; next[i] = tmp; return next
+                        })}
+                        disabled={i === homeSteps.length - 1}
+                        className="w-6 h-6 flex items-center justify-center text-brand-muted hover:text-brand-dark disabled:opacity-30"
+                        aria-label="Turun"
+                      >
+                        <FontAwesomeIcon icon={faArrowDown} className="text-xs" />
+                      </button>
+                      <button onClick={() => setHomeSteps(p => p.filter((_, idx) => idx !== i))} className="w-6 h-6 flex items-center justify-center text-red-400 hover:text-red-600">
+                        <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] gap-2">
+                    <IconPicker value={step.icon ?? 'check'} onChange={key => setHomeSteps(p => p.map((x, idx) => idx === i ? { ...x, icon: key } : x))} />
+                    <input type="text" value={step.title} onChange={e => setHomeSteps(p => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))} placeholder="Judul" className={inpCls} style={{ height: 34 }} />
+                  </div>
                   <input type="text" value={step.desc} onChange={e => setHomeSteps(p => p.map((x, idx) => idx === i ? { ...x, desc: e.target.value } : x))} placeholder="Deskripsi" className={inpCls} style={{ height: 34 }} />
                 </div>
               ))}
@@ -307,6 +426,8 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
             <button disabled={isPending} onClick={() => save(
               ['home_badge','home_hero_title_1','home_hero_title_2','home_hero_desc','home_cta_primary','home_cta_primary_href','home_cta_secondary','home_cta_secondary_href',
                'home_features_title','home_features_desc','home_featured_title','home_featured_desc',
+               'home_featured_product_label','home_featured_product_count',
+               'home_featured_campaign_label','home_featured_campaign_count',
                'home_steps_title','home_steps_desc','home_testimonials_title','home_testimonials_desc',
                'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href'],
               { home_stats: JSON.stringify(homeStats), home_features: JSON.stringify(homeFeatures),
@@ -394,6 +515,72 @@ export default function KontenClient({ initialSettings }: { initialSettings: Rec
               <div>
                 <label className={labelCls}>Nama Toko / Brand</label>
                 <input type="text" value={s.store_name ?? 'Beyond Qurban'} onChange={e => set('store_name', e.target.value)} className={inpCls} placeholder="Beyond Qurban" />
+              </div>
+              {/* Logo + Favicon upload */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Logo */}
+                <div className="bg-brand-light rounded-[10px] p-3 flex gap-3">
+                  <div className="w-16 h-16 rounded-[8px] overflow-hidden bg-brand-dark border border-brand-muted/20 flex items-center justify-center shrink-0">
+                    {s.site_logo_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={s.site_logo_url} alt="logo" className="w-full h-full object-contain" />
+                      : <FontAwesomeIcon icon={faImage} className="text-brand-muted/40 text-2xl" />
+                    }
+                    {brandUploading === 'logo' && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-brand-surface border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <label className={labelCls}>Logo Header</label>
+                    <p className="text-[11px] text-brand-muted leading-snug">PNG / SVG · maks 2MB · transparan disarankan</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <label className="cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-brand-surface hover:text-brand-dark">
+                        <FontAwesomeIcon icon={faUpload} className="text-[11px]" /> Upload
+                        <input type="file" accept="image/png,image/svg+xml" className="hidden"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleBrandUpload('logo', f) }} />
+                      </label>
+                      {s.site_logo_url && (
+                        <button
+                          onClick={() => {
+                            set('site_logo_url', '')
+                            startTransition(async () => { await saveSettings({ site_logo_url: '' }); showToast('Logo dihapus') })
+                          }}
+                          className="text-xs text-red-400 hover:text-red-600">Hapus</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Favicon */}
+                <div className="bg-brand-light rounded-[10px] p-3 flex gap-3">
+                  <div className="w-16 h-16 rounded-[8px] overflow-hidden bg-brand-dark border border-brand-muted/20 flex items-center justify-center shrink-0">
+                    {s.site_favicon_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={s.site_favicon_url} alt="favicon" className="w-full h-full object-contain" />
+                      : <FontAwesomeIcon icon={faImage} className="text-brand-muted/40 text-2xl" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <label className={labelCls}>Favicon</label>
+                    <p className="text-[11px] text-brand-muted leading-snug">ICO / PNG · maks 500KB · disarankan 32×32</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <label className="cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-brand-surface hover:text-brand-dark">
+                        <FontAwesomeIcon icon={faUpload} className="text-[11px]" /> Upload
+                        <input type="file" accept="image/png,image/x-icon,image/vnd.microsoft.icon,.ico" className="hidden"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleBrandUpload('favicon', f) }} />
+                      </label>
+                      {s.site_favicon_url && (
+                        <button
+                          onClick={() => {
+                            set('site_favicon_url', '')
+                            startTransition(async () => { await saveSettings({ site_favicon_url: '' }); showToast('Favicon dihapus') })
+                          }}
+                          className="text-xs text-red-400 hover:text-red-600">Hapus</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

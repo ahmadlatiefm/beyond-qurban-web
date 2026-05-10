@@ -58,14 +58,18 @@ export default function AdminLoginPage() {
 
         {/* Card */}
         <div className="bg-brand-surface rounded-[14px] p-8 md:p-10 shadow-premium border border-brand-accent/20">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5" autoComplete="off">
             {/* Email */}
             <div className="flex flex-col gap-2">
               <label className="text-brand-light font-medium text-sm">Email / Username</label>
               <input
                 name="email"
                 type="text"
-                defaultValue="admin@beyondqurban.com"
+                required
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 className="w-full h-12 bg-brand-light text-brand-dark rounded-[8px] px-4 border-2 border-transparent focus:border-brand-accent focus:outline-none transition-colors text-sm"
                 placeholder="admin@beyondqurban.com"
               />
@@ -78,6 +82,8 @@ export default function AdminLoginPage() {
                 <input
                   name="password"
                   type={showPw ? 'text' : 'password'}
+                  required
+                  autoComplete="new-password"
                   className="w-full h-12 bg-brand-light text-brand-dark rounded-[8px] px-4 pr-12 border-2 border-transparent focus:border-brand-accent focus:outline-none transition-colors text-sm"
                   placeholder="••••••••"
                 />

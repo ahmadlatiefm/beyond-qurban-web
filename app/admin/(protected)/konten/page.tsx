@@ -11,6 +11,8 @@ const ALL_KEYS = [
   'home_steps','home_steps_title','home_steps_desc',
   'home_testimonials','home_testimonials_title','home_testimonials_desc',
   'home_cta_badge','home_cta_title_1','home_cta_title_2','home_cta_desc','home_cta_btn','home_cta_btn_href',
+  'home_featured_product_label','home_featured_product_count',
+  'home_featured_campaign_label','home_featured_campaign_count',
   // Penyaluran
   'penyaluran_badge','penyaluran_hero_title_1','penyaluran_hero_title_2','penyaluran_hero_desc',
   'penyaluran_trust_1','penyaluran_trust_2','penyaluran_trust_3',
@@ -19,6 +21,7 @@ const ALL_KEYS = [
   'katalog_hero_title','katalog_hero_desc',
   // Header
   'store_name','nav_items','header_cta_text','header_cta_href',
+  'site_logo_url','site_favicon_url',
   // Footer
   'footer_description','footer_address','footer_phone','footer_email',
   'footer_instagram','footer_facebook','footer_whatsapp','footer_copyright',

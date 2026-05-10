@@ -25,9 +25,10 @@ interface Props {
   navItems?: { label: string; href: string }[]
   ctaText?: string
   ctaHref?: string
+  logoUrl?: string
 }
 
-export default function Header({ storeName, navItems, ctaText, ctaHref }: Props) {
+export default function Header({ storeName, navItems, ctaText, ctaHref, logoUrl }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
@@ -62,10 +63,15 @@ export default function Header({ storeName, navItems, ctaText, ctaHref }: Props)
         style={headerStyle}
       >
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo — admin-uploaded logo overrides the bundled placeholder. */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 group-hover:border-brand-accent transition-colors">
-              <Image src="/logo-gold.png" alt="logo" width={28} height={28} className="object-contain" />
+            <div className="w-10 h-10 bg-brand-surface rounded-full flex items-center justify-center border border-brand-accent/30 group-hover:border-brand-accent transition-colors overflow-hidden">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={brandName} className="w-7 h-7 object-contain" />
+              ) : (
+                <Image src="/logo-gold.png" alt="logo" width={28} height={28} className="object-contain" />
+              )}
             </div>
             <span className="font-serif text-brand-accent text-xl font-bold tracking-wide">{brandName}</span>
           </Link>

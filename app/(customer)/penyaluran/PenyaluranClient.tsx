@@ -145,14 +145,22 @@ export default function PenyaluranClient({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((campaign) => {
               const badge = getLocationBadge(campaign.location)
-              // Effective price from per-destination settings only
+              // Starting price comes from the cheapest animal card; settings-level fallback only kicks in
+              // if a campaign somehow has no animals (legacy). The form now requires ≥1 animal.
+              let animalsList: { price?: number }[] = []
+              try { animalsList = JSON.parse((campaign as any).animals ?? '[]') } catch {}
+              const animalPrices = animalsList
+                .map(a => a.price)
+                .filter((p): p is number => typeof p === 'number' && p > 0)
+              const startingPrice = animalPrices.length > 0
+                ? Math.min(...animalPrices)
+                : (campaign.price ?? 0)
               const locationKey = campaign.location === 'INDONESIA' ? 'indonesia'
                 : campaign.location === 'AFRICA' ? 'africa' : 'palestine'
-              const settingsPrice = settingsMap[`penyaluran_harga_${locationKey}`]
-                ? parseInt(settingsMap[`penyaluran_harga_${locationKey}`]) : campaign.price
               const settingsDisc = parseInt(settingsMap[`penyaluran_disc_${locationKey}`] ?? '0')
-              const finalPrice = Math.round(settingsPrice * (1 - settingsDisc / 100))
-              const hasDiscount = settingsDisc > 0 && finalPrice < campaign.price
+              const finalPrice = Math.round(startingPrice * (1 - settingsDisc / 100))
+              const hasDiscount = settingsDisc > 0 && finalPrice < startingPrice
+              const hasMultipleAnimals = animalsList.length > 1
 
               return (
                 <div
@@ -225,15 +233,17 @@ export default function PenyaluranClient({
                     <div className="mt-auto flex flex-col gap-3 pt-3 border-t border-brand-muted/10">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-[11px] text-brand-muted uppercase tracking-wide">Harga / Ekor</div>
+                          <div className="text-[11px] text-brand-muted uppercase tracking-wide">
+                            {hasMultipleAnimals ? 'Mulai dari' : 'Harga / Ekor'}
+                          </div>
                           {hasDiscount ? (
                             <div className="flex flex-col gap-0.5">
-                              <div className="text-brand-muted/50 line-through text-sm">{formatCurrency(campaign.price)}</div>
+                              <div className="text-brand-muted/50 line-through text-sm">{formatCurrency(startingPrice)}</div>
                               <div className="font-bold text-lg text-red-500 leading-tight">{formatCurrency(finalPrice)}</div>
                             </div>
                           ) : (
                             <div className="font-bold text-lg text-brand-accent leading-tight">
-                              {formatCurrency(campaign.price)}
+                              {formatCurrency(startingPrice)}
                             </div>
                           )}
                         </div>

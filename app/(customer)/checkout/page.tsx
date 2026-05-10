@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import CheckoutForm from './CheckoutForm'
-import { applyGlobalDiscount } from '@/lib/discount'
+import { applyGlobalDiscount, applyCategoryDiscount } from '@/lib/discount'
 import { parseShippingZones } from '@/lib/shipping'
 
 export default async function CheckoutPage({
@@ -24,13 +24,19 @@ export default async function CheckoutPage({
       where: {
         key: {
           in: [
+            'tripay_enabled',
             'ch_bcava','ch_mandiriva','ch_bniva','ch_briva','ch_permatava','ch_muamalatva','ch_cimbva','ch_bsiva',
             'ch_qris','ch_qris2','ch_ovo','ch_dana','ch_shopeepay',
             'ch_alfamart','ch_indomaret','ch_alfamidi',
             'manual_transfer_enabled','manual_banks',
+            'manual_qris_enabled','manual_qris_image','manual_qris_bank','manual_qris_label',
             // Discount settings
             'diskon_global_enabled','diskon_type','diskon_value','diskon_start','diskon_end',
             'vouchers','shipping_zones',
+            // Per-category discount
+            'disc_sapi','disc_kambing','disc_domba','disc_unta',
+            'disc_sapi_until','disc_kambing_until','disc_domba_until','disc_unta_until',
+            'discount_category_sapi_active','discount_category_kambing_active','discount_category_domba_active','discount_category_unta_active',
           ]
         }
       }
@@ -39,23 +45,24 @@ export default async function CheckoutPage({
   const settingsMap: Record<string, string> = {}
   settings.forEach(s => { settingsMap[s.key] = s.value })
 
+  const tripayEnabled = settingsMap.tripay_enabled !== 'false'
   const activeChannels = {
-    BCAVA:      settingsMap.ch_bcava !== 'false',
-    MANDIRIVA:  settingsMap.ch_mandiriva !== 'false',
-    BNIVA:      settingsMap.ch_bniva !== 'false',
-    BRIVA:      settingsMap.ch_briva !== 'false',
-    PERMATAVA:  settingsMap.ch_permatava === 'true',
-    MUAMALATVA: settingsMap.ch_muamalatva === 'true',
-    CIMBVA:     settingsMap.ch_cimbva === 'true',
-    BSIVA:      settingsMap.ch_bsiva === 'true',
-    QRIS:       settingsMap.ch_qris !== 'false',
-    QRIS2:      settingsMap.ch_qris2 === 'true',
-    OVO:        settingsMap.ch_ovo === 'true',
-    DANA:       settingsMap.ch_dana === 'true',
-    SHOPEEPAY:  settingsMap.ch_shopeepay === 'true',
-    ALFAMART:   settingsMap.ch_alfamart === 'true',
-    INDOMARET:  settingsMap.ch_indomaret === 'true',
-    ALFAMIDI:   settingsMap.ch_alfamidi === 'true',
+    BCAVA:      tripayEnabled && settingsMap.ch_bcava !== 'false',
+    MANDIRIVA:  tripayEnabled && settingsMap.ch_mandiriva !== 'false',
+    BNIVA:      tripayEnabled && settingsMap.ch_bniva !== 'false',
+    BRIVA:      tripayEnabled && settingsMap.ch_briva !== 'false',
+    PERMATAVA:  tripayEnabled && settingsMap.ch_permatava === 'true',
+    MUAMALATVA: tripayEnabled && settingsMap.ch_muamalatva === 'true',
+    CIMBVA:     tripayEnabled && settingsMap.ch_cimbva === 'true',
+    BSIVA:      tripayEnabled && settingsMap.ch_bsiva === 'true',
+    QRIS:       tripayEnabled && settingsMap.ch_qris !== 'false',
+    QRIS2:      tripayEnabled && settingsMap.ch_qris2 === 'true',
+    OVO:        tripayEnabled && settingsMap.ch_ovo === 'true',
+    DANA:       tripayEnabled && settingsMap.ch_dana === 'true',
+    SHOPEEPAY:  tripayEnabled && settingsMap.ch_shopeepay === 'true',
+    ALFAMART:   tripayEnabled && settingsMap.ch_alfamart === 'true',
+    INDOMARET:  tripayEnabled && settingsMap.ch_indomaret === 'true',
+    ALFAMIDI:   tripayEnabled && settingsMap.ch_alfamidi === 'true',
     MANUAL:     settingsMap.manual_transfer_enabled === 'true',
   }
 
@@ -73,8 +80,24 @@ export default async function CheckoutPage({
     accountOwner: manualBanksList[0]?.owner ?? 'Yayasan One Ummah',
   }
 
-  // Global discount
-  const discount = applyGlobalDiscount(product.price, settingsMap)
+  const manualQris = settingsMap.manual_qris_enabled === 'true' && (settingsMap.manual_qris_image ?? '').length > 0
+    ? {
+        enabled: true,
+        image: settingsMap.manual_qris_image ?? '',
+        bank: settingsMap.manual_qris_bank ?? '',
+        label: settingsMap.manual_qris_label ?? '',
+      }
+    : null
+
+  // Global + per-category discount stacked
+  const global = applyGlobalDiscount(product.price, settingsMap)
+  const category = applyCategoryDiscount(global.finalPrice, product.category, settingsMap)
+  const totalDiscountAmount = global.discountAmount + category.discountAmount
+  const discount = {
+    finalPrice: category.finalPrice,
+    discountAmount: totalDiscountAmount,
+    discountLabel: [global.discountLabel, category.discountLabel].filter(Boolean).join(' + ') || null,
+  }
 
   // Always show voucher input — validation happens server-side
   const hasVouchers = true
@@ -108,6 +131,7 @@ export default async function CheckoutPage({
         product={product}
         activeChannels={activeChannels}
         manualBank={manualBank}
+        manualQris={manualQris}
         discountedPrice={discount.discountAmount > 0 ? discount.finalPrice : null}
         discountLabel={discount.discountLabel}
         hasVouchers={hasVouchers}
