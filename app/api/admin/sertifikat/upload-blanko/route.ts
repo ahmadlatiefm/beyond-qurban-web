@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import { join, extname } from 'path'
-import { loadImage } from 'canvas'
+import { join } from 'path'
+import sharp from 'sharp'
+import { compressBlanko, formatBytes, reductionPercent } from '@/lib/compress-image'
 
 export const dynamic = 'force-dynamic'
 
 const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp']
-const MAX_SIZE = 5 * 1024 * 1024
+const MAX_SIZE = 10 * 1024 * 1024
 const MIN_WIDTH = 1200
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Format harus PNG, JPG, atau WebP' }, { status: 400 })
   }
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'File terlalu besar (maks 5MB)' }, { status: 400 })
+    return NextResponse.json({ error: 'File terlalu besar (maks 10MB)' }, { status: 400 })
   }
 
   const bytes = Buffer.from(await file.arrayBuffer())
@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
   let width = 0
   let height = 0
   try {
-    const img = await loadImage(bytes)
-    width = img.width
-    height = img.height
+    const meta = await sharp(bytes).metadata()
+    width = meta.width || 0
+    height = meta.height || 0
   } catch {
     return NextResponse.json({ error: 'File gambar tidak valid' }, { status: 400 })
   }
@@ -42,15 +42,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Lebar gambar minimal ${MIN_WIDTH}px (saat ini ${width}px)` }, { status: 400 })
   }
 
-  const ext = extname(file.name).toLowerCase() || '.png'
-  const filename = `blanko-${Date.now()}${ext}`
+  const filename = `blanko-${Date.now()}.webp`
   const uploadDir = join(process.cwd(), 'public', 'uploads', 'sertifikat')
-  await mkdir(uploadDir, { recursive: true })
-  await writeFile(join(uploadDir, filename), bytes)
+  const originalSize = file.size
 
-  return NextResponse.json({
-    url: `/uploads/sertifikat/${filename}`,
-    width,
-    height,
-  })
+  try {
+    const result = await compressBlanko(bytes, join(uploadDir, filename))
+    return NextResponse.json({
+      url: `/uploads/sertifikat/${filename}`,
+      width: result.width,
+      height: result.height,
+      originalSize: formatBytes(originalSize),
+      compressedSize: formatBytes(result.size),
+      reduction: reductionPercent(originalSize, result.size),
+      quality: result.quality,
+    })
+  } catch (err) {
+    console.error('sertifikat upload-blanko compress error', err)
+    return NextResponse.json({ error: 'Gagal memproses gambar' }, { status: 500 })
+  }
 }

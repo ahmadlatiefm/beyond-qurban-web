@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join, extname } from 'path'
+import { join } from 'path'
 import { checkLapanganCode } from '@/lib/lapangan-auth'
+import { compressToTarget, formatBytes, reductionPercent } from '@/lib/compress-image'
 
 export const dynamic = 'force-dynamic'
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_SIZE = 4 * 1024 * 1024 // 4MB — field photos can be larger
+const MAX_SIZE = 8 * 1024 * 1024 // 8MB pre-compression — field photos can be large
 
 export async function POST(req: NextRequest) {
   if (!(await checkLapanganCode(req))) {
@@ -20,15 +20,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tipe file tidak didukung. Gunakan JPEG, PNG, WebP.' }, { status: 400 })
   }
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'Ukuran file maksimal 4MB.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ukuran file maksimal 8MB.' }, { status: 400 })
   }
 
-  const ext = extname(file.name) || '.jpg'
-  const filename = `${Date.now()}${ext}`.replace(/[^a-z0-9.\-_]/gi, '-').toLowerCase()
+  const filename = `${Date.now()}.webp`
   const dir = join(process.cwd(), 'public', 'uploads', 'lapangan')
-  await mkdir(dir, { recursive: true })
-  const bytes = await file.arrayBuffer()
-  await writeFile(join(dir, filename), Buffer.from(bytes))
+  const originalSize = file.size
+  const buffer = Buffer.from(await file.arrayBuffer())
 
-  return NextResponse.json({ url: `/uploads/lapangan/${filename}` })
+  try {
+    const result = await compressToTarget(buffer, join(dir, filename), {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      targetSizeBytes: 150 * 1024,
+    })
+    return NextResponse.json({
+      url: `/uploads/lapangan/${filename}`,
+      originalSize: formatBytes(originalSize),
+      compressedSize: formatBytes(result.size),
+      reduction: reductionPercent(originalSize, result.size),
+      quality: result.quality,
+    })
+  } catch (err) {
+    console.error('lapangan upload compress error', err)
+    return NextResponse.json({ error: 'Gagal memproses gambar' }, { status: 500 })
+  }
 }

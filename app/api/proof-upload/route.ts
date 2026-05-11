@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join, extname } from 'path'
+import { join } from 'path'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
+import { compressToTarget, formatBytes, reductionPercent } from '@/lib/compress-image'
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB for proofs
@@ -53,11 +53,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const ext = extname(file.name) || '.jpg'
-  const filename = `proof-${Date.now()}${ext}`
+  const originalSize = file.size
+  const filename = `proof-${Date.now()}.webp`
   const uploadDir = join(process.cwd(), 'public', 'uploads', 'proofs')
-  await mkdir(uploadDir, { recursive: true })
-  const bytes = await file.arrayBuffer()
-  await writeFile(join(uploadDir, filename), Buffer.from(bytes))
-  return NextResponse.json({ url: `/uploads/proofs/${filename}` })
+  const buffer = Buffer.from(await file.arrayBuffer())
+
+  try {
+    const result = await compressToTarget(buffer, join(uploadDir, filename), {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      targetSizeBytes: 150 * 1024,
+    })
+    return NextResponse.json({
+      url: `/uploads/proofs/${filename}`,
+      originalSize: formatBytes(originalSize),
+      compressedSize: formatBytes(result.size),
+      reduction: reductionPercent(originalSize, result.size),
+      quality: result.quality,
+    })
+  } catch (err) {
+    console.error('proof-upload compress error', err)
+    return NextResponse.json({ error: 'Gagal memproses gambar' }, { status: 500 })
+  }
 }
