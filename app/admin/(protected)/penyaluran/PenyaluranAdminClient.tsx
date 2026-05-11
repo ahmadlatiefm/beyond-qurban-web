@@ -13,6 +13,7 @@ import { useAppToast } from '@/components/ui/AppToast'
 import AdminNotifBell from '@/components/admin/AdminNotifBell'
 import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
 import { StatusDropdown } from '@/components/admin/StatusDropdown'
+import KonfirmasiBayarModal from '@/components/admin/KonfirmasiBayarModal'
 import type { Donation, Campaign } from '@prisma/client'
 
 type DonationWithCampaign = Donation & { campaign: Campaign }
@@ -91,6 +92,7 @@ export default function PenyaluranAdminClient({ donations: initialDonations, sta
   const [detailModal, setDetailModal] = useState<DonationWithCampaign | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkDeleteModal, setBulkDeleteModal] = useState(false)
+  const [konfirmasiTarget, setKonfirmasiTarget] = useState<DonationWithCampaign | null>(null)
   const [isPending, startTransition] = useTransition()
   const appToast = useAppToast()
 
@@ -200,6 +202,24 @@ export default function PenyaluranAdminClient({ donations: initialDonations, sta
       )
       router.refresh()
     })
+  }
+
+  function handleKonfirmasiSuccess(id: string, linkForm: string | null) {
+    setDonations(prev => prev.map(d => d.id === id
+      ? { ...d, paymentStatus: 'PAID' as any, status: 'CONFIRMED' as any, sisaPembayaran: 0 }
+      : d
+    ))
+    setDetailModal(prev => prev && prev.id === id
+      ? { ...prev, paymentStatus: 'PAID' as any, status: 'CONFIRMED' as any, sisaPembayaran: 0 }
+      : prev
+    )
+    setKonfirmasiTarget(null)
+    appToast.success(
+      linkForm
+        ? 'Lunas! Link form pengiriman dikirim ke WA donatur'
+        : 'Lunas! Status donasi diperbarui',
+    )
+    router.refresh()
   }
 
   function handleExport() {
@@ -498,6 +518,15 @@ export default function PenyaluranAdminClient({ donations: initialDonations, sta
                         >
                           <FontAwesomeIcon icon={faWhatsapp} className="text-sm" /> WA
                         </a>
+                        {(d.paymentStatus === 'UNPAID' || d.paymentStatus === 'DP') && (
+                          <button
+                            onClick={() => setKonfirmasiTarget(d)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 border border-emerald-300 px-2.5 py-1.5 rounded-[8px] hover:bg-emerald-500 hover:text-white transition-colors"
+                            title="Konfirmasi pembayaran offline"
+                          >
+                            <FontAwesomeIcon icon={faCircleCheck} className="text-sm" /> Konfirmasi Bayar
+                          </button>
+                        )}
                         {(() => {
                           const eligible = d.paymentStatus === 'PAID' || ['CONFIRMED','PREPARING','SHIPPED','DELIVERED'].includes(d.status)
                           const cls = eligible
@@ -707,11 +736,11 @@ export default function PenyaluranAdminClient({ donations: initialDonations, sta
                   </div>
                   {detailModal.paymentStatus !== 'PAID' && (
                     <button
-                      onClick={() => handleConfirmDonationPayment(detailModal.id)}
+                      onClick={() => setKonfirmasiTarget(detailModal)}
                       disabled={isPending}
                       className="w-full px-3 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-[8px] flex items-center justify-center gap-1.5 hover:bg-emerald-100 disabled:opacity-60"
                     >
-                      <FontAwesomeIcon icon={faCircleCheck} /> Konfirmasi Pembayaran (jadi Lunas + Dikonfirmasi)
+                      <FontAwesomeIcon icon={faCircleCheck} /> Konfirmasi Bayar (upload bukti + buat pengiriman)
                     </button>
                   )}
                 </div>
@@ -776,6 +805,19 @@ export default function PenyaluranAdminClient({ donations: initialDonations, sta
             </div>
           </div>
         </div>
+      )}
+
+      {konfirmasiTarget && (
+        <KonfirmasiBayarModal
+          kind="donation"
+          id={konfirmasiTarget.id}
+          customerName={konfirmasiTarget.customerName}
+          totalAmount={konfirmasiTarget.totalAmount}
+          sisaPembayaran={konfirmasiTarget.sisaPembayaran ?? null}
+          jumlahDP={konfirmasiTarget.jumlahDP ?? null}
+          onClose={() => setKonfirmasiTarget(null)}
+          onSuccess={handleKonfirmasiSuccess}
+        />
       )}
 
       {/* Bulk Delete Confirm Modal */}

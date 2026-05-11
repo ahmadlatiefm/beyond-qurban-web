@@ -92,14 +92,22 @@ export default function AssignClient({
   const searchParams = useSearchParams()
   const queryCampaignId = searchParams.get('campaignId') ?? ''
   const queryDonationId = searchParams.get('donationId') ?? ''
+  const queryLaporanId = searchParams.get('laporanId') ?? ''
+
+  // Resolve initial campaign: prefer ?campaignId, else infer from ?laporanId, else first.
+  const inferredCampaignFromLaporan = queryLaporanId
+    ? (laporanList.find(l => l.id === queryLaporanId)?.campaignId ?? '')
+    : ''
+  const initialCampaignId =
+    (queryCampaignId && campaigns.some(c => c.id === queryCampaignId)) ? queryCampaignId
+    : (inferredCampaignFromLaporan && campaigns.some(c => c.id === inferredCampaignFromLaporan)) ? inferredCampaignFromLaporan
+    : (campaigns[0]?.id ?? '')
 
   const [donations, setDonations] = useState<AssignDonation[]>(initial)
-  const [campaignId, setCampaignId] = useState<string>(
-    queryCampaignId && campaigns.some(c => c.id === queryCampaignId)
-      ? queryCampaignId
-      : (campaigns[0]?.id ?? ''),
+  const [campaignId, setCampaignId] = useState<string>(initialCampaignId)
+  const [laporanId, setLaporanId] = useState<string>(
+    queryLaporanId && laporanList.some(l => l.id === queryLaporanId) ? queryLaporanId : '',
   )
-  const [laporanId, setLaporanId] = useState<string>('')
   const [highlightId, setHighlightId] = useState<string | null>(queryDonationId || null)
   const [toast, setToast] = useState<{ show: boolean; msg: string; ok: boolean }>({ show: false, msg: '', ok: true })
   const [sendingIds, setSendingIds] = useState<Set<string>>(new Set())

@@ -18,6 +18,7 @@ import { usePixelEventMapping } from '@/hooks/usePixelEventMapping'
 
 interface Props {
   orderNumber: string
+  whatsapp: string
   totalAmount: number
   campaignTitle: string
   campaignLocation: string
@@ -38,6 +39,7 @@ function getFlag(loc: string) {
 
 export default function PembayaranPenyaluranClient({
   orderNumber,
+  whatsapp,
   totalAmount,
   campaignTitle,
   campaignLocation,
@@ -118,6 +120,7 @@ export default function PembayaranPenyaluranClient({
     setSubmitError('')
     const fd = new FormData()
     fd.append('file', file)
+    fd.append('orderNumber', orderNumber)
     const res = await fetch('/api/proof-upload', { method: 'POST', body: fd })
     const data = await res.json()
     setUploadingProof(false)
@@ -139,7 +142,7 @@ export default function PembayaranPenyaluranClient({
       const res = await fetch('/api/orders/save-proof', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber, proofUrl }),
+        body: JSON.stringify({ orderNumber, proofUrl, whatsapp }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))

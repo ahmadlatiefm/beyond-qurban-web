@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { href: '/admin/import', label: 'Import Data', icon: faFileImport },
   { href: '/admin/konten', label: 'Konten Halaman', icon: faFileLines },
   { href: '/admin/pengaturan/sertifikat', label: 'Sertifikat', icon: faCertificate },
+  { href: '/admin/pengaturan/laporan', label: 'Template Laporan', icon: faClipboardList },
   { href: '/admin/pengaturan', label: 'Pengaturan', icon: faGear },
   { href: '/admin/panduan', label: 'Panduan', icon: faBookOpen },
 ]

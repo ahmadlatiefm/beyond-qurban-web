@@ -1,33 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
+import { normalizePhone } from '@/lib/onesender'
 
 export async function POST(req: NextRequest) {
-  let body: { orderNumber?: string; proofUrl?: string }
+  let body: { orderNumber?: string; proofUrl?: string; whatsapp?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
-  const { orderNumber, proofUrl } = body
-  if (!orderNumber || !proofUrl) {
-    return NextResponse.json({ error: 'orderNumber dan proofUrl wajib diisi' }, { status: 400 })
+  const { orderNumber, proofUrl, whatsapp } = body
+  if (!orderNumber || !proofUrl || !whatsapp) {
+    return NextResponse.json(
+      { error: 'orderNumber, proofUrl, dan whatsapp wajib diisi' },
+      { status: 400 },
+    )
   }
 
+  const ip = clientIp(req)
+  const rl = rateLimit(`save-proof:${ip}`, 3, 10 * 60 * 1000)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil(rl.retryAfterSec / 60)} menit.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+    )
+  }
+
+  const normalizedInput = normalizePhone(whatsapp)
+
   try {
-    const orderUpdate = await prisma.order.updateMany({
+    const order = await prisma.order.findUnique({
       where: { orderNumber },
-      data: { paymentProofUrl: proofUrl },
+      select: { whatsapp: true },
     })
-    if (orderUpdate.count > 0) {
+    if (order) {
+      if (normalizePhone(order.whatsapp) !== normalizedInput) {
+        return NextResponse.json({ error: 'Nomor tidak sesuai' }, { status: 403 })
+      }
+      await prisma.order.update({
+        where: { orderNumber },
+        data: { paymentProofUrl: proofUrl },
+      })
       return NextResponse.json({ success: true, type: 'order' })
     }
-    const donationUpdate = await prisma.donation.updateMany({
+
+    const donation = await prisma.donation.findUnique({
       where: { orderNumber },
-      data: { paymentProofUrl: proofUrl },
+      select: { whatsapp: true },
     })
-    if (donationUpdate.count > 0) {
+    if (donation) {
+      if (normalizePhone(donation.whatsapp) !== normalizedInput) {
+        return NextResponse.json({ error: 'Nomor tidak sesuai' }, { status: 403 })
+      }
+      await prisma.donation.update({
+        where: { orderNumber },
+        data: { paymentProofUrl: proofUrl },
+      })
       return NextResponse.json({ success: true, type: 'donation' })
     }
+
     return NextResponse.json({ error: 'Pesanan tidak ditemukan' }, { status: 404 })
   } catch (err) {
     console.error('[save-proof] DB error:', err)

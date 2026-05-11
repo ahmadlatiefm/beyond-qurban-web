@@ -3,13 +3,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateOrderNumber } from '@/lib/utils'
+import { parseXlsxRows } from '@/lib/import/xlsx'
+import { createPengirimanFromPaidOrder } from '@/lib/order-to-pengiriman'
 import type { PesananImportRow, ImportResult, ImportFailure } from '@/lib/import/types'
 
 export const dynamic = 'force-dynamic'
 
-const PAYMENT_STATUS_MAP: Record<string, 'PAID' | 'UNPAID' | 'EXPIRED' | 'REFUNDED'> = {
+const PAYMENT_STATUS_MAP: Record<string, 'PAID' | 'UNPAID' | 'DP' | 'EXPIRED' | 'REFUNDED'> = {
   paid: 'PAID', lunas: 'PAID',
   unpaid: 'UNPAID', belum: 'UNPAID', pending: 'UNPAID',
+  dp: 'DP', cicilan: 'DP', downpayment: 'DP',
   expired: 'EXPIRED', kadaluarsa: 'EXPIRED',
   refunded: 'REFUNDED', dikembalikan: 'REFUNDED',
 }
@@ -47,10 +50,17 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json().catch(() => null) as { rows: PesananImportRow[] } | null
-  if (!body || !Array.isArray(body.rows) || body.rows.length === 0) {
-    return NextResponse.json({ error: 'Body invalid: rows[] required' }, { status: 400 })
+  let rows: PesananImportRow[]
+  try {
+    const parsed = await parseXlsxRows(req)
+    rows = parsed as unknown as PesananImportRow[]
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Gagal membaca file' }, { status: 400 })
   }
+  if (rows.length === 0) {
+    return NextResponse.json({ error: 'File tidak berisi baris data' }, { status: 400 })
+  }
+  const body = { rows }
 
   // Pre-load products for name resolution (cheap; small table).
   const products = await prisma.product.findMany({ select: { id: true, name: true } })
@@ -78,7 +88,7 @@ export async function POST(req: NextRequest) {
         const found = productByName.get(row.nama_produk.toLowerCase().trim())
         if (found) productId = found
       }
-      if (!productId) throw new Error('produk tidak ditemukan (produk_id/nama_produk salah)')
+      // produk opsional - productId bisa kosong
 
       const jumlah = Math.max(1, parseInt0(row.jumlah))
       const totalAmount = parseInt0(row.total_harga)
@@ -92,7 +102,13 @@ export async function POST(req: NextRequest) {
       const dup = await prisma.order.findUnique({ where: { orderNumber }, select: { id: true } })
       if (dup) throw new Error(`nomor_order "${orderNumber}" sudah ada`)
 
-      await prisma.order.create({
+      const animalType = (row.jenis_hewan?.trim() || 'domba').toLowerCase()
+
+      const jumlahDp = parseInt0(row.jumlah_dp)
+      const jumlahDP = jumlahDp > 0 ? jumlahDp : null
+      const sisaPembayaran = jumlahDP != null ? Math.max(totalAmount - jumlahDP, 0) : null
+
+      const created = await prisma.order.create({
         data: {
           orderNumber,
           customerName: namaPembeli,
@@ -105,13 +121,21 @@ export async function POST(req: NextRequest) {
           notes: row.catatan?.trim() || row.atas_nama?.trim() || null,
           productId,
           quantity: jumlah,
+          animalType,
           shippingCost: 0,
           totalAmount,
+          jumlahDP,
+          sisaPembayaran,
           paymentMethod: row.metode_bayar?.trim() || null,
           paymentStatus,
           createdAt: parseDate(row.tanggal_pesan),
         },
       })
+
+      if (paymentStatus === 'PAID') {
+        void createPengirimanFromPaidOrder(created.id, { skipDeliveryFilter: true })
+      }
+
       successCount++
     } catch (e) {
       failed.push({ row: rowNum, reason: e instanceof Error ? e.message : 'Gagal' })

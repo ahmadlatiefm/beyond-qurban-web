@@ -8,9 +8,11 @@ export interface PesananImportRow {
   no_whatsapp: string
   produk_id?: string
   nama_produk?: string
+  jenis_hewan?: string
   jumlah: string | number
   total_harga: string | number
-  status_bayar?: string  // PAID | UNPAID | EXPIRED | REFUNDED
+  status_bayar?: string  // PAID | UNPAID | DP | EXPIRED | REFUNDED
+  jumlah_dp?: string | number
   metode_bayar?: string
   tanggal_pesan?: string
   catatan?: string
@@ -26,11 +28,13 @@ export interface PenyaluranImportRow {
   nama_campaign?: string
   jumlah_donasi: string | number  // total_amount in IDR
   status_bayar?: string
+  jumlah_dp?: string | number
   tanggal_donasi?: string
   atas_nama?: string
   catatan?: string
   metode_bayar?: string
   jumlah_hewan?: string | number  // optional: ekor count, defaults to 1
+  jenis_hewan?: string
 }
 
 export interface ImportFailure {

@@ -47,8 +47,11 @@ model Order {
   notes            String?
   productId        String
   quantity         Int            @default(1)
+  animalType       String         @default("domba")
   shippingCost     Int            @default(0)
   totalAmount      Int
+  jumlahDP         Int?
+  sisaPembayaran   Int?
   paymentMethod    String?
   paymentStatus    PaymentStatus  @default(UNPAID)
   tripayReference  String?
@@ -177,12 +180,16 @@ model Donation {
   whatsapp         String
   qurbanName       String?
   qurbanNames      String?
+  atasNama         String?
+  animalType       String        @default("domba")
   forWhom          String?
   shareType        String?
   donationType     String?
   email            String?
   quantity         Int           @default(1)
   totalAmount      Int
+  jumlahDP         Int?
+  sisaPembayaran   Int?
   paymentMethod    String?
   paymentStatus    PaymentStatus @default(UNPAID)
   tripayReference  String?
@@ -266,6 +273,20 @@ model TemplateSertifikat {
   @@index([tipe, aktif])
 }
 
+model TemplateLaporan {
+  id        String   @id @default(cuid())
+  nama      String
+  blankoUrl String
+  width     Int      @default(0)
+  height    Int      @default(0)
+  elements  Json     @default("[]")
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([aktif])
+}
+
 enum ProductStatus {
   ACTIVE
   INACTIVE
@@ -294,6 +315,7 @@ enum OrderStatus {
 enum PaymentStatus {
   UNPAID
   PAID
+  DP
   EXPIRED
   REFUNDED
 }

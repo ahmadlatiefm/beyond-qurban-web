@@ -239,6 +239,25 @@ function Chapter6() {
         <li><strong>Dalam Perjalanan</strong> — tim lapangan sedang berangkat. Notif WA otomatis ke pemesan.</li>
         <li><strong>Terkirim</strong> — hewan sudah diserahkan + foto serah terima diupload.</li>
       </Bullets>
+      <Sub>C. Konfirmasi Bayar Offline</Sub>
+      <Lead>Dipakai untuk pesanan/donasi yang dibayar di luar sistem (transfer manual, COD, dll).</Lead>
+      <Steps>
+        <StepItem number={1} title="Cari row UNPAID atau DP">Di tabel pesanan / penyaluran, baris dengan status UNPAID atau DP punya tombol <strong>💰 Konfirmasi Bayar</strong>.</StepItem>
+        <StepItem number={2} title="Klik tombol Konfirmasi Bayar">Modal upload bukti transfer terbuka.</StepItem>
+        <StepItem number={3} title="Isi data pembayaran">Jumlah dibayar, tanggal bayar, metode bayar (transfer/cash/QRIS/dll).</StepItem>
+        <StepItem number={4} title="Upload foto bukti transfer">JPG/PNG/WebP. Tampil sebagai arsip di detail order.</StepItem>
+        <StepItem number={5} title="Klik 'Konfirmasi Lunas'">Otomatis: status → PAID, record Pengiriman dibuat, link form konsumen di-generate, WA berisi link otomatis dikirim ke konsumen.</StepItem>
+      </Steps>
+
+      <Sub>D. DP (Down Payment)</Sub>
+      <Steps>
+        <StepItem number={1} title="Set status DP saat input">Saat import atau tambah pesanan manual, pilih status <strong>DP</strong> dan isi jumlah DP.</StepItem>
+        <StepItem number={2} title="Sistem hitung sisa otomatis">Sisa pembayaran = total — jumlah DP. Tampil di detail order.</StepItem>
+        <StepItem number={3} title="Saat konsumen melunasi">Klik <strong>💰 Konfirmasi Bayar</strong> lagi untuk catat pelunasan.</StepItem>
+        <StepItem number={4} title="Status berubah PAID">Pengiriman otomatis dibuat seperti alur konfirmasi biasa.</StepItem>
+      </Steps>
+      <TipBox>💡 Order DP tetap muncul di laporan revenue (parsial). Pelunasan tidak menggandakan revenue — hanya menutup sisa.</TipBox>
+
       <Sub>Export</Sub>
       <P>Klik tombol Export di header — CSV download dengan filter aktif (search/status/PIC/tanggal).</P>
       <TipBox>💡 Tabel kolom "Tgl Kirim" tampilkan <em>Req: 14 Jun</em> warna biru italic kalau itu adalah <strong>request konsumen</strong> yang belum dikonfirmasi admin (admin belum set tanggal final).</TipBox>
@@ -359,24 +378,24 @@ function Chapter11() {
       <Bullets>
         <li><strong>Default:</strong> tampil semua pengiriman yang belum terkirim, urut tanggal terdekat.</li>
         <li><strong>Filter tanggal:</strong> pill "Semua / Hari Ini / Besok" atau pilih tanggal manual.</li>
-        <li><strong>Filter PIC:</strong> "Semua PIC / Belum ada PIC / per nama PIC" — kurir bisa filter pengiriman tugas dia sendiri.</li>
+        <li><strong>Filter PIC (dropdown di atas list):</strong> "Semua PIC / Belum ada PIC / per nama PIC" — kurir bisa filter pengiriman tugas dia sendiri.</li>
         <li><strong>Filter status:</strong> "Semua / Dijadwalkan / Dalam Perjalanan / Belum Dijadwalkan".</li>
       </Bullets>
       <Sub>Buka detail & ambil aksi</Sub>
       <Steps>
-        <StepItem number={1} title="Klik card">Drawer detail terbuka — semua data lengkap (pemesan, hewan, jadwal, PIC, lokasi, catatan, foto).</StepItem>
+        <StepItem number={1} title="Klik card untuk detail lengkap">Drawer detail terbuka berisi semua data: pemesan, hewan, jadwal, lokasi, catatan, foto, dan <strong>info PIC</strong> (nama + no HP yang bisa diklik untuk langsung WA).</StepItem>
         <StepItem number={2} title="Tombol di drawer">WA Donatur · Buka Maps · WA PIC · Dalam Perjalanan · Sudah Terkirim.</StepItem>
       </Steps>
       <Sub>Klik "Dalam Perjalanan"</Sub>
       <Steps>
         <StepItem number={1} title="Modal konfirmasi">Pilih PIC + isi No Kendaraan.</StepItem>
-        <StepItem number={2} title="Klik 'Mulai Perjalanan'">Status update + sistem <strong>otomatis kirim WA ke pemesan</strong> via OneSender (server-side, tanpa buka tab baru).</StepItem>
+        <StepItem number={2} title="Klik 'Mulai Perjalanan'">Status update + sistem <strong>otomatis kirim WA ke donatur</strong> via OneSender (server-side, tanpa buka tab baru).</StepItem>
         <StepItem number={3} title="Toast muncul">"Status diperbarui. Notifikasi WA sudah dikirim ke pemesan."</StepItem>
       </Steps>
       <Sub>Klik "Sudah Terkirim"</Sub>
       <Steps>
-        <StepItem number={1} title="Modal konfirmasi (lebih panjang)">PIC + No Kendaraan + Diterima Oleh* + No HP/WA Penerima + Keterangan tambahan + Upload foto serah terima.</StepItem>
-        <StepItem number={2} title="Foto wajib">Klik area upload → kamera atau galeri. Format JPG/PNG/WebP, max 4MB.</StepItem>
+        <StepItem number={1} title="Modal konfirmasi (lebih panjang)">PIC + No Kendaraan + <strong>Diterima Oleh*</strong> (wajib) + No HP/WA Penerima + Keterangan tambahan + Upload foto serah terima.</StepItem>
+        <StepItem number={2} title="Foto serah terima wajib">Klik area upload → kamera atau galeri. Format JPG/PNG/WebP, max 4MB. Tidak bisa konfirmasi tanpa foto.</StepItem>
         <StepItem number={3} title="Klik 'Konfirmasi Terkirim'">Foto upload → status update → WA "Sudah diterima oleh [nama]" terbuka di tab baru untuk dikirim manual.</StepItem>
       </Steps>
       <Sub>Tombol Panduan</Sub>
@@ -412,6 +431,139 @@ function Chapter12() {
   )
 }
 
+function Chapter13() {
+  return (
+    <>
+      <Lead>Generator sertifikat untuk pesanan & donasi. Buka <Path>/admin/pengaturan/sertifikat</Path> untuk kelola template.</Lead>
+
+      <Sub>A. Buat Template Sertifikat</Sub>
+      <Steps>
+        <StepItem number={1} title="Buka pengaturan sertifikat">Klik menu "Sertifikat" di sidebar admin.</StepItem>
+        <StepItem number={2} title="Klik 'Template Baru'">Pilih tipe: <strong>Pembelian</strong> (untuk order produk) atau <strong>Qurban</strong> (untuk donasi).</StepItem>
+        <StepItem number={3} title="Upload blanko">PNG / JPG / WebP, maks 5MB, lebar minimal 1200px. Blanko = background sertifikat.</StepItem>
+        <StepItem number={4} title="Drag elemen ke kanvas">Field dinamis dari panel kiri, atau klik tombol untuk tambah teks statis / gambar.</StepItem>
+        <StepItem number={5} title="Atur properti tiap elemen">Pilih elemen → panel kanan: font, warna, ukuran, opacity, rotasi, posisi (X/Y dalam %).</StepItem>
+        <StepItem number={6} title="Preview & simpan">Klik <strong>Preview</strong> untuk lihat hasil dengan data dummy. Aktifkan checkbox aktif → otomatis nonaktifkan template lain dengan tipe sama.</StepItem>
+      </Steps>
+
+      <Sub>B. Generate Sertifikat</Sub>
+      <Bullets>
+        <li><strong>Pembelian:</strong> di /admin/pesanan, klik tombol Sertifikat per row → PDF generate dari template aktif tipe pembelian.</li>
+        <li><strong>Qurban:</strong> di /admin/penyaluran, klik tombol Sertifikat per row → PDF generate dari template aktif tipe qurban.</li>
+        <li>Sertifikat juga otomatis di-attach ke laporan donatur kalau dipakai sebagai elemen.</li>
+      </Bullets>
+
+      <Sub>C. Elemen yang Bisa Ditambah di Editor</Sub>
+      <Bullets>
+        <li><strong>Field Dinamis</strong> — data otomatis dari sistem: nama pembeli, atas nama qurban, nomor order, jenis hewan, tanggal, total harga, dll.</li>
+        <li><strong>Teks Statis</strong> — teks tetap seperti ayat Qur&apos;an, nama organisasi, judul sertifikat.</li>
+        <li><strong>Logo</strong> — upload logo utama / tambahan, atau pakai logo toko yang sudah ada.</li>
+        <li><strong>Tanda Tangan</strong> — upload gambar TTD (disarankan PNG transparan).</li>
+        <li><strong>Cap / Stempel</strong> — upload gambar cap (PNG transparan).</li>
+        <li>Semua elemen bisa di-drag, resize, rotasi, dan diatur opacity 0–100%.</li>
+      </Bullets>
+
+      <Sub>D. Tips Template Sertifikat</Sub>
+      <TipBox>💡 Gunakan PNG transparan untuk TTD dan cap agar background blanko tetap terlihat.</TipBox>
+      <WarningBox>⚠️ Simpan template setelah setiap perubahan. Perubahan yang belum disimpan akan hilang jika halaman ditutup.</WarningBox>
+    </>
+  )
+}
+
+function Chapter14() {
+  return (
+    <>
+      <Lead>Import data pesanan dan penyaluran dari file Excel — cocok untuk migrasi data lama atau input batch.</Lead>
+
+      <Sub>Cara Import</Sub>
+      <Steps>
+        <StepItem number={1} title="Buka /admin/import">Menu "Import Data" di sidebar admin.</StepItem>
+        <StepItem number={2} title="Pilih tab">Tab <strong>Pesanan</strong> untuk order produk, atau <strong>Penyaluran</strong> untuk donasi campaign.</StepItem>
+        <StepItem number={3} title="Download Template Excel">Klik tombol Download Template — file .xlsx berisi header kolom & contoh.</StepItem>
+        <StepItem number={4} title="Isi data di Excel">Buka file template, isi tiap baris satu transaksi. Jangan ubah nama kolom di baris pertama.</StepItem>
+        <StepItem number={5} title="Upload file Excel">Klik area upload → pilih file yang sudah diisi.</StepItem>
+        <StepItem number={6} title="Cek preview">Tabel preview muncul: kolom ✅ = valid, ❌ = ada error (hover untuk lihat alasan).</StepItem>
+        <StepItem number={7} title="Klik 'Import X baris valid'">Hanya baris valid yang diproses. Baris error di-skip — fix di Excel lalu upload ulang.</StepItem>
+      </Steps>
+
+      <Sub>Kolom Template Pesanan</Sub>
+      <Bullets>
+        <li><Path>nomor_order</Path> — unik per row, contoh BQ-2026-0001.</li>
+        <li><Path>nama_pembeli</Path>, <Path>no_whatsapp</Path>.</li>
+        <li><Path>nama_produk</Path> (opsional — dipakai untuk match ke katalog).</li>
+        <li><Path>jenis_hewan</Path>, <Path>jumlah</Path>, <Path>total_harga</Path>.</li>
+        <li><Path>status_bayar</Path> (PAID / DP / UNPAID), <Path>jumlah_dp</Path>, <Path>metode_bayar</Path>.</li>
+        <li><Path>tanggal_pesan</Path>, <Path>atas_nama</Path>, <Path>alamat</Path>, <Path>catatan</Path>.</li>
+      </Bullets>
+
+      <Sub>Kolom Template Penyaluran</Sub>
+      <Bullets>
+        <li><Path>nomor_donasi</Path>, <Path>nama_donatur</Path>, <Path>no_whatsapp</Path>.</li>
+        <li><Path>nama_campaign</Path> (opsional — dipakai untuk match ke campaign aktif).</li>
+        <li><Path>jumlah_donasi</Path>, <Path>jumlah_hewan</Path>, <Path>jenis_hewan</Path>, <Path>atas_nama</Path>.</li>
+        <li><Path>status_bayar</Path> (PAID / DP / UNPAID), <Path>jumlah_dp</Path>, <Path>metode_bayar</Path>.</li>
+        <li><Path>tanggal_donasi</Path>, <Path>catatan</Path>.</li>
+      </Bullets>
+
+      <Sub>Aturan Status Bayar</Sub>
+      <Bullets>
+        <li><strong>PAID</strong> — otomatis buat record pengiriman + kirim WA berisi link form ke konsumen.</li>
+        <li><strong>DP</strong> — isi kolom <Path>jumlah_dp</Path>; sisa pembayaran auto-hitung (total − DP).</li>
+        <li><strong>UNPAID</strong> — masuk sebagai pending, perlu konfirmasi manual lewat tombol "💰 Konfirmasi Bayar".</li>
+      </Bullets>
+
+      <TipBox>💡 Produk dan Campaign tidak wajib diisi — data tetap masuk meski tanpa referensi produk/campaign. Cocok untuk migrasi data lama yang katalognya sudah berubah.</TipBox>
+      <WarningBox>⚠️ Import tidak bisa dibatalkan. Pastikan preview sudah benar sebelum klik Import. Untuk koreksi, hapus row satu per satu lewat halaman pesanan/penyaluran.</WarningBox>
+    </>
+  )
+}
+
+function Chapter15() {
+  return (
+    <>
+      <Lead>Bikin laporan penyaluran qurban per campaign — dikirim ke setiap donatur sebagai bukti realisasi qurban mereka.</Lead>
+
+      <Sub>A. Buat Laporan Baru</Sub>
+      <Steps>
+        <StepItem number={1} title="Buka /admin/laporan">List semua laporan tampil.</StepItem>
+        <StepItem number={2} title="Klik '+ Buat Laporan'">Wizard 3-step terbuka.</StepItem>
+        <StepItem number={3} title="Step 1 — Pilih sumber data">Isi judul, pilih campaign, tanggal penyembelihan, lokasi distribusi. Sistem otomatis tarik semua donatur <strong>PAID</strong> dari campaign tersebut — banner menampilkan "Ditemukan X donatur".</StepItem>
+        <StepItem number={4} title="Step 2 — Upload foto distribusi">Upload 2–4 foto distribusi/implementasi. Foto ini akan muncul di <strong>KANAN</strong> laporan semua donatur.</StepItem>
+        <StepItem number={5} title="Step 3 — Konfirmasi & buat">Review semua data + daftar donatur yang akan ter-link → klik "Buat Laporan".</StepItem>
+        <StepItem number={6} title="Auto redirect">Sistem buat laporan + link otomatis ke semua donatur PAID + redirect ke halaman Assign Foto.</StepItem>
+      </Steps>
+
+      <Sub>B. Assign Foto Penyembelihan</Sub>
+      <Steps>
+        <StepItem number={1} title="Halaman Assign muncul">List semua donatur ter-link, dengan filter campaign & laporan.</StepItem>
+        <StepItem number={2} title="Upload foto per donatur">Per donatur upload 1–2 foto penyembelihan. Foto ini personal — tampil di <strong>KIRI</strong> laporan.</StepItem>
+        <StepItem number={3} title="Status auto-update">Setelah foto terupload, status berubah jadi "Telah Disembelih ✅".</StepItem>
+        <StepItem number={4} title="Preview PDF per donatur">Klik <strong>Preview PDF</strong> di kartu donatur untuk lihat hasil laporan personalisasi.</StepItem>
+        <StepItem number={5} title="Kirim Laporan individual">Klik <strong>Kirim Laporan</strong> → PDF dikirim ke WA donatur via OneSender.</StepItem>
+        <StepItem number={6} title="Atau kirim semua sekaligus">Tombol <strong>Kirim Semua</strong> di header → loop kirim ke semua donatur yang sudah ada foto.</StepItem>
+      </Steps>
+      <TipBox>💡 Foto distribusi (kanan) SAMA untuk semua donatur. Foto penyembelihan (kiri) BERBEDA per donatur. Layout ini diatur lewat template laporan.</TipBox>
+
+      <Sub>C. Template Laporan</Sub>
+      <Steps>
+        <StepItem number={1} title="Buka /admin/pengaturan/laporan">Menu "Template Laporan" di sidebar.</StepItem>
+        <StepItem number={2} title="Upload blanko">PNG/JPG sebagai background laporan, lebar min 1200px.</StepItem>
+        <StepItem number={3} title="Drag elemen dari panel kiri">Zona Foto (penyembelihan / distribusi), Logo/TTD/Cap, Teks statis, Garis dekoratif, Field dinamis (nomor order, nama donatur, atas nama, dll).</StepItem>
+        <StepItem number={4} title="Atur zona foto">Klik zona → panel kanan: label, max foto (1-6), layout (Grid 2x1 / 2x2 / Kolom / Baris), border, gap antar foto.</StepItem>
+        <StepItem number={5} title="Preview & simpan">Tombol Preview pakai data dummy + placeholder kotak. Aktifkan template → otomatis dipakai saat generate PDF laporan.</StepItem>
+      </Steps>
+
+      <Sub>D. Tabel List Laporan</Sub>
+      <Bullets>
+        <li><strong>Kolom Donatur</strong> — jumlah donatur ter-link ke laporan.</li>
+        <li><strong>Kolom Foto Sembelih</strong> — badge <Path>X/Y</Path> (hijau=lengkap, kuning=sebagian, merah=kosong).</li>
+        <li><strong>Aksi per row:</strong> Assign Foto · PDF Semua · Preview · WA manual · Edit · Hapus.</li>
+      </Bullets>
+      <TipBox>💡 Tombol "PDF Semua" hanya aktif kalau ada donatur ter-link. Pastikan foto penyembelihan sudah di-assign sebelum klik — donatur tanpa foto akan di-skip otomatis.</TipBox>
+    </>
+  )
+}
+
 /* ------------------------------------------------------------------ */
 /*  Main switch                                                         */
 /* ------------------------------------------------------------------ */
@@ -430,6 +582,9 @@ export default function ChapterContent({ chapter }: { chapter: number }) {
     case 10: return <Chapter10 />
     case 11: return <Chapter11 />
     case 12: return <Chapter12 />
+    case 13: return <Chapter13 />
+    case 14: return <Chapter14 />
+    case 15: return <Chapter15 />
     default: return <p className="text-sm text-brand-muted italic">Bab tidak ditemukan.</p>
   }
 }
@@ -442,13 +597,16 @@ export const CHAPTER_KEYWORDS: Record<number, string> = {
   1: 'dashboard statistik order donasi revenue grafik chart hari ini total',
   2: 'produk katalog hewan domba sapi tambah edit foto gallery video youtube stok harga kategori berat slug deskripsi nonaktif',
   3: 'campaign program penyaluran donasi cerita kabar update gambar video target nominal slug aktif',
-  4: 'pesanan order konfirmasi bayar transfer manual paid unpaid status export csv',
-  5: 'donasi penyaluran qurban campaign list tabel konfirmasi bayar manual',
-  6: 'pengiriman kirim pic tag hewan token link form konsumen offline online whatsapp wa export status menunggu data dijadwalkan dalam perjalanan terkirim',
+  4: 'pesanan order konfirmasi bayar transfer manual paid unpaid dp status export csv',
+  5: 'donasi penyaluran qurban campaign list tabel konfirmasi bayar manual dp',
+  6: 'pengiriman kirim pic tag hewan token link form konsumen offline online whatsapp wa export status menunggu data dijadwalkan dalam perjalanan terkirim konfirmasi bayar dp down payment cicilan',
   7: 'pixel facebook meta capi conversion api token test event tracking analytics',
   8: 'follow up followup auto otomatis cron template variabel pesan unpaid pengingat reminder',
   9: 'whatsapp wa onesender gateway api key url credentials test koneksi nomor pengirim',
   10: 'pengaturan umum nama logo toko store kode akses tim lapangan rekening bank info voucher',
-  11: 'tim lapangan kurir kode akses kirim foto serah terima upload status update filter pic tanggal panduan',
+  11: 'tim lapangan kurir kode akses kirim foto serah terima upload status update filter pic tanggal panduan dalam perjalanan',
   12: 'form konsumen donatur token link pengiriman alamat maps pin kecamatan kota waktu sesi h-3',
+  13: 'sertifikat template blanko field dinamis statis teks logo ttd tanda tangan cap stempel editor drag pembelian qurban opacity rotasi font preview',
+  14: 'import data excel xlsx template pesanan penyaluran upload paid dp unpaid migrasi batch bulk preview validasi error',
+  15: 'laporan penyaluran donatur foto sembelih distribusi implementasi wizard campaign assign pdf onesender wa kirim template blanko zona foto grid layout',
 }

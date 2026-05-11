@@ -92,6 +92,7 @@ export default async function PembayaranPage({
         {/* Full 2-col layout rendered by client */}
         <PembayaranClient
           orderNumber={order.orderNumber}
+          whatsapp={order.whatsapp}
           totalAmount={order.totalAmount}
           productPrice={order.totalAmount - order.shippingCost}
           shippingCost={order.shippingCost}

@@ -100,6 +100,7 @@ export default async function PembayaranPenyaluranPage({
 
         <PembayaranPenyaluranClient
           orderNumber={donation.orderNumber}
+          whatsapp={donation.whatsapp}
           totalAmount={donation.totalAmount}
           campaignTitle={donation.campaign.title}
           campaignLocation={donation.campaign.location}

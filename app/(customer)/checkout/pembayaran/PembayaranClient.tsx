@@ -14,6 +14,7 @@ import { usePixelEventMapping } from '@/hooks/usePixelEventMapping'
 
 interface Props {
   orderNumber: string
+  whatsapp: string
   totalAmount: number
   productPrice: number    // totalAmount - shippingCost
   shippingCost: number    // separate so summary shows correct breakdown
@@ -32,7 +33,7 @@ interface Props {
 }
 
 export default function PembayaranClient({
-  orderNumber, totalAmount, productPrice, shippingCost,
+  orderNumber, whatsapp, totalAmount, productPrice, shippingCost,
   productName, productImage, productWeight, createdAt,
   paymentMethod, payCode, manualBank, manualQris, tripayPaymentUrl,
 }: Props) {
@@ -101,6 +102,7 @@ export default function PembayaranClient({
     setSubmitError('')
     const fd = new FormData()
     fd.append('file', file)
+    fd.append('orderNumber', orderNumber)
     const res = await fetch('/api/proof-upload', { method: 'POST', body: fd })
     const data = await res.json()
     setUploadingProof(false)
@@ -122,7 +124,7 @@ export default function PembayaranClient({
       const res = await fetch('/api/orders/save-proof', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber, proofUrl }),
+        body: JSON.stringify({ orderNumber, proofUrl, whatsapp }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))

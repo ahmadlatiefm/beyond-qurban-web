@@ -20,6 +20,9 @@ const CHAPTERS = [
   { id: 10, title: 'Pengaturan Umum', icon: '🔧' },
   { id: 11, title: 'Tim Lapangan', icon: '👷' },
   { id: 12, title: 'Form Konsumen', icon: '📋' },
+  { id: 13, title: 'Sertifikat', icon: '📜' },
+  { id: 14, title: 'Import Data', icon: '📥' },
+  { id: 15, title: 'Laporan Penyaluran', icon: '📋' },
 ] as const
 
 const TOTAL = CHAPTERS.length

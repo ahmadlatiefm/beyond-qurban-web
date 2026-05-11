@@ -7,6 +7,8 @@ import { formatDate } from '@/lib/utils'
 import { resolvePdfImageSrc } from '@/lib/pdf/image-source'
 import LaporanDonatur from '@/components/pdf/LaporanDonatur'
 import { toAbsoluteUrl } from '@/lib/onesender'
+import { generateLaporanPdf } from '@/lib/laporan/generate'
+import type { LaporanElement, FotoZoneKey } from '@/lib/laporan/types'
 
 const LOCATION_LABEL: Record<string, string> = {
   INDONESIA: 'Pelosok Indonesia',
@@ -78,13 +80,61 @@ export async function generateLaporanDonaturPdf(donationId: string): Promise<Lap
     }
   }
 
-  const logoUrl = await resolvePdfImageSrc('/logo-gold.png')
-  const siteLogoRow = await prisma.settings.findUnique({ where: { key: 'site_logo_url' } })
-  const logoRightUrl = siteLogoRow?.value ? await resolvePdfImageSrc(siteLogoRow.value) : null
-
   const atasNama = donationAtasNama(donation)
   const jenisHewan = donation.campaign.animalType || 'Hewan Qurban'
   const lokasi = LOCATION_LABEL[donation.campaign.location] ?? donation.campaign.title
+  const tanggal = formatDate(ld?.assignedAt ?? ld?.dikirimAt ?? donation.createdAt)
+
+  // Try active template first (canvas-based blanko overlay)
+  const activeTpl = await prisma.templateLaporan.findFirst({ where: { aktif: true } })
+  if (activeTpl) {
+    const fotoSembelih = (ld?.fotoPenyembelihan as unknown as string[]) ?? []
+    const fotoDistribusi = (ld?.laporan?.fotoUrls as unknown as string[]) ?? []
+    const photos: Record<FotoZoneKey, string[]> = {
+      foto_sembelih: fotoSembelih,
+      foto_distribusi: fotoDistribusi,
+    }
+    const data: Record<string, string> = {
+      nomor_order: donation.orderNumber,
+      nama_donatur: donation.customerName,
+      atas_nama: atasNama,
+      nomor_hewan: ld?.laporan?.judul || '',
+      lokasi_distribusi: ld?.laporan?.lokasi || lokasi,
+      tanggal_penyembelihan: tanggal,
+      jenis_hewan: jenisHewan,
+      jumlah_hewan: `${donation.quantity} ekor`,
+    }
+    const pdfBuffer = await generateLaporanPdf({
+      blankoUrl: activeTpl.blankoUrl,
+      elements: activeTpl.elements as unknown as LaporanElement[],
+      data,
+      photos,
+    })
+    return {
+      donation: {
+        id: donation.id,
+        orderNumber: donation.orderNumber,
+        customerName: donation.customerName,
+        whatsapp: donation.whatsapp,
+        quantity: donation.quantity,
+        campaign: {
+          title: donation.campaign.title,
+          location: donation.campaign.location,
+          animalType: donation.campaign.animalType,
+        },
+      },
+      pdfBuffer,
+      filename: `laporan-${donation.orderNumber}.pdf`,
+      atasNama,
+      jenisHewan,
+      lokasi,
+    }
+  }
+
+  // Fallback: legacy @react-pdf renderer
+  const logoUrl = await resolvePdfImageSrc('/logo-gold.png')
+  const siteLogoRow = await prisma.settings.findUnique({ where: { key: 'site_logo_url' } })
+  const logoRightUrl = siteLogoRow?.value ? await resolvePdfImageSrc(siteLogoRow.value) : null
 
   const element = React.createElement(LaporanDonatur, {
     data: {
@@ -93,7 +143,7 @@ export async function generateLaporanDonaturPdf(donationId: string): Promise<Lap
       atasNama,
       jenisHewan,
       jumlahHewan: donation.quantity,
-      tanggal: formatDate(ld?.assignedAt ?? ld?.dikirimAt ?? donation.createdAt),
+      tanggal,
       lokasi,
       campaignTitle: donation.campaign.title,
       isPatungan: ld?.isPatungan ?? false,

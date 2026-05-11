@@ -1,11 +1,11 @@
 'use client'
 import { useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import Papa from 'papaparse'
+import * as XLSX from 'xlsx-js-style'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faUpload, faDownload, faArrowLeft, faCheck, faXmark, faTriangleExclamation,
-  faFileCsv, faCircleCheck, faCircleXmark, faRotate, faPlay,
+  faFileExcel, faCircleCheck, faCircleXmark, faRotate, faPlay,
 } from '@fortawesome/free-solid-svg-icons'
 import AdminNotifBell from '@/components/admin/AdminNotifBell'
 import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
@@ -77,6 +77,7 @@ export default function ImportClient({
   const [tab, setTab] = useState<Tab>('pesanan')
   const [rawRows, setRawRows] = useState<Record<string, string>[]>([])
   const [filename, setFilename] = useState<string>('')
+  const [file, setFile] = useState<File | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [pending, startTransition] = useTransition()
@@ -226,33 +227,43 @@ export default function ImportClient({
   function reset() {
     setRawRows([])
     setFilename('')
+    setFile(null)
     setParseError(null)
     setImportResult(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  function handleFile(file: File) {
+  async function handleFile(picked: File) {
     setParseError(null)
     setImportResult(null)
-    setFilename(file.name)
-    Papa.parse<Record<string, string>>(file, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: normalizeKey,
-      transform: (val) => (typeof val === 'string' ? val.trim() : val),
-      complete: (res) => {
-        if (res.errors && res.errors.length > 0) {
-          setParseError(`Parse error: ${res.errors[0].message}`)
-          setRawRows([])
-          return
+    setFilename(picked.name)
+    setFile(picked)
+    try {
+      const buf = await picked.arrayBuffer()
+      const wb = XLSX.read(buf, { type: 'array' })
+      const sheetName = wb.SheetNames[0]
+      const sheet = sheetName ? wb.Sheets[sheetName] : null
+      if (!sheet) throw new Error('Sheet pertama tidak ditemukan')
+      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+        defval: '',
+        raw: false,
+        blankrows: false,
+      })
+      const normalized: Record<string, string>[] = raw.map(row => {
+        const out: Record<string, string> = {}
+        for (const [k, v] of Object.entries(row)) {
+          const key = normalizeKey(k)
+          if (!key) continue
+          out[key] = v == null ? '' : String(v).trim()
         }
-        setRawRows(res.data || [])
-      },
-      error: (err) => {
-        setParseError(err.message || 'Gagal parse CSV')
-        setRawRows([])
-      },
-    })
+        return out
+      }).filter(r => Object.values(r).some(v => v !== ''))
+      setRawRows(normalized)
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : 'Gagal parse Excel')
+      setRawRows([])
+      setFile(null)
+    }
   }
 
   function onDrop(e: React.DragEvent) {
@@ -263,12 +274,14 @@ export default function ImportClient({
   }
 
   async function handleImport() {
-    const importableRows = validated
-      .filter(v => v.status !== 'error')
-      .map(v => v.raw)
+    const importableRows = validated.filter(v => v.status !== 'error')
 
     if (importableRows.length === 0) {
       alert('Tidak ada baris yang valid untuk diimport')
+      return
+    }
+    if (!file) {
+      alert('File Excel belum dipilih')
       return
     }
 
@@ -279,11 +292,9 @@ export default function ImportClient({
         const url = tab === 'pesanan'
           ? '/api/admin/import/pesanan'
           : '/api/admin/import/penyaluran'
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rows: importableRows }),
-        })
+        const fd = new FormData()
+        fd.append('file', file, file.name)
+        const res = await fetch(url, { method: 'POST', body: fd })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Gagal import')
         setImportResult(json as ImportResult)
@@ -340,14 +351,14 @@ export default function ImportClient({
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <p className="text-sm text-brand-muted">
-                Format header CSV harus sesuai template. Header dinormalisasi (lowercase, snake_case).
+                Format header file Excel harus sesuai template. Header dinormalisasi (lowercase, snake_case).
               </p>
               <button
                 onClick={downloadTemplate}
                 className="text-xs font-bold border border-brand-muted/20 px-3 py-2 rounded-[10px] hover:bg-brand-light flex items-center gap-1.5"
               >
                 <FontAwesomeIcon icon={faDownload} />
-                Download Template CSV
+                Download Template Excel
               </button>
             </div>
             <label
@@ -356,13 +367,13 @@ export default function ImportClient({
               onDrop={onDrop}
               className={`block border-2 border-dashed rounded-[14px] p-12 text-center cursor-pointer transition-colors ${dragOver ? 'border-brand-dark bg-brand-light/40' : 'border-brand-muted/30 bg-white hover:border-brand-dark/40 hover:bg-brand-light/30'}`}
             >
-              <FontAwesomeIcon icon={faFileCsv} className="text-3xl text-brand-muted mb-3" />
-              <div className="font-bold text-brand-dark mb-1">Drag & drop file CSV di sini</div>
-              <div className="text-xs text-brand-muted">atau klik untuk pilih file</div>
+              <FontAwesomeIcon icon={faFileExcel} className="text-3xl text-brand-muted mb-3" />
+              <div className="font-bold text-brand-dark mb-1">Upload file Excel (.xlsx)</div>
+              <div className="text-xs text-brand-muted">Drag & drop atau klik untuk pilih file</div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,text/csv"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
               />
@@ -382,7 +393,7 @@ export default function ImportClient({
             <div className="bg-white border border-brand-muted/15 rounded-[14px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-col gap-1">
                 <div className="text-sm font-bold text-brand-dark flex items-center gap-2">
-                  <FontAwesomeIcon icon={faFileCsv} />
+                  <FontAwesomeIcon icon={faFileExcel} />
                   {filename}
                 </div>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
@@ -420,6 +431,10 @@ export default function ImportClient({
                       <th className="px-3 py-2 font-bold w-20">Status</th>
                       <th className="px-3 py-2 font-bold">Nama</th>
                       <th className="px-3 py-2 font-bold">{tab === 'pesanan' ? 'Produk' : 'Campaign'}</th>
+                      <th className="px-3 py-2 font-bold w-24">Jenis Hewan</th>
+                      {tab === 'penyaluran' && (
+                        <th className="px-3 py-2 font-bold">Atas Nama</th>
+                      )}
                       <th className="px-3 py-2 font-bold w-32">Total</th>
                       <th className="px-3 py-2 font-bold w-24">Bayar</th>
                       <th className="px-3 py-2 font-bold">Catatan</th>
@@ -444,6 +459,10 @@ export default function ImportClient({
                         </td>
                         <td className="px-3 py-2 font-medium text-brand-dark">{v.resolved.nama}</td>
                         <td className="px-3 py-2 text-brand-muted truncate max-w-[200px]">{v.resolved.refLabel}</td>
+                        <td className="px-3 py-2 text-brand-muted">{(v.raw as { jenis_hewan?: string }).jenis_hewan?.trim() || '—'}</td>
+                        {tab === 'penyaluran' && (
+                          <td className="px-3 py-2 text-brand-muted truncate max-w-[160px]">{(v.raw as PenyaluranImportRow).atas_nama?.trim() || '—'}</td>
+                        )}
                         <td className="px-3 py-2 font-mono">{v.resolved.total > 0 ? formatRupiah(v.resolved.total) : '—'}</td>
                         <td className="px-3 py-2 font-mono">{v.resolved.statusBayar}</td>
                         <td className="px-3 py-2 text-[11px] text-brand-muted truncate max-w-[260px]">{v.reason || '—'}</td>

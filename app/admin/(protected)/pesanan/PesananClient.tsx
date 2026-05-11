@@ -11,6 +11,7 @@ import { useAppToast } from '@/components/ui/AppToast'
 import AdminNotifBell from '@/components/admin/AdminNotifBell'
 import AdminProfileMenu from '@/components/admin/AdminProfileMenu'
 import { StatusDropdown } from '@/components/admin/StatusDropdown'
+import KonfirmasiBayarModal from '@/components/admin/KonfirmasiBayarModal'
 import type { Order, Product } from '@prisma/client'
 
 type OrderWithProduct = Order & { product: Product }
@@ -38,6 +39,7 @@ const STATUS_LABELS: Record<string, string> = {
 const PAYMENT_BADGES: Record<string, { label: string; cls: string }> = {
   UNPAID:   { label: 'Menunggu Bayar', cls: 'bg-amber-500 text-white' },
   PAID:     { label: 'Lunas',          cls: 'bg-emerald-500 text-white' },
+  DP:       { label: 'DP',             cls: 'bg-blue-500 text-white' },
   EXPIRED:  { label: 'Kadaluarsa',     cls: 'bg-gray-200 text-gray-600' },
   REFUNDED: { label: 'Refund',         cls: 'bg-red-100 text-red-600' },
 }
@@ -81,6 +83,7 @@ export default function PesananClient({ initialOrders, followupTemplate }: { ini
   const [sortBy, setSortBy] = useState<SortKey>('date_desc')
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [konfirmasiTarget, setKonfirmasiTarget] = useState<OrderWithProduct | null>(null)
 
   // Sync local state when server component re-fetches (after router.refresh)
   useEffect(() => {
@@ -152,6 +155,17 @@ export default function PesananClient({ initialOrders, followupTemplate }: { ini
       setOrders(prev => prev.map(o => o.id === id ? { ...o, paymentStatus: 'PAID' as any, status: 'CONFIRMED' as any } : o))
       router.refresh()
     })
+  }
+
+  function handleKonfirmasiSuccess(id: string, linkForm: string | null) {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, paymentStatus: 'PAID' as any, status: 'CONFIRMED' as any, sisaPembayaran: 0 } : o))
+    setKonfirmasiTarget(null)
+    appToast.success(
+      linkForm
+        ? 'Lunas! Link form pengiriman dikirim ke WA konsumen'
+        : 'Lunas! Status pesanan diperbarui',
+    )
+    router.refresh()
   }
 
   function handleUpdateStatus(id: string, status: string) {
@@ -400,6 +414,7 @@ export default function PesananClient({ initialOrders, followupTemplate }: { ini
             const payBadge = PAYMENT_BADGES[order.paymentStatus] ?? { label: order.paymentStatus, cls: 'bg-gray-100 text-gray-600' }
             const ordBadge = ORDER_BADGES[order.status] ?? { label: order.status, cls: 'bg-gray-100 text-gray-600' }
             const isUnpaid = order.paymentStatus === 'UNPAID'
+            const showKonfirmasi = order.paymentStatus === 'UNPAID' || order.paymentStatus === 'DP'
             const waText = encodeURIComponent(`Halo ${order.customerName}, ini konfirmasi pesanan ${order.orderNumber} dari Beyond Qurban.`)
 
             return (
@@ -502,9 +517,9 @@ export default function PesananClient({ initialOrders, followupTemplate }: { ini
                           }
                         />
 
-                        {isUnpaid && (
+                        {showKonfirmasi && (
                           <button
-                            onClick={() => handleConfirmPayment(order.id)}
+                            onClick={() => setKonfirmasiTarget(order)}
                             disabled={isPending}
                             className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-[8px] flex items-center gap-1.5 hover:bg-emerald-100 disabled:opacity-60"
                           >
@@ -671,6 +686,19 @@ export default function PesananClient({ initialOrders, followupTemplate }: { ini
             </div>
           </div>
         </div>
+      )}
+
+      {konfirmasiTarget && (
+        <KonfirmasiBayarModal
+          kind="order"
+          id={konfirmasiTarget.id}
+          customerName={konfirmasiTarget.customerName}
+          totalAmount={konfirmasiTarget.totalAmount}
+          sisaPembayaran={konfirmasiTarget.sisaPembayaran ?? null}
+          jumlahDP={konfirmasiTarget.jumlahDP ?? null}
+          onClose={() => setKonfirmasiTarget(null)}
+          onSuccess={handleKonfirmasiSuccess}
+        />
       )}
 
       {/* Bulk Delete Confirm Modal */}
